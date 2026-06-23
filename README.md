@@ -1,62 +1,122 @@
-# MEGA TubeSheet Automation
+# MEGA Engineering Suite
 
-MEGA TubeSheet Automation is a professional C# Windows Forms application designed to automate the generation of highly detailed, anchor-based engineering drawings for Heat Exchanger Tube Sheets using GstarCAD.
+MEGA Engineering Suite is a professional CAD automation platform developed in C# and AutoLISP for automating the generation of engineering drawings used in process equipment and heat exchanger design.
+
+The system transforms engineering input data into production-ready CAD drawings by combining parametric calculations, template-based drafting, and automated GstarCAD integration.
 
 ## Overview
 
-Generating intricate Tube Sheet drawings manually is time-consuming and prone to human error. This project bridges the gap between engineering calculations and CAD drafting by dynamically generating precise AutoLISP (`.lsp`) scripts. These scripts communicate directly with GstarCAD to automatically draft Front and Rear Tube Sheets, complete with annotations, hole patterns, bolt circles, flanges, and side-view cross-sections.
+Traditional engineering drafting requires significant manual effort for repetitive drawing creation, dimensioning, annotation placement, and standards compliance.
 
-## Features
+MEGA Engineering Suite automates this workflow by generating accurate CAD drawings directly from engineering parameters while maintaining company drafting standards and template structures.
 
-- **Anchor-Based Template System**: Uses predefined CAD anchors (`REAR_TS_ANCHOR`, `FRONT_TS_ANCHOR`, `REAR_SIDEVIEW_ANCHOR`, `FRONT_SIDEVIEW_ANCHOR`) to insert geometry directly into specific coordinates of a pre-existing engineering drawing template.
-- **Parametric Generation**: Generates geometry based on exact engineering inputs (e.g., Tube OD, Pitch, Pass Partitions, Flange ID/OD).
-- **Drafting Automation**: Automatically scales and places dimensions, leaders, and text (e.g., Row-count labels) on corresponding sides (Rear on the right, Front mirrored to the left).
-- **Side View Cross Sections**: Automatically creates rectangular side profiles with `ANSI31` hatching and thickness dimensions.
-- **Layer & Style Management**: Ensures compliance with drafting standards (e.g., Centerlines on `CENTER`, Bolt holes on `PHANTOM` with Red styling, inner tube holes in Blue).
-- **One-Click Execution**: Generates the LISP script, creates an SCR file, and launches GstarCAD to execute the drawing completely unattended.
+The platform is designed around a modular architecture, allowing multiple equipment and component types to be generated from a unified automation engine.
 
-## Architecture & Technologies Used
+---
 
-- **Language**: C#
-- **Framework**: .NET (Windows Forms)
-- **CAD Automation**: AutoLISP (`.lsp`) and AutoCAD Scripting (`.scr`)
-- **Target CAD Platform**: GstarCAD (Compatible with AutoCAD)
+## Current Modules
 
-## Installation
+### TubeSheet Module
 
-1. **Prerequisites**:
-   - .NET SDK (Compatible with .NET 10.0 / .NET 6.0+)
-   - GstarCAD (or AutoCAD) installed on the host machine.
-2. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/yourusername/mega-tubesheet-automation.git
-   ```
-3. **Build the Project**:
-   Open the solution in Visual Studio and build, or run:
-   ```bash
-   dotnet build
-   ```
+* Front Tube Sheet generation
+* Rear Tube Sheet generation
+* Tube layout automation
+* Bolt hole generation
+* Pass partition generation
+* Side-view generation
+* Automated annotations and dimensions
 
-## Usage
+### Flange Module
 
-1. Launch the `loginpage1.exe` application.
-2. Input the required mechanical parameters for the Tube Sheet (OD, ID, Tube Pitch, Tube Count, Passes, etc.).
-3. Click the **Generate Template CAD** button.
-4. The application will compute all coordinates, generate a `.lsp` script, and automatically launch GstarCAD to draw the components at the designated template anchors.
+* Parametric flange generation
+* Standard flange configurations
+* Automated dimensions and callouts
 
-## Project Structure
+### Nozzle Module
 
-- `DrawingAutomationService.cs`: The core engine responsible for compiling the AutoLISP syntax, extracting anchor coordinates, and sequencing the drawing phases.
-- `TubeSheetViewBase.cs`: Base logic for geometric calculations.
-- `FrontTubeSheetView.cs` / `RearTubeSheetView.cs`: Specific implementations mirroring the front and rear configurations.
-- `DrawingLayoutEngine.cs`: Handles spacing, scaling, and spatial reasoning for the drafting layout.
+* Nozzle geometry generation
+* Orientation and placement automation
+
+### Tank Module
+
+* Tank component drafting
+* Parametric vessel features
+
+### Pipe Support Module
+
+* Support geometry generation
+* Standardized support configurations
+
+### Reports Module
+
+* Engineering summaries
+* Bill of Materials generation
+* Design output documentation
+
+---
+
+## Key Features
+
+* Parametric CAD generation
+* Anchor-based template architecture
+* AutoLISP-driven drafting automation
+* GstarCAD integration
+* Automated dimensions and annotations
+* Engineering drawing standardization
+* Multi-module design architecture
+* Reusable drawing templates
+* Scalable CAD automation framework
+
+---
+
+## Technology Stack
+
+* C#
+* .NET
+* Windows Forms
+* AutoLISP
+* GstarCAD
+* CAD Template Automation
+
+---
+
+## Architecture
+
+The platform uses a layered architecture:
+
+Engineering Inputs
+↓
+Calculation Engine
+↓
+Geometry Generation
+↓
+AutoLISP Generation
+↓
+CAD Automation Layer
+↓
+Drawing Templates
+↓
+Final Engineering Drawings
+
+---
 
 ## Future Roadmap
 
-- Further alignment of drafting standards between views.
-- Support for additional Heat Exchanger components (Baffles, Shell, Channels).
-- Enhanced collision detection for dense annotation fields.
+* Advanced report generation
+* BOM automation
+* Additional equipment modules
+* Design validation tools
+* Multi-CAD compatibility
+* API integration
+* Cloud-based drawing management
+
+---
 
 ## License
 
-This project is licensed under the MIT License.
+Copyright © MEGA Engineering Projects Pvt. Ltd.
+All Rights Reserved.
+
+No MIT license.
+
+No public source distribution.
