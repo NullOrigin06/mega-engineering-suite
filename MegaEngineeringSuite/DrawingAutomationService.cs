@@ -1,0 +1,1439 @@
+#pragma warning disable CS8600
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Runtime.InteropServices;
+namespace MegaEngineeringSuite
+{
+    public class AppSettings
+    {
+        public string CadPath { get; set; } = @"C:\Program Files\Gstarsoft\GstarCAD2026\gcad.exe";
+    }
+
+    public class DrawingAutomationResult
+    {
+        public string ScriptPath { get; set; } = string.Empty;
+        public string BackupPath { get; set; } = string.Empty;
+        public string ScrPath { get; set; } = string.Empty;
+        public string BackupScrPath { get; set; } = string.Empty;
+        public string CadExecutable { get; set; } = string.Empty;
+        public string Arguments { get; set; } = string.Empty;
+        public string ScrContent { get; set; } = string.Empty;
+    }
+
+    public class DrawingAutomationService
+    {
+        [DllImport("oleaut32.dll", PreserveSig = false)]
+        static extern void GetActiveObject(ref Guid rclsid, IntPtr pvReserved, [MarshalAs(UnmanagedType.IUnknown)] out object ppunk);
+
+        private object GetActiveCOMObject(string progId)
+        {
+            Type type = Type.GetTypeFromProgID(progId);
+            if (type == null) return null;
+            Guid clsid = type.GUID;
+            try
+            {
+                object obj;
+                GetActiveObject(ref clsid, IntPtr.Zero, out obj);
+                return obj;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Generates a placeholder AutoLISP script with the engineering parameters and calculated geometry,
+        /// and attempts to launch the CAD software defined in Settings.json.
+        /// </summary>
+        public DrawingAutomationResult GenerateLispAndLaunchCAD(DrawingModel model, EngineeringDataModel data)
+        {
+            if (model == null || data == null)
+            {
+                throw new ArgumentNullException("Drawing model and engineering data must be provided.");
+            }
+
+            // 1. Manage Settings.json
+            string settingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.json");
+            AppSettings settings = new AppSettings();
+            bool settingsUpdated = false;
+            
+            if (File.Exists(settingsPath))
+            {
+                string json = File.ReadAllText(settingsPath);
+                settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+            }
+
+            // 2. Auto-Detect if configured path does not exist
+            if (!File.Exists(settings.CadPath))
+            {
+                string[] commonPaths = new string[]
+                {
+                    @"C:\Program Files\Gstarsoft\GstarCAD2026\gcad.exe",
+                    @"C:\Program Files\Gstarsoft\GstarCAD2025\gcad.exe",
+                    @"C:\Program Files\Gstarsoft\GstarCAD2024\gcad.exe"
+                };
+
+                bool found = false;
+                foreach (string path in commonPaths)
+                {
+                    if (File.Exists(path))
+                    {
+                        settings.CadPath = path;
+                        found = true;
+                        settingsUpdated = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    // Update Settings file anyway so the user has the template to edit
+                    string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
+                    File.WriteAllText(settingsPath, json);
+
+                    throw new FileNotFoundException($"CAD executable not found.\nAuto-detection failed.\n\nPlease edit Settings.json in the application directory to point to your installed CAD software.");
+                }
+            }
+
+            // 3. Save Settings if missing or updated by auto-detect
+            if (!File.Exists(settingsPath) || settingsUpdated)
+            {
+                string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(settingsPath, json);
+            }
+
+            try
+            {
+                string tempDir = Path.GetTempPath();
+                string scriptName = $"TubeSheet_Draw_{data.ShellID}_{DateTime.Now:yyyyMMdd_HHmmss}.lsp";
+                string scriptPath = Path.Combine(tempDir, scriptName);
+
+                // Note: As per project restrictions, we do NOT generate actual AutoLISP geometric drawing code.
+                // We only generate a placeholder script with variable declarations and geometry dumps.
+                StringBuilder lspContent = new StringBuilder();
+                lspContent.AppendLine("; =========================================");
+                lspContent.AppendLine("; AUTOMATED TUBESHEET GENERATION SCRIPT");
+                lspContent.AppendLine("; Generated by Mega Engineering Automation");
+                lspContent.AppendLine($"; Date: {DateTime.Now}");
+                lspContent.AppendLine("; =========================================");
+                lspContent.AppendLine();
+                
+                // Injecting basic engineering variables
+                lspContent.AppendLine($"(setq ShellID {data.ShellID})");
+                lspContent.AppendLine($"(setq BoltSize \"{data.BoltSize}\")");
+                lspContent.AppendLine($"(setq NoOfBolts {data.NoOfBolts})");
+                lspContent.AppendLine();
+
+                // Implement Phase T4 - Rear Tubesheet Base Geometry
+                double rearTsRadius = data.TubeSheetFinishOD / 2.0;
+                double tubeLimitRadius = data.ShellID / 2.0;
+                double clExt = rearTsRadius * 1.1; // 10% extension for centerlines
+                
+                lspContent.AppendLine("; -----------------------------------------");
+                lspContent.AppendLine("; PHASE T4 - REAR TUBESHEET BASE GEOMETRY");
+                lspContent.AppendLine("; -----------------------------------------");
+                lspContent.AppendLine("(setq blk");
+                lspContent.AppendLine("      (ssget \"_X\"");
+                lspContent.AppendLine("             '((0 . \"INSERT\")");
+                lspContent.AppendLine("               (2 . \"REAR_TS_ANCHOR\"))))");
+                lspContent.AppendLine();
+                lspContent.AppendLine("(if blk");
+                lspContent.AppendLine("  (progn");
+                lspContent.AppendLine("    (setq pt");
+                lspContent.AppendLine("          (cdr");
+                lspContent.AppendLine("           (assoc 10");
+                lspContent.AppendLine("                  (entget (ssname blk 0)))))");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; --- DIAGNOSTIC LOG ---");
+                lspContent.AppendLine("    (princ \"\\n--- DIAGNOSTIC LOG ---\")");
+                lspContent.AppendLine($"    (princ \"\\nShellID: {data.ShellID}\")");
+                lspContent.AppendLine($"    (princ \"\\nFlangeID: {data.FlangeID}\")");
+                lspContent.AppendLine($"    (princ \"\\nTubeSheetFinishOD: {data.TubeSheetFinishOD}\")");
+                lspContent.AppendLine($"    (princ \"\\nTubeSheetRawOD: {data.TubeSheetRawOD}\")");
+                lspContent.AppendLine("    (princ \"\\n----------------------\")");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 1. Shell ID circle (Tube Limit)");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"TS_SHELL\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine($"    (command \"_.CIRCLE\" pt {tubeLimitRadius:F4})");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 2. Flange ID circle");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"TS_FLANGE\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine($"    (setq flangeRadius (/ {data.FlangeID:F4} 2.0))");
+                lspContent.AppendLine("    (command \"_.CIRCLE\" pt flangeRadius)");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 3. Tube Sheet Finish OD circle");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"TS_FINISH\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine($"    (command \"_.CIRCLE\" pt {rearTsRadius:F4})");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; Restore Layer 0");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 3. Horizontal Centerline");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"CL\" \"C\" \"1\" \"\" \"\")");
+                lspContent.AppendLine($"    (setq p1 (list (- (car pt) {clExt:F4}) (cadr pt)))");
+                lspContent.AppendLine($"    (setq p2 (list (+ (car pt) {clExt:F4}) (cadr pt)))");
+                lspContent.AppendLine("    (command \"_.LINE\" p1 p2 \"\")");
+                
+                lspContent.AppendLine("    ; 4. Vertical Centerline");
+                lspContent.AppendLine($"    (setq p3 (list (car pt) (- (cadr pt) {clExt:F4})))");
+                lspContent.AppendLine($"    (setq p4 (list (car pt) (+ (cadr pt) {clExt:F4})))");
+                lspContent.AppendLine("    (command \"_.LINE\" p3 p4 \"\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+                
+                lspContent.AppendLine("    ; 5. Pass Partition Lines");
+                double halfPassThk = data.PartitionPlateTHK / 2.0;
+                if (data.NoOfPass >= 2)
+                {
+                    lspContent.AppendLine($"    (setq ppH1 (list (- (car pt) {tubeLimitRadius:F4}) (+ (cadr pt) {halfPassThk:F4})))");
+                    lspContent.AppendLine($"    (setq ppH2 (list (+ (car pt) {tubeLimitRadius:F4}) (+ (cadr pt) {halfPassThk:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" ppH1 ppH2 \"\")");
+                    lspContent.AppendLine($"    (setq ppH3 (list (- (car pt) {tubeLimitRadius:F4}) (- (cadr pt) {halfPassThk:F4})))");
+                    lspContent.AppendLine($"    (setq ppH4 (list (+ (car pt) {tubeLimitRadius:F4}) (- (cadr pt) {halfPassThk:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" ppH3 ppH4 \"\")");
+                }
+                if (data.NoOfPass >= 4)
+                {
+                    lspContent.AppendLine($"    (setq ppV1 (list (+ (car pt) {halfPassThk:F4}) (- (cadr pt) {tubeLimitRadius:F4})))");
+                    lspContent.AppendLine($"    (setq ppV2 (list (+ (car pt) {halfPassThk:F4}) (+ (cadr pt) {tubeLimitRadius:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" ppV1 ppV2 \"\")");
+                    lspContent.AppendLine($"    (setq ppV3 (list (- (car pt) {halfPassThk:F4}) (- (cadr pt) {tubeLimitRadius:F4})))");
+                    lspContent.AppendLine($"    (setq ppV4 (list (- (car pt) {halfPassThk:F4}) (+ (cadr pt) {tubeLimitRadius:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" ppV3 ppV4 \"\")");
+                }
+
+                // Implement Phase T5 - Bolt Circle Generation
+                double pcdRadius = data.BoltPCD / 2.0;
+                double boltHoleRadius = data.HoleDia / 2.0;
+                lspContent.AppendLine("    ; -----------------------------------------");
+                lspContent.AppendLine("    ; PHASE T5 - BOLT CIRCLE GENERATION");
+                lspContent.AppendLine("    ; -----------------------------------------");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"TS_BOLT\" \"C\" \"1\" \"\" \"L\" \"PHANTOM\" \"\" \"\")");
+                lspContent.AppendLine("    ; 1. Bolt PCD Construction Circle");
+                lspContent.AppendLine($"    (command \"_.CIRCLE\" pt {pcdRadius:F4})");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 2. Bolt Holes");
+                
+                if (data.NoOfBolts > 0 && data.BoltPCD > 0 && data.HoleDia > 0)
+                {
+                    double angleIncrement = (2 * Math.PI) / data.NoOfBolts;
+                    for (int i = 0; i < data.NoOfBolts; i++)
+                    {
+                        double angle = i * angleIncrement;
+                        double dx = pcdRadius * Math.Cos(angle);
+                        double dy = pcdRadius * Math.Sin(angle);
+                        
+                        lspContent.AppendLine($"    (setq bx (+ (car pt) {dx:F4}))");
+                        lspContent.AppendLine($"    (setq by (+ (cadr pt) {dy:F4}))");
+                        lspContent.AppendLine($"    (command \"_.CIRCLE\" (list bx by) {boltHoleRadius:F4})");
+                    }
+                }
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+
+                // Implement Phase T6 - Tube Hole Generation
+                TubeLayoutService tubeLayoutService = new TubeLayoutService();
+                var tubePoints = tubeLayoutService.GenerateLayout(
+                    (float)(data.ShellID / 2.0),
+                    (float)data.TubeOD,
+                    data.TubeQty,
+                    (float)data.PartitionPlateTHK,
+                    data.NoOfPass
+                );
+                double tubeRadius = data.TubeOD / 2.0;
+                
+                lspContent.AppendLine("    ; -----------------------------------------");
+                lspContent.AppendLine("    ; PHASE T6 - TUBE HOLE GENERATION");
+                lspContent.AppendLine("    ; -----------------------------------------");
+                lspContent.AppendLine($"    (princ \"\\nGenerating {tubePoints.Count} tube holes...\")");
+                foreach (var tp in tubePoints)
+                {
+                    lspContent.AppendLine($"    (setq tx (+ (car pt) {tp.X:F4}))");
+                    lspContent.AppendLine($"    (setq ty (+ (cadr pt) {tp.Y:F4}))");
+                    lspContent.AppendLine($"    (command \"_.CIRCLE\" (list tx ty) {tubeRadius:F4})");
+                }
+                lspContent.AppendLine($"    (princ \"\\nTube Hole Generation Complete: {tubePoints.Count} holes generated.\\n\")");
+
+                // Implement Phase T7B - Rear Tubesheet Dimensions
+                lspContent.AppendLine("    ; -----------------------------------------");
+                lspContent.AppendLine("    ; PHASE T7B - REAR TUBESHEET DIMENSIONS");
+                lspContent.AppendLine("    ; -----------------------------------------");
+                
+                // Switch to DIM layer and set magenta color for dimensions
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"DIM\" \"C\" \"6\" \"\" \"\")");
+                
+                // 1. Tube Limit Dimension
+                lspContent.AppendLine($"    (setq d3_p1 (list (- (car pt) {tubeLimitRadius:F4}) (cadr pt)))");
+                lspContent.AppendLine($"    (setq d3_p2 (list (+ (car pt) {tubeLimitRadius:F4}) (cadr pt)))");
+                lspContent.AppendLine($"    (setq d3_loc (list (car pt) (+ (cadr pt) {tubeLimitRadius + 100:F4})))");
+                lspContent.AppendLine("    (command \"_.DIMLINEAR\" d3_p1 d3_p2 \"T\" \"TUBE LIMIT %%c<>\" d3_loc)");
+
+                // 5. Bolt PCD Dimension
+                lspContent.AppendLine($"    (setq d5_p1 (list (- (car pt) {pcdRadius:F4}) (cadr pt)))");
+                lspContent.AppendLine($"    (setq d5_p2 (list (+ (car pt) {pcdRadius:F4}) (cadr pt)))");
+                lspContent.AppendLine($"    (setq d5_loc (list (car pt) (- (cadr pt) {pcdRadius + 150:F4})))");
+                lspContent.AppendLine("    (command \"_.DIMLINEAR\" d5_p1 d5_p2 d5_loc)");
+
+                // 6. Partition Plate Thickness
+                if (data.NoOfPass >= 2)
+                {
+                    lspContent.AppendLine($"    (setq d6_p1 (list (+ (car pt) {tubeLimitRadius + 50:F4}) (+ (cadr pt) {halfPassThk:F4})))");
+                    lspContent.AppendLine($"    (setq d6_p2 (list (+ (car pt) {tubeLimitRadius + 50:F4}) (- (cadr pt) {halfPassThk:F4})))");
+                    lspContent.AppendLine($"    (setq d6_loc (list (+ (car pt) {tubeLimitRadius + 150:F4}) (cadr pt)))");
+                    lspContent.AppendLine("    (command \"_.DIMLINEAR\" d6_p1 d6_p2 d6_loc)");
+                }
+
+                // 7. Tube Pitch
+                if (tubePoints.Count >= 2)
+                {
+                    var tp1 = tubePoints[0];
+                    var tp2 = tubePoints.OrderBy(t => Math.Sqrt(Math.Pow(t.X - tp1.X, 2) + Math.Pow(t.Y - tp1.Y, 2))).ElementAt(1);
+                    lspContent.AppendLine($"    (setq tp1_abs (list (+ (car pt) {tp1.X:F4}) (+ (cadr pt) {tp1.Y:F4})))");
+                    lspContent.AppendLine($"    (setq tp2_abs (list (+ (car pt) {tp2.X:F4}) (+ (cadr pt) {tp2.Y:F4})))");
+                    lspContent.AppendLine($"    (setq tp_loc (list (+ (car pt) {(tp1.X + tp2.X)/2:F4}) (+ (cadr pt) {Math.Max(tp1.Y, tp2.Y) + 50:F4})))");
+                    lspContent.AppendLine("    (command \"_.DIMALIGNED\" tp1_abs tp2_abs tp_loc)");
+                }
+
+                // Implement Phase T8 - Rear Tubesheet Annotations
+                lspContent.AppendLine("    ; -----------------------------------------");
+                lspContent.AppendLine("    ; PHASE T8 - REAR TUBESHEET ANNOTATIONS");
+                lspContent.AppendLine("    ; -----------------------------------------");
+                
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION\" \"C\" \"3\" \"\" \"\")");
+                
+                double outerRadiusMax = data.TubeSheetFinishOD / 2.0;
+
+                // 1. Angular Markers (P1)
+                double angRadius = outerRadiusMax + 30.0;
+                lspContent.AppendLine($"    (setq ang_t (list (car pt) (+ (cadr pt) {angRadius:F4})))");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"BC\" ang_t 15.0 0 \"0%%d\")");
+                lspContent.AppendLine($"    (setq ang_r (list (+ (car pt) {angRadius:F4}) (cadr pt)))");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"ML\" ang_r 15.0 0 \"90%%d\")");
+                lspContent.AppendLine($"    (setq ang_b (list (car pt) (- (cadr pt) {angRadius:F4})))");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"TC\" ang_b 15.0 0 \"180%%d\")");
+                lspContent.AppendLine($"    (setq ang_l (list (- (car pt) {angRadius:F4}) (cadr pt)))");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"MR\" ang_l 15.0 0 \"270%%d\")");
+
+                // 2. Tube Note (Top Right)
+                if (tubePoints.Count > 0)
+                {
+                    var tpRight = tubePoints.OrderByDescending(p => p.X + p.Y).First();
+                    lspContent.AppendLine($"    (setq t_p1 (list (+ (car pt) {tpRight.X + tubeRadius:F4}) (+ (cadr pt) {tpRight.Y:F4})))");
+                    lspContent.AppendLine($"    (setq t_p2 (list (+ (car pt) {outerRadiusMax + 80.0:F4}) (+ (cadr pt) {outerRadiusMax + 80.0:F4})))");
+                    lspContent.AppendLine($"    (setq t_p3 (list (+ (car pt) {outerRadiusMax + 120.0:F4}) (+ (cadr pt) {outerRadiusMax + 80.0:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" t_p1 t_p2 t_p3 \"\")");
+                    lspContent.AppendLine($"    (setq t_txt (list (+ (car pt) {outerRadiusMax + 125.0:F4}) (+ (cadr pt) {outerRadiusMax + 85.0:F4})))");
+                    lspContent.AppendLine($"    (command \"_.TEXT\" t_txt 15.0 0 \"{data.TubeQty} NOS. TUBE HOLES FOR %%c{data.TubeOD}\")");
+                }
+
+                // 3. Bolt Note (Top Left)
+                lspContent.AppendLine($"    (setq b_p1 (list (- (car pt) {(pcdRadius + boltHoleRadius) * 0.707:F4}) (+ (cadr pt) {(pcdRadius + boltHoleRadius) * 0.707:F4})))");
+                lspContent.AppendLine($"    (setq b_p2 (list (- (car pt) {outerRadiusMax + 80.0:F4}) (+ (cadr pt) {outerRadiusMax + 80.0:F4})))");
+                lspContent.AppendLine($"    (setq b_p3 (list (- (car pt) {outerRadiusMax + 120.0:F4}) (+ (cadr pt) {outerRadiusMax + 80.0:F4})))");
+                lspContent.AppendLine("    (command \"_.LINE\" b_p1 b_p2 b_p3 \"\")");
+                lspContent.AppendLine($"    (setq b_txt (list (- (car pt) {outerRadiusMax + 125.0:F4}) (+ (cadr pt) {outerRadiusMax + 85.0:F4})))");
+                lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"BR\" b_txt 15.0 0 \"%%c{data.HoleDia}, {data.NoOfBolts} HOLES EQUI. ON {data.BoltPCD} P.C.D.\")");
+
+                // Tube Limit, PCD, and Partition Notes have been removed per user request
+
+                // Phase T7E/T8R - Row Count Labels
+                var groupedY = tubePoints
+                    .GroupBy(p => Math.Round(p.Y, 2))
+                    .OrderByDescending(g => g.Key)
+                    .ToList();
+                
+                double textHeight = 15.0; 
+                double minSpacing = textHeight * 1.5; 
+                double clearX = (data.TubeSheetFinishOD / 2.0) + 20.0;
+                double baseSafeMargin = clearX + 20.0;
+                
+                double[] labelY = new double[groupedY.Count];
+                for (int i = 0; i < groupedY.Count; i++) labelY[i] = groupedY[i].Key;
+
+                if (groupedY.Count > 1) {
+                    double requiredSpan = (groupedY.Count - 1) * minSpacing;
+                    double totalSpan = labelY[0] - labelY[groupedY.Count - 1];
+
+                    if (totalSpan < requiredSpan) {
+                        double centerY = (labelY[0] + labelY[groupedY.Count - 1]) / 2.0;
+                        double startY = centerY + requiredSpan / 2.0;
+                        for (int i = 0; i < groupedY.Count; i++) {
+                            labelY[i] = startY - i * minSpacing;
+                        }
+                    } else {
+                        // Top-down pass to ensure minimum spacing
+                        for (int i = 1; i < groupedY.Count; i++) {
+                            if (labelY[i - 1] - labelY[i] < minSpacing) {
+                                labelY[i] = labelY[i - 1] - minSpacing;
+                            }
+                        }
+                        // Bottom-up adjustment if we pushed too far down
+                        double overshot = groupedY.Last().Key - labelY.Last();
+                        if (overshot > 0) {
+                            for (int i = 0; i < groupedY.Count; i++) {
+                                labelY[i] += overshot;
+                            }
+                        }
+                    }
+                }
+
+                lspContent.AppendLine("    ; -----------------------------------------");
+                lspContent.AppendLine("    ; PHASE T7E/T8R - ROW COUNT LABELS");
+                lspContent.AppendLine("    ; -----------------------------------------");
+                
+                for (int i = 0; i < groupedY.Count; i++)
+                {
+                    double yPos = groupedY[i].Key;
+                    double lY = labelY[i];
+                    double maxX = groupedY[i].Max(p => p.X);
+                    int count = groupedY[i].Count();
+                    
+                    double currentSafeMargin = baseSafeMargin + (i % 2 == 0 ? 0 : 30.0);
+                    
+                    lspContent.AppendLine($"    (setq l_p1 (list (+ (car pt) {maxX + tubeRadius + 2.0:F4}) (+ (cadr pt) {yPos:F4})))");
+                    lspContent.AppendLine($"    (setq l_p2 (list (+ (car pt) {currentSafeMargin:F4}) (+ (cadr pt) {lY:F4})))");
+                    lspContent.AppendLine($"    (setq l_p3 (list (+ (car pt) {currentSafeMargin + 40.0:F4}) (+ (cadr pt) {lY:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" l_p1 l_p2 l_p3 \"\")");
+
+                    lspContent.AppendLine($"    (setq txt_pt (list (+ (car pt) {currentSafeMargin + 45.0:F4}) (+ (cadr pt) {lY:F4})))");
+                    lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"ML\" txt_pt {textHeight:F1} 0 \"{count}\")");
+                }
+
+                // Restore Layer 0
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+
+                lspContent.AppendLine("  )");
+                lspContent.AppendLine(")");
+                lspContent.AppendLine();
+                
+                // Phase T10B - Rear Tubesheet Side View Geometry
+                lspContent.AppendLine("; -----------------------------------------");
+                lspContent.AppendLine("; PHASE T10B - REAR TUBESHEET SIDE VIEW GEOMETRY (PRIMARY)");
+                lspContent.AppendLine("; -----------------------------------------");
+                lspContent.AppendLine("(setq side_blk");
+                lspContent.AppendLine("      (ssget \"_X\"");
+                lspContent.AppendLine("             '((0 . \"INSERT\")");
+                lspContent.AppendLine("               (2 . \"REAR_SIDEVIEW_ANCHOR\"))))");
+                lspContent.AppendLine();
+                lspContent.AppendLine("(if side_blk");
+                lspContent.AppendLine("  (progn");
+                lspContent.AppendLine("    (setq side_pt");
+                lspContent.AppendLine("          (cdr");
+                lspContent.AppendLine("           (assoc 10");
+                lspContent.AppendLine("                  (entget (ssname side_blk 0)))))");
+                lspContent.AppendLine();
+                lspContent.AppendLine($"    (setq ts_thk {data.TubeSheetFinishTHK:F4})");
+                lspContent.AppendLine($"    (setq ts_height {data.TubeSheetFinishOD:F4})");
+                lspContent.AppendLine("    (setq half_thk (/ ts_thk 2.0))");
+                lspContent.AppendLine("    (setq half_h (/ ts_height 2.0))");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    (setq p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
+                lspContent.AppendLine("    (setq p2 (list (+ (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
+                lspContent.AppendLine("    (setq p3 (list (+ (car side_pt) half_thk) (+ (cadr side_pt) half_h)))");
+                lspContent.AppendLine("    (setq p4 (list (- (car side_pt) half_thk) (+ (cadr side_pt) half_h)))");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    (setq ssHatch (ssadd))");
+                lspContent.AppendLine("    (command \"_.LINE\" p1 p2 \"\")");
+                lspContent.AppendLine("    (ssadd (entlast) ssHatch)");
+                lspContent.AppendLine("    (command \"_.LINE\" p2 p3 \"\")");
+                lspContent.AppendLine("    (ssadd (entlast) ssHatch)");
+                lspContent.AppendLine("    (command \"_.LINE\" p3 p4 \"\")");
+                lspContent.AppendLine("    (ssadd (entlast) ssHatch)");
+                lspContent.AppendLine("    (command \"_.LINE\" p4 p1 \"\")");
+                lspContent.AppendLine("    (ssadd (entlast) ssHatch)");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; Phase T10C - Side View Hatch Generation");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"HATCH\" \"\")");
+                lspContent.AppendLine("    (command \"_.-HATCH\" \"P\" \"ANSI31\" \"5.0\" \"0\" \"S\" ssHatch \"\" \"\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; Phase T10D - Side View Dimensions");
+                lspContent.AppendLine("    ; -----------------------------------------");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"DIM\" \"\")");
+                lspContent.AppendLine();
+                lspContent.AppendLine($"    (setq shell_id {data.ShellID:F4})");
+                lspContent.AppendLine($"    (setq flange_id {data.FlangeID:F4})");
+                lspContent.AppendLine("    (setq half_shell (/ shell_id 2.0))");
+                lspContent.AppendLine("    (setq half_flange (/ flange_id 2.0))");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 1. Shell ID");
+                lspContent.AppendLine("    (setq d1_p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_shell)))");
+                lspContent.AppendLine("    (setq d1_p2 (list (- (car side_pt) half_thk) (+ (cadr side_pt) half_shell)))");
+                lspContent.AppendLine("    (setq d1_loc (list (- (car side_pt) (+ half_thk 60.0)) (cadr side_pt)))");
+                lspContent.AppendLine("    (command \"_.DIMLINEAR\" d1_p1 d1_p2 \"T\" \"%%C<>\" d1_loc)");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 2. Flange ID");
+                lspContent.AppendLine("    (setq d2_p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_flange)))");
+                lspContent.AppendLine("    (setq d2_p2 (list (- (car side_pt) half_thk) (+ (cadr side_pt) half_flange)))");
+                lspContent.AppendLine("    (setq d2_loc (list (- (car side_pt) (+ half_thk 120.0)) (cadr side_pt)))");
+                lspContent.AppendLine("    (command \"_.DIMLINEAR\" d2_p1 d2_p2 \"T\" \"%%C<>\" d2_loc)");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 3. TubeSheet Finish OD");
+                lspContent.AppendLine("    (setq d3_p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
+                lspContent.AppendLine("    (setq d3_p2 (list (- (car side_pt) half_thk) (+ (cadr side_pt) half_h)))");
+                lspContent.AppendLine("    (setq d3_loc (list (- (car side_pt) (+ half_thk 180.0)) (cadr side_pt)))");
+                lspContent.AppendLine("    (command \"_.DIMLINEAR\" d3_p1 d3_p2 \"T\" \"%%C<>\" d3_loc)");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 4. TubeSheet Finish THK");
+                lspContent.AppendLine("    (setq d4_p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
+                lspContent.AppendLine("    (setq d4_p2 (list (+ (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
+                lspContent.AppendLine("    (setq d4_loc (list (car side_pt) (- (cadr side_pt) (+ half_h 40.0))))");
+                lspContent.AppendLine("    (command \"_.DIMLINEAR\" d4_p1 d4_p2 \"T\" \"<> THK\" d4_loc)");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+                lspContent.AppendLine("  )");
+                lspContent.AppendLine("  (prompt \"\\nREAR_SIDEVIEW_ANCHOR NOT FOUND\")");
+                lspContent.AppendLine(")");
+                lspContent.AppendLine();
+                lspContent.AppendLine("; Zoom Extents to see the result");
+                                // Implement Phase T11 - Front Tubesheet
+                lspContent.AppendLine("; -----------------------------------------");
+                lspContent.AppendLine("; PHASE T11 - FRONT TUBESHEET GENERATION");
+                lspContent.AppendLine("; -----------------------------------------");
+                lspContent.AppendLine("(setq blk");
+                lspContent.AppendLine("      (ssget \"_X\"");
+                lspContent.AppendLine("             '((0 . \"INSERT\")");
+                lspContent.AppendLine("               (2 . \"FRONT_TS_ANCHOR\"))))");
+                lspContent.AppendLine();
+                lspContent.AppendLine("(if blk");
+                lspContent.AppendLine("  (progn");
+                lspContent.AppendLine("    (setq pt");
+                lspContent.AppendLine("          (cdr");
+                lspContent.AppendLine("           (assoc 10");
+                lspContent.AppendLine("                  (entget (ssname blk 0)))))");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 1. Shell ID, Flange ID, Finish OD");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"TS_SHELL\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine($"    (command \"_.CIRCLE\" pt {tubeLimitRadius:F4})");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"TS_FLANGE\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine($"    (command \"_.CIRCLE\" pt {data.FlangeID / 2.0:F4})");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"TS_FINISH\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine($"    (command \"_.CIRCLE\" pt {rearTsRadius:F4})");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 2. Centerlines");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"CL\" \"C\" \"1\" \"\" \"\")");
+                lspContent.AppendLine($"    (setq p1 (list (- (car pt) {clExt:F4}) (cadr pt)))");
+                lspContent.AppendLine($"    (setq p2 (list (+ (car pt) {clExt:F4}) (cadr pt)))");
+                lspContent.AppendLine("    (command \"_.LINE\" p1 p2 \"\")");
+                lspContent.AppendLine($"    (setq p3 (list (car pt) (- (cadr pt) {clExt:F4})))");
+                lspContent.AppendLine($"    (setq p4 (list (car pt) (+ (cadr pt) {clExt:F4})))");
+                lspContent.AppendLine("    (command \"_.LINE\" p3 p4 \"\")");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 3. Bolt Circle");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"TS_BOLT\" \"C\" \"1\" \"\" \"L\" \"PHANTOM\" \"\" \"\")");
+                lspContent.AppendLine($"    (command \"_.CIRCLE\" pt {pcdRadius:F4})");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 4. Tube Holes");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"TS_HOLES\" \"C\" \"5\" \"\" \"\")");
+                foreach (var tPt in tubePoints)
+                {
+                    lspContent.AppendLine($"    (setq h_pt (list (+ (car pt) {tPt.X:F4}) (+ (cadr pt) {tPt.Y:F4})))");
+                    lspContent.AppendLine($"    (command \"_.CIRCLE\" h_pt {tubeRadius:F4})");
+                }
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 5. Dimensions");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"DIM\" \"C\" \"6\" \"\" \"\")");
+                lspContent.AppendLine($"    (setq d1_loc (list (car pt) (+ (cadr pt) {tubeLimitRadius + 100:F4})))");
+                lspContent.AppendLine("    (command \"_.DIMLINEAR\" (list (- (car pt) " + tubeLimitRadius + ") (cadr pt)) (list (+ (car pt) " + tubeLimitRadius + ") (cadr pt)) \"T\" \"TUBE LIMIT %%c<>\" d1_loc)");
+                lspContent.AppendLine($"    (setq d2_loc (list (car pt) (- (cadr pt) {pcdRadius + 150:F4})))");
+                lspContent.AppendLine("    (command \"_.DIMLINEAR\" (list (- (car pt) " + pcdRadius + ") (cadr pt)) (list (+ (car pt) " + pcdRadius + ") (cadr pt)) \"T\" \"PCD %%c<>\" d2_loc)");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 6. Annotations");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION\" \"C\" \"3\" \"\" \"\")");
+                lspContent.AppendLine($"    (setq ang_t (list (car pt) (+ (cadr pt) {outerRadiusMax + 30.0:F4})))");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"BC\" ang_t 15.0 0 \"0%%d\")");
+                lspContent.AppendLine($"    (setq ang_r (list (+ (car pt) {outerRadiusMax + 30.0:F4}) (cadr pt)))");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"ML\" ang_r 15.0 0 \"90%%d\")");
+                lspContent.AppendLine($"    (setq ang_b (list (car pt) (- (cadr pt) {outerRadiusMax + 30.0:F4})))");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"TC\" ang_b 15.0 0 \"180%%d\")");
+                lspContent.AppendLine($"    (setq ang_l (list (- (car pt) {outerRadiusMax + 30.0:F4}) (cadr pt)))");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"MR\" ang_l 15.0 0 \"270%%d\")");
+                lspContent.AppendLine();
+                if (tubePoints.Count > 0)
+                {
+                    var tpRight = tubePoints.OrderByDescending(p => p.X + p.Y).First();
+                    lspContent.AppendLine($"    (setq t_p1 (list (+ (car pt) {tpRight.X + tubeRadius:F4}) (+ (cadr pt) {tpRight.Y:F4})))");
+                    lspContent.AppendLine($"    (setq t_p2 (list (+ (car pt) {outerRadiusMax + 80.0:F4}) (+ (cadr pt) {outerRadiusMax + 80.0:F4})))");
+                    lspContent.AppendLine($"    (setq t_p3 (list (+ (car pt) {outerRadiusMax + 120.0:F4}) (+ (cadr pt) {outerRadiusMax + 80.0:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" t_p1 t_p2 t_p3 \"\")");
+                    lspContent.AppendLine($"    (setq t_txt (list (+ (car pt) {outerRadiusMax + 125.0:F4}) (+ (cadr pt) {outerRadiusMax + 85.0:F4})))");
+                    lspContent.AppendLine($"    (command \"_.TEXT\" t_txt 15.0 0 \"{data.TubeQty} NOS. TUBE HOLES FOR %%c{data.TubeOD}\")");
+                }
+                lspContent.AppendLine($"    (setq b_p1 (list (- (car pt) {(pcdRadius + boltHoleRadius) * 0.707:F4}) (+ (cadr pt) {(pcdRadius + boltHoleRadius) * 0.707:F4})))");
+                lspContent.AppendLine($"    (setq b_p2 (list (- (car pt) {outerRadiusMax + 80.0:F4}) (+ (cadr pt) {outerRadiusMax + 80.0:F4})))");
+                lspContent.AppendLine($"    (setq b_p3 (list (- (car pt) {outerRadiusMax + 120.0:F4}) (+ (cadr pt) {outerRadiusMax + 80.0:F4})))");
+                lspContent.AppendLine("    (command \"_.LINE\" b_p1 b_p2 b_p3 \"\")");
+                lspContent.AppendLine($"    (setq b_txt (list (- (car pt) {outerRadiusMax + 125.0:F4}) (+ (cadr pt) {outerRadiusMax + 85.0:F4})))");
+                lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"BR\" b_txt 15.0 0 \"%%c{data.HoleDia}, {data.NoOfBolts} HOLES EQUI. ON {data.BoltPCD} P.C.D.\")");
+                lspContent.AppendLine();
+                
+                // Row Count Labels
+                lspContent.AppendLine("    ; 7. Row Count Labels (Left Side)");
+                for (int i = 0; i < groupedY.Count; i++)
+                {
+                    double yPos = groupedY[i].Key;
+                    double lY = labelY[i];
+                    double minX = groupedY[i].Min(p => p.X);
+                    int count = groupedY[i].Count();
+                    
+                    double currentSafeMargin = baseSafeMargin + (i % 2 == 0 ? 0 : 30.0);
+                    double startXOffset = minX - tubeRadius - 2.0;
+                    
+                    lspContent.AppendLine($"    (setq l_p1 (list (+ (car pt) {startXOffset:F4}) (+ (cadr pt) {yPos:F4})))");
+                    lspContent.AppendLine($"    (setq l_p2 (list (- (car pt) {currentSafeMargin:F4}) (+ (cadr pt) {lY:F4})))");
+                    lspContent.AppendLine($"    (setq l_p3 (list (- (car pt) {currentSafeMargin + 40.0:F4}) (+ (cadr pt) {lY:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" l_p1 l_p2 l_p3 \"\")");
+
+                    lspContent.AppendLine($"    (setq txt_pt (list (- (car pt) {currentSafeMargin + 45.0:F4}) (+ (cadr pt) {lY:F4})))");
+                    lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"MR\" txt_pt {textHeight:F1} 0 \"{count}\")");
+                }
+                
+                lspContent.AppendLine("    ; Restore Layer 0");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+                lspContent.AppendLine("  )");
+                lspContent.AppendLine("  (prompt \"\\nFRONT_TS_ANCHOR NOT FOUND\")");
+                lspContent.AppendLine(")");
+                lspContent.AppendLine();
+                
+                lspContent.AppendLine("(command \"_.ZOOM\" \"_E\")");
+                lspContent.AppendLine();
+                lspContent.AppendLine("(princ \"\\nTubeSheet multi-anchor test generated successfully.\")");
+                lspContent.AppendLine("(princ)");
+
+                // Save to Temp
+                File.WriteAllText(scriptPath, lspContent.ToString());
+                
+                // Save Backup
+                string generatedDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "GeneratedLisp");
+                if (!Directory.Exists(generatedDir)) Directory.CreateDirectory(generatedDir);
+                string backupPath = Path.Combine(generatedDir, scriptName);
+                File.WriteAllText(backupPath, lspContent.ToString());
+
+                // Verify LISP file exists
+                if (!File.Exists(scriptPath))
+                {
+                    throw new FileNotFoundException($"Failed to generate LISP file at {scriptPath}");
+                }
+
+                // Generate SCR file for CAD Batch Launch
+                string scrName = $"Condenser_Launch_{data.ShellID}_{DateTime.Now:yyyyMMdd_HHmmss}.scr";
+                string scrPath = Path.Combine(tempDir, scrName);
+                string backupScrPath = Path.Combine(generatedDir, scrName);
+
+                // AutoLISP 'load' function requires forward slashes or double backslashes
+                string loadPath = scriptPath.Replace("\\", "/");
+                string scrContent = $"(load \"{loadPath}\")\n";
+
+                File.WriteAllText(scrPath, scrContent);
+                File.WriteAllText(backupScrPath, scrContent);
+
+                if (!File.Exists(scrPath))
+                {
+                    throw new FileNotFoundException($"Failed to generate SCR file at {scrPath}");
+                }
+
+                // ProcessStartInfo uses the SCR file, not the LISP file directly
+                string arguments = $"/b \"{scrPath}\"";
+
+                ProcessStartInfo startInfo = new ProcessStartInfo
+                {
+                    FileName = settings.CadPath,
+                    Arguments = arguments,
+                    UseShellExecute = true
+                };
+
+                Process.Start(startInfo);
+
+                return new DrawingAutomationResult
+                {
+                    ScriptPath = scriptPath,
+                    BackupPath = backupPath,
+                    ScrPath = scrPath,
+                    BackupScrPath = backupScrPath,
+                    CadExecutable = settings.CadPath,
+                    Arguments = arguments,
+                    ScrContent = scrContent
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to launch CAD automation: {ex.Message}");
+            }
+        }
+        public DrawingAutomationResult GenerateTemplateLispAndLaunchCAD(Dictionary<string, List<ICadEntity>> views, EngineeringDataModel data, string templatePath)
+        {
+            if (views == null || data == null)
+            {
+                throw new ArgumentNullException("Views and engineering data must be provided.");
+            }
+
+            // 1. Manage Settings.json
+            string settingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.json");
+            AppSettings settings = new AppSettings();
+            bool settingsUpdated = false;
+            
+            if (File.Exists(settingsPath))
+            {
+                string json = File.ReadAllText(settingsPath);
+                settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+            }
+
+            // 2. Auto-Detect if configured path does not exist
+            if (!File.Exists(settings.CadPath))
+            {
+                string[] commonPaths = new string[]
+                {
+                    @"C:\Program Files\Gstarsoft\GstarCAD2026\gcad.exe",
+                    @"C:\Program Files\Gstarsoft\GstarCAD2025\gcad.exe",
+                    @"C:\Program Files\Gstarsoft\GstarCAD2024\gcad.exe"
+                };
+
+                bool found = false;
+                foreach (string path in commonPaths)
+                {
+                    if (File.Exists(path))
+                    {
+                        settings.CadPath = path;
+                        found = true;
+                        settingsUpdated = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
+                    File.WriteAllText(settingsPath, json);
+                    throw new FileNotFoundException($"CAD executable not found.\nAuto-detection failed.\n\nPlease edit Settings.json in the application directory to point to your installed CAD software.");
+                }
+            }
+
+            if (!File.Exists(settingsPath) || settingsUpdated)
+            {
+                string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(settingsPath, json);
+            }
+
+            try
+            {
+                string tempDir = Path.GetTempPath();
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string scriptName = $"TubeSheet_Draw_{data.ShellID}_{timestamp}.lsp";
+                string scriptPath = Path.Combine(tempDir, scriptName);
+
+                StringBuilder lspContent = new StringBuilder();
+                lspContent.AppendLine("; =========================================");
+                lspContent.AppendLine("; AUTOMATED TUBESHEET TEMPLATE PLACEMENT SCRIPT");
+                lspContent.AppendLine("; =========================================");
+                lspContent.AppendLine();
+                
+                // Set system variables for script safety
+                lspContent.AppendLine("(setvar \"CMDECHO\" 0)");
+                lspContent.AppendLine("(setvar \"OSMODE\" 0)");
+                lspContent.AppendLine();
+
+                // Implement Phase T4 - Rear Tubesheet Base Geometry (Template View)
+                double templateRearTsRadius = data.TubeSheetFinishOD / 2.0;
+                double templateTubeLimitRadius = data.ShellID / 2.0;
+                double templateClExt = templateRearTsRadius * 1.1; // 10% extension for centerlines
+                
+                lspContent.AppendLine("; -----------------------------------------");
+                lspContent.AppendLine("; PHASE T4 - REAR TUBESHEET BASE GEOMETRY (TEMPLATE VIEW)");
+                lspContent.AppendLine("; -----------------------------------------");
+                lspContent.AppendLine("(setq blk");
+                lspContent.AppendLine("      (ssget \"_X\"");
+                lspContent.AppendLine("             '((0 . \"INSERT\")");
+                lspContent.AppendLine("               (2 . \"REAR_TS_ANCHOR\"))))");
+                lspContent.AppendLine();
+                lspContent.AppendLine("(if blk");
+                lspContent.AppendLine("  (progn");
+                lspContent.AppendLine("    (setq pt");
+                lspContent.AppendLine("          (cdr");
+                lspContent.AppendLine("           (assoc 10");
+                lspContent.AppendLine("                  (entget (ssname blk 0)))))");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; --- DIAGNOSTIC LOG (TEMPLATE VIEW) ---");
+                lspContent.AppendLine("    (princ \"\\n--- DIAGNOSTIC LOG ---\")");
+                lspContent.AppendLine($"    (princ \"\\nShellID: {data.ShellID}\")");
+                lspContent.AppendLine($"    (princ \"\\nFlangeID: {data.FlangeID}\")");
+                lspContent.AppendLine($"    (princ \"\\nTubeSheetFinishOD: {data.TubeSheetFinishOD}\")");
+                lspContent.AppendLine("    (princ \"\\n----------------------\")");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 1. Shell ID circle (Tube Limit)");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"TS_SHELL\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine($"    (command \"_.CIRCLE\" pt {templateTubeLimitRadius:F4})");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 2. Flange ID circle");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"TS_FLANGE\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine($"    (setq templateFlangeRadius (/ {data.FlangeID:F4} 2.0))");
+                lspContent.AppendLine("    (command \"_.CIRCLE\" pt templateFlangeRadius)");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 3. Tube Sheet Finish OD circle");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"TS_FINISH\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine($"    (command \"_.CIRCLE\" pt {templateRearTsRadius:F4})");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; Restore Layer 0");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 2. Tube Limit OD circle");
+                lspContent.AppendLine($"    (command \"_.CIRCLE\" pt {templateTubeLimitRadius:F4})");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 3. Horizontal Centerline");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"CL\" \"C\" \"1\" \"\" \"\")");
+                lspContent.AppendLine($"    (setq p1 (list (- (car pt) {templateClExt:F4}) (cadr pt)))");
+                lspContent.AppendLine($"    (setq p2 (list (+ (car pt) {templateClExt:F4}) (cadr pt)))");
+                lspContent.AppendLine("    (command \"_.LINE\" p1 p2 \"\")");
+                
+                lspContent.AppendLine("    ; 4. Vertical Centerline");
+                lspContent.AppendLine($"    (setq p3 (list (car pt) (- (cadr pt) {templateClExt:F4})))");
+                lspContent.AppendLine($"    (setq p4 (list (car pt) (+ (cadr pt) {templateClExt:F4})))");
+                lspContent.AppendLine("    (command \"_.LINE\" p3 p4 \"\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+                
+                lspContent.AppendLine("    ; 5. Pass Partition Lines");
+                double templateHalfPassThk = data.PartitionPlateTHK / 2.0;
+                if (data.NoOfPass >= 2)
+                {
+                    lspContent.AppendLine($"    (setq ppH1 (list (- (car pt) {templateTubeLimitRadius:F4}) (+ (cadr pt) {templateHalfPassThk:F4})))");
+                    lspContent.AppendLine($"    (setq ppH2 (list (+ (car pt) {templateTubeLimitRadius:F4}) (+ (cadr pt) {templateHalfPassThk:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" ppH1 ppH2 \"\")");
+                    lspContent.AppendLine($"    (setq ppH3 (list (- (car pt) {templateTubeLimitRadius:F4}) (- (cadr pt) {templateHalfPassThk:F4})))");
+                    lspContent.AppendLine($"    (setq ppH4 (list (+ (car pt) {templateTubeLimitRadius:F4}) (- (cadr pt) {templateHalfPassThk:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" ppH3 ppH4 \"\")");
+                }
+                if (data.NoOfPass >= 4)
+                {
+                    lspContent.AppendLine($"    (setq ppV1 (list (+ (car pt) {templateHalfPassThk:F4}) (- (cadr pt) {templateTubeLimitRadius:F4})))");
+                    lspContent.AppendLine($"    (setq ppV2 (list (+ (car pt) {templateHalfPassThk:F4}) (+ (cadr pt) {templateTubeLimitRadius:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" ppV1 ppV2 \"\")");
+                    lspContent.AppendLine($"    (setq ppV3 (list (- (car pt) {templateHalfPassThk:F4}) (- (cadr pt) {templateTubeLimitRadius:F4})))");
+                    lspContent.AppendLine($"    (setq ppV4 (list (- (car pt) {templateHalfPassThk:F4}) (+ (cadr pt) {templateTubeLimitRadius:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" ppV3 ppV4 \"\")");
+                }
+
+                // Implement Phase T5 - Bolt Circle Generation (Template View)
+                double templatePcdRadius = data.BoltPCD / 2.0;
+                double templateBoltHoleRadius = data.HoleDia / 2.0;
+                lspContent.AppendLine("    ; -----------------------------------------");
+                lspContent.AppendLine("    ; PHASE T5 - BOLT CIRCLE GENERATION (TEMPLATE VIEW)");
+                lspContent.AppendLine("    ; -----------------------------------------");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"TS_BOLT\" \"C\" \"1\" \"\" \"L\" \"PHANTOM\" \"\" \"\")");
+                lspContent.AppendLine("    ; 1. Bolt PCD Construction Circle");
+                lspContent.AppendLine($"    (command \"_.CIRCLE\" pt {templatePcdRadius:F4})");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 2. Bolt Holes");
+                
+                if (data.NoOfBolts > 0 && data.BoltPCD > 0 && data.HoleDia > 0)
+                {
+                    double templateAngleIncrement = (2 * Math.PI) / data.NoOfBolts;
+                    for (int i = 0; i < data.NoOfBolts; i++)
+                    {
+                        double templateAngle = i * templateAngleIncrement;
+                        double templateDx = templatePcdRadius * Math.Cos(templateAngle);
+                        double templateDy = templatePcdRadius * Math.Sin(templateAngle);
+                        
+                        lspContent.AppendLine($"    (setq bx (+ (car pt) {templateDx:F4}))");
+                        lspContent.AppendLine($"    (setq by (+ (cadr pt) {templateDy:F4}))");
+                        lspContent.AppendLine($"    (command \"_.CIRCLE\" (list bx by) {templateBoltHoleRadius:F4})");
+                    }
+                }
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+
+                // Implement Phase T6 - Tube Hole Generation (Template View)
+                TubeLayoutService templateTubeLayoutService = new TubeLayoutService();
+                var templateTubePoints = templateTubeLayoutService.GenerateLayout(
+                    (float)(data.ShellID / 2.0),
+                    (float)data.TubeOD,
+                    data.TubeQty,
+                    (float)data.PartitionPlateTHK,
+                    data.NoOfPass
+                );
+                double templateTubeRadius = data.TubeOD / 2.0;
+                
+                lspContent.AppendLine("    ; -----------------------------------------");
+                lspContent.AppendLine("    ; PHASE T6 - TUBE HOLE GENERATION (TEMPLATE VIEW)");
+                lspContent.AppendLine("    ; -----------------------------------------");
+                lspContent.AppendLine($"    (princ \"\\nGenerating {templateTubePoints.Count} tube holes...\")");
+                foreach (var tp in templateTubePoints)
+                {
+                    lspContent.AppendLine($"    (setq tx (+ (car pt) {tp.X:F4}))");
+                    lspContent.AppendLine($"    (setq ty (+ (cadr pt) {tp.Y:F4}))");
+                    lspContent.AppendLine($"    (command \"_.CIRCLE\" (list tx ty) {templateTubeRadius:F4})");
+                }
+                lspContent.AppendLine($"    (princ \"\\nTube Hole Generation Complete: {templateTubePoints.Count} holes generated.\\n\")");
+
+                // Implement Phase T7 - Rear Tubesheet Dimensions (Template View)
+                lspContent.AppendLine("    ; -----------------------------------------");
+                lspContent.AppendLine("    ; PHASE T7 - REAR TUBESHEET DIMENSIONS (TEMPLATE VIEW)");
+                lspContent.AppendLine("    ; -----------------------------------------");
+                
+                // Switch to DIM layer and set magenta color for dimensions
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"DIM\" \"C\" \"6\" \"\" \"\")");
+                
+                // 1. Tube Limit Circle Dimension
+                lspContent.AppendLine($"    (setq d3_p1 (list (- (car pt) {templateTubeLimitRadius:F4}) (cadr pt)))");
+                lspContent.AppendLine($"    (setq d3_p2 (list (+ (car pt) {templateTubeLimitRadius:F4}) (cadr pt)))");
+                lspContent.AppendLine($"    (setq d4_loc (list (car pt) (- (cadr pt) {templateTubeLimitRadius + 150:F4})))");
+                lspContent.AppendLine("    (command \"_.DIMLINEAR\" d3_p1 d3_p2 \"_T\" \"TUBE LIMIT %%c<>\" d4_loc)");
+
+                // 5. Bolt PCD Dimension
+                lspContent.AppendLine($"    (setq d5_p1 (list (- (car pt) {templatePcdRadius:F4}) (cadr pt)))");
+                lspContent.AppendLine($"    (setq d5_p2 (list (+ (car pt) {templatePcdRadius:F4}) (cadr pt)))");
+                lspContent.AppendLine($"    (setq d5_loc (list (car pt) (- (cadr pt) {templatePcdRadius + 150:F4})))");
+                lspContent.AppendLine("    (command \"_.DIMLINEAR\" d5_p1 d5_p2 \"_T\" \"PCD %%c<>\" d5_loc)");
+
+                // 6. Partition Plate Thickness
+                if (data.NoOfPass >= 2)
+                {
+                    lspContent.AppendLine($"    (setq d7_p1 (list (+ (car pt) {templateTubeLimitRadius + 50:F4}) (+ (cadr pt) {templateHalfPassThk:F4})))");
+                    lspContent.AppendLine($"    (setq d7_p2 (list (+ (car pt) {templateTubeLimitRadius + 50:F4}) (- (cadr pt) {templateHalfPassThk:F4})))");
+                    lspContent.AppendLine($"    (setq d7_loc (list (+ (car pt) {templateTubeLimitRadius + 150:F4}) (cadr pt)))");
+                    lspContent.AppendLine("    (command \"_.DIMLINEAR\" d7_p1 d7_p2 d7_loc)");
+                }
+
+                // 7. Tube Pitch Dimension
+                if (templateTubePoints.Count >= 2)
+                {
+                    var tp1 = templateTubePoints[0];
+                    var tp2 = templateTubePoints.OrderBy(t => Math.Sqrt(Math.Pow(t.X - tp1.X, 2) + Math.Pow(t.Y - tp1.Y, 2))).ElementAt(1);
+                    
+                    lspContent.AppendLine($"    (setq tp1_abs (list (+ (car pt) {tp1.X:F4}) (+ (cadr pt) {tp1.Y:F4})))");
+                    lspContent.AppendLine($"    (setq tp2_abs (list (+ (car pt) {tp2.X:F4}) (+ (cadr pt) {tp2.Y:F4})))");
+                    lspContent.AppendLine($"    (setq tp_loc (list (+ (car pt) {(tp1.X + tp2.X)/2:F4}) (+ (cadr pt) {Math.Max(tp1.Y, tp2.Y) + 50:F4})))");
+                    lspContent.AppendLine("    (command \"_.DIMALIGNED\" tp1_abs tp2_abs tp_loc)");
+                }
+
+                // Implement Phase T8 - Rear Tubesheet Annotations (Template View)
+                lspContent.AppendLine("    ; -----------------------------------------");
+                lspContent.AppendLine("    ; PHASE T8 - REAR TUBESHEET ANNOTATIONS (TEMPLATE VIEW)");
+                lspContent.AppendLine("    ; -----------------------------------------");
+
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION\" \"C\" \"3\" \"\" \"\")");
+
+                double templateOuterRadiusMax = data.TubeSheetFinishOD / 2.0;
+
+                // 1. Angular Markers (P1)
+                double templateAngRadius = templateOuterRadiusMax + 30.0;
+                lspContent.AppendLine($"    (setq ang_t (list (car pt) (+ (cadr pt) {templateAngRadius:F4})))");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"BC\" ang_t 15.0 0 \"0%%d\")");
+                lspContent.AppendLine($"    (setq ang_r (list (+ (car pt) {templateAngRadius:F4}) (cadr pt)))");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"ML\" ang_r 15.0 0 \"90%%d\")");
+                lspContent.AppendLine($"    (setq ang_b (list (car pt) (- (cadr pt) {templateAngRadius:F4})))");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"TC\" ang_b 15.0 0 \"180%%d\")");
+                lspContent.AppendLine($"    (setq ang_l (list (- (car pt) {templateAngRadius:F4}) (cadr pt)))");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"MR\" ang_l 15.0 0 \"270%%d\")");
+
+                // 2. Tube Note (Top Right)
+                if (templateTubePoints.Count > 0)
+                {
+                    var tpRight = templateTubePoints.OrderByDescending(p => p.X + p.Y).First();
+                    lspContent.AppendLine($"    (setq t_p1 (list (+ (car pt) {tpRight.X + templateTubeRadius:F4}) (+ (cadr pt) {tpRight.Y:F4})))");
+                    lspContent.AppendLine($"    (setq t_p2 (list (+ (car pt) {templateOuterRadiusMax + 80.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 80.0:F4})))");
+                    lspContent.AppendLine($"    (setq t_p3 (list (+ (car pt) {templateOuterRadiusMax + 120.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 80.0:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" t_p1 t_p2 t_p3 \"\")");
+                    lspContent.AppendLine($"    (setq t_txt (list (+ (car pt) {templateOuterRadiusMax + 125.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 85.0:F4})))");
+                    lspContent.AppendLine($"    (command \"_.TEXT\" t_txt 15.0 0 \"{data.TubeQty} NOS. TUBE HOLES FOR %%c{data.TubeOD}\")");
+                }
+
+                // 3. Bolt Note (Top Left)
+                lspContent.AppendLine($"    (setq b_p1 (list (- (car pt) {(templatePcdRadius + templateBoltHoleRadius) * 0.707:F4}) (+ (cadr pt) {(templatePcdRadius + templateBoltHoleRadius) * 0.707:F4})))");
+                lspContent.AppendLine($"    (setq b_p2 (list (- (car pt) {templateOuterRadiusMax + 80.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 80.0:F4})))");
+                lspContent.AppendLine($"    (setq b_p3 (list (- (car pt) {templateOuterRadiusMax + 120.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 80.0:F4})))");
+                lspContent.AppendLine("    (command \"_.LINE\" b_p1 b_p2 b_p3 \"\")");
+                lspContent.AppendLine($"    (setq b_txt (list (- (car pt) {templateOuterRadiusMax + 125.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 85.0:F4})))");
+                lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"BR\" b_txt 15.0 0 \"%%c{data.HoleDia}, {data.NoOfBolts} HOLES EQUI. ON {data.BoltPCD} P.C.D.\")");
+
+                // Tube Limit, PCD, and Partition Notes have been removed per user request
+
+                // Phase T7E/T8R - Row Count Labels (Template View)
+                var templateGroupedY = templateTubePoints
+                    .GroupBy(p => Math.Round(p.Y, 2))
+                    .OrderByDescending(g => g.Key)
+                    .ToList();
+                
+                double templateTextHeight = 15.0; 
+                double templateMinSpacing = templateTextHeight * 1.5; 
+                double templateClearX = (data.TubeSheetFinishOD / 2.0) + 20.0;
+                double templateBaseSafeMargin = templateClearX + 20.0;
+                
+                double[] templateLabelY = new double[templateGroupedY.Count];
+                for (int i = 0; i < templateGroupedY.Count; i++) templateLabelY[i] = templateGroupedY[i].Key;
+
+                if (templateGroupedY.Count > 1) {
+                    double reqSpan = (templateGroupedY.Count - 1) * templateMinSpacing;
+                    double totSpan = templateLabelY[0] - templateLabelY[templateGroupedY.Count - 1];
+
+                    if (totSpan < reqSpan) {
+                        double centerY = (templateLabelY[0] + templateLabelY[templateGroupedY.Count - 1]) / 2.0;
+                        double startY = centerY + reqSpan / 2.0;
+                        for (int i = 0; i < templateGroupedY.Count; i++) {
+                            templateLabelY[i] = startY - i * templateMinSpacing;
+                        }
+                    } else {
+                        // Top-down pass
+                        for (int i = 1; i < templateGroupedY.Count; i++) {
+                            if (templateLabelY[i - 1] - templateLabelY[i] < templateMinSpacing) {
+                                templateLabelY[i] = templateLabelY[i - 1] - templateMinSpacing;
+                            }
+                        }
+                        // Bottom-up adjustment
+                        double overshot = templateGroupedY.Last().Key - templateLabelY.Last();
+                        if (overshot > 0) {
+                            for (int i = 0; i < templateGroupedY.Count; i++) {
+                                templateLabelY[i] += overshot;
+                            }
+                        }
+                    }
+                }
+                
+                lspContent.AppendLine("    ; -----------------------------------------");
+                lspContent.AppendLine("    ; PHASE T7E/T8R - ROW COUNT LABELS (TEMPLATE)");
+                lspContent.AppendLine("    ; -----------------------------------------");
+                
+                for (int i = 0; i < templateGroupedY.Count; i++)
+                {
+                    double yPos = templateGroupedY[i].Key;
+                    double lY = templateLabelY[i];
+                    double maxX = templateGroupedY[i].Max(p => p.X);
+                    int count = templateGroupedY[i].Count();
+                    
+                    double currentSafeMargin = templateBaseSafeMargin + (i % 2 == 0 ? 0 : 30.0);
+                    
+                    lspContent.AppendLine($"    (setq l_p1 (list (+ (car pt) {maxX + templateTubeRadius + 2.0:F4}) (+ (cadr pt) {yPos:F4})))");
+                    lspContent.AppendLine($"    (setq l_p2 (list (+ (car pt) {currentSafeMargin:F4}) (+ (cadr pt) {lY:F4})))");
+                    lspContent.AppendLine($"    (setq l_p3 (list (+ (car pt) {currentSafeMargin + 40.0:F4}) (+ (cadr pt) {lY:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" l_p1 l_p2 l_p3 \"\")");
+
+                    lspContent.AppendLine($"    (setq txt_pt (list (+ (car pt) {currentSafeMargin + 45.0:F4}) (+ (cadr pt) {lY:F4})))");
+                    lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"ML\" txt_pt {templateTextHeight:F1} 0 \"{count}\")");
+                }
+
+                // Restore Layer 0
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+
+                lspContent.AppendLine("  )");
+                lspContent.AppendLine(")");
+                lspContent.AppendLine();
+
+                // Phase T10B - Rear Tubesheet Side View Geometry
+                lspContent.AppendLine("; -----------------------------------------");
+                lspContent.AppendLine("; PHASE T10B - REAR TUBESHEET SIDE VIEW GEOMETRY (TEMPLATE)");
+                lspContent.AppendLine("; -----------------------------------------");
+                lspContent.AppendLine("(setq side_blk");
+                lspContent.AppendLine("      (ssget \"_X\"");
+                lspContent.AppendLine("             '((0 . \"INSERT\")");
+                lspContent.AppendLine("               (2 . \"REAR_SIDEVIEW_ANCHOR\"))))");
+                lspContent.AppendLine();
+                lspContent.AppendLine("(if side_blk");
+                lspContent.AppendLine("  (progn");
+                lspContent.AppendLine("    (setq side_pt");
+                lspContent.AppendLine("          (cdr");
+                lspContent.AppendLine("           (assoc 10");
+                lspContent.AppendLine("                  (entget (ssname side_blk 0)))))");
+                lspContent.AppendLine();
+                lspContent.AppendLine($"    (setq ts_thk {data.TubeSheetFinishTHK:F4})");
+                lspContent.AppendLine($"    (setq ts_height {data.TubeSheetFinishOD:F4})");
+                lspContent.AppendLine("    (setq half_thk (/ ts_thk 2.0))");
+                lspContent.AppendLine("    (setq half_h (/ ts_height 2.0))");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    (setq p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
+                lspContent.AppendLine("    (setq p2 (list (+ (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
+                lspContent.AppendLine("    (setq p3 (list (+ (car side_pt) half_thk) (+ (cadr side_pt) half_h)))");
+                lspContent.AppendLine("    (setq p4 (list (- (car side_pt) half_thk) (+ (cadr side_pt) half_h)))");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    (setq ssHatch (ssadd))");
+                lspContent.AppendLine("    (command \"_.LINE\" p1 p2 \"\")");
+                lspContent.AppendLine("    (ssadd (entlast) ssHatch)");
+                lspContent.AppendLine("    (command \"_.LINE\" p2 p3 \"\")");
+                lspContent.AppendLine("    (ssadd (entlast) ssHatch)");
+                lspContent.AppendLine("    (command \"_.LINE\" p3 p4 \"\")");
+                lspContent.AppendLine("    (ssadd (entlast) ssHatch)");
+                lspContent.AppendLine("    (command \"_.LINE\" p4 p1 \"\")");
+                lspContent.AppendLine("    (ssadd (entlast) ssHatch)");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; Phase T10C - Side View Hatch Generation");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"HATCH\" \"\")");
+                lspContent.AppendLine("    (command \"_.-HATCH\" \"P\" \"ANSI31\" \"5.0\" \"0\" \"S\" ssHatch \"\" \"\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; Phase T10D - Side View Dimensions");
+                lspContent.AppendLine("    ; -----------------------------------------");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"DIM\" \"\")");
+                lspContent.AppendLine();
+                    lspContent.AppendLine($"    (setq shell_id {data.ShellID:F4})");
+                lspContent.AppendLine($"    (setq flange_id {data.FlangeID:F4})");
+                lspContent.AppendLine("    (setq half_shell (/ shell_id 2.0))");
+                lspContent.AppendLine("    (setq half_flange (/ flange_id 2.0))");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 1. Shell ID");
+                lspContent.AppendLine("    (setq d1_p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_shell)))");
+                lspContent.AppendLine("    (setq d1_p2 (list (- (car side_pt) half_thk) (+ (cadr side_pt) half_shell)))");
+                lspContent.AppendLine("    (setq d1_loc (list (- (car side_pt) (+ half_thk 60.0)) (cadr side_pt)))");
+                lspContent.AppendLine("    (command \"_.DIMLINEAR\" d1_p1 d1_p2 \"T\" \"%%C<>\" d1_loc)");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 2. Flange ID");
+                lspContent.AppendLine("    (setq d2_p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_flange)))");
+                lspContent.AppendLine("    (setq d2_p2 (list (- (car side_pt) half_thk) (+ (cadr side_pt) half_flange)))");
+                lspContent.AppendLine("    (setq d2_loc (list (- (car side_pt) (+ half_thk 120.0)) (cadr side_pt)))");
+                lspContent.AppendLine("    (command \"_.DIMLINEAR\" d2_p1 d2_p2 \"T\" \"%%C<>\" d2_loc)");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 3. TubeSheet Finish OD");
+                lspContent.AppendLine("    (setq d3_p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
+                lspContent.AppendLine("    (setq d3_p2 (list (- (car side_pt) half_thk) (+ (cadr side_pt) half_h)))");
+                lspContent.AppendLine("    (setq d3_loc (list (- (car side_pt) (+ half_thk 180.0)) (cadr side_pt)))");
+                lspContent.AppendLine("    (command \"_.DIMLINEAR\" d3_p1 d3_p2 \"T\" \"%%C<>\" d3_loc)");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 4. TubeSheet Finish THK");
+                lspContent.AppendLine("    (setq d4_p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
+                lspContent.AppendLine("    (setq d4_p2 (list (+ (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
+                lspContent.AppendLine("    (setq d4_loc (list (car side_pt) (- (cadr side_pt) (+ half_h 60.0))))");
+                lspContent.AppendLine("    (command \"_.DIMLINEAR\" d4_p1 d4_p2 \"T\" \"<> THK\" d4_loc)");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+                lspContent.AppendLine("  )");
+                lspContent.AppendLine("  (prompt \"\\nREAR_SIDEVIEW_ANCHOR NOT FOUND\")");
+                lspContent.AppendLine(")");
+                lspContent.AppendLine();
+
+                // -----------------------------------------
+                // PHASE T11 - FRONT TUBESHEET GENERATION (TEMPLATE VIEW)
+                // -----------------------------------------
+                double templateFlangeRadius = data.FlangeID / 2.0;
+                
+                lspContent.AppendLine("; -----------------------------------------");
+                lspContent.AppendLine("; PHASE T11 - FRONT TUBESHEET GENERATION (TEMPLATE VIEW)");
+                lspContent.AppendLine("; -----------------------------------------");
+                lspContent.AppendLine("(setq blk_front");
+                lspContent.AppendLine("      (ssget \"_X\"");
+                lspContent.AppendLine("             '((0 . \"INSERT\")");
+                lspContent.AppendLine("               (2 . \"FRONT_TS_ANCHOR\"))))");
+                lspContent.AppendLine();
+                lspContent.AppendLine("(if blk_front");
+                lspContent.AppendLine("  (progn");
+                lspContent.AppendLine("    (setq pt");
+                lspContent.AppendLine("          (cdr");
+                lspContent.AppendLine("           (assoc 10");
+                lspContent.AppendLine("                  (entget (ssname blk_front 0)))))");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 1. Shell ID, Flange ID, Finish OD");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"TS_SHELL\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine($"    (command \"_.CIRCLE\" pt {templateTubeLimitRadius:F4})");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"TS_FLANGE\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine($"    (command \"_.CIRCLE\" pt {templateFlangeRadius:F4})");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"TS_FINISH\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine($"    (command \"_.CIRCLE\" pt {templateRearTsRadius:F4})");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 2. Centerlines");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"CL\" \"C\" \"1\" \"\" \"\")");
+                lspContent.AppendLine($"    (setq p1 (list (- (car pt) {templateClExt:F4}) (cadr pt)))");
+                lspContent.AppendLine($"    (setq p2 (list (+ (car pt) {templateClExt:F4}) (cadr pt)))");
+                lspContent.AppendLine("    (command \"_.LINE\" p1 p2 \"\")");
+                lspContent.AppendLine($"    (setq p3 (list (car pt) (- (cadr pt) {templateClExt:F4})))");
+                lspContent.AppendLine($"    (setq p4 (list (car pt) (+ (cadr pt) {templateClExt:F4})))");
+                lspContent.AppendLine("    (command \"_.LINE\" p3 p4 \"\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 3. Pass Partition Lines");
+                if (data.NoOfPass >= 2)
+                {
+                    lspContent.AppendLine($"    (setq ppH1 (list (- (car pt) {templateTubeLimitRadius:F4}) (+ (cadr pt) {templateHalfPassThk:F4})))");
+                    lspContent.AppendLine($"    (setq ppH2 (list (+ (car pt) {templateTubeLimitRadius:F4}) (+ (cadr pt) {templateHalfPassThk:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" ppH1 ppH2 \"\")");
+                    lspContent.AppendLine($"    (setq ppH3 (list (- (car pt) {templateTubeLimitRadius:F4}) (- (cadr pt) {templateHalfPassThk:F4})))");
+                    lspContent.AppendLine($"    (setq ppH4 (list (+ (car pt) {templateTubeLimitRadius:F4}) (- (cadr pt) {templateHalfPassThk:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" ppH3 ppH4 \"\")");
+                }
+                if (data.NoOfPass >= 4)
+                {
+                    lspContent.AppendLine($"    (setq ppV1 (list (+ (car pt) {templateHalfPassThk:F4}) (- (cadr pt) {templateTubeLimitRadius:F4})))");
+                    lspContent.AppendLine($"    (setq ppV2 (list (+ (car pt) {templateHalfPassThk:F4}) (+ (cadr pt) {templateTubeLimitRadius:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" ppV1 ppV2 \"\")");
+                    lspContent.AppendLine($"    (setq ppV3 (list (- (car pt) {templateHalfPassThk:F4}) (- (cadr pt) {templateTubeLimitRadius:F4})))");
+                    lspContent.AppendLine($"    (setq ppV4 (list (- (car pt) {templateHalfPassThk:F4}) (+ (cadr pt) {templateTubeLimitRadius:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" ppV3 ppV4 \"\")");
+                }
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 4. Bolt Circle");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"TS_BOLT\" \"C\" \"1\" \"\" \"L\" \"PHANTOM\" \"\" \"\")");
+                lspContent.AppendLine($"    (command \"_.CIRCLE\" pt {templatePcdRadius:F4})");
+                if (data.NoOfBolts > 0 && data.BoltPCD > 0 && data.HoleDia > 0)
+                {
+                    double templateAngleIncrement = (2 * Math.PI) / data.NoOfBolts;
+                    for (int i = 0; i < data.NoOfBolts; i++)
+                    {
+                        double templateAngle = i * templateAngleIncrement;
+                        double templateDx = templatePcdRadius * Math.Cos(templateAngle);
+                        double templateDy = templatePcdRadius * Math.Sin(templateAngle);
+                        
+                        lspContent.AppendLine($"    (setq bx (+ (car pt) {templateDx:F4}))");
+                        lspContent.AppendLine($"    (setq by (+ (cadr pt) {templateDy:F4}))");
+                        lspContent.AppendLine($"    (command \"_.CIRCLE\" (list bx by) {templateBoltHoleRadius:F4})");
+                    }
+                }
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 5. Tube Holes");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"TS_HOLES\" \"C\" \"5\" \"\" \"\")");
+                foreach (var tPt in templateTubePoints)
+                {
+                    lspContent.AppendLine($"    (setq h_pt (list (+ (car pt) {tPt.X:F4}) (+ (cadr pt) {tPt.Y:F4})))");
+                    lspContent.AppendLine($"    (command \"_.CIRCLE\" h_pt {templateTubeRadius:F4})");
+                }
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 6. Dimensions");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"DIM\" \"C\" \"6\" \"\" \"\")");
+                lspContent.AppendLine($"    (setq d1_loc (list (car pt) (+ (cadr pt) {templateTubeLimitRadius + 100:F4})))");
+                lspContent.AppendLine("    (command \"_.DIMLINEAR\" (list (- (car pt) " + templateTubeLimitRadius + ") (cadr pt)) (list (+ (car pt) " + templateTubeLimitRadius + ") (cadr pt)) \"T\" \"TUBE LIMIT %%c<>\" d1_loc)");
+                lspContent.AppendLine($"    (setq d2_loc (list (car pt) (- (cadr pt) {templatePcdRadius + 150:F4})))");
+                lspContent.AppendLine("    (command \"_.DIMLINEAR\" (list (- (car pt) " + templatePcdRadius + ") (cadr pt)) (list (+ (car pt) " + templatePcdRadius + ") (cadr pt)) \"T\" \"PCD %%c<>\" d2_loc)");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    ; 7. Annotations");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION\" \"C\" \"3\" \"\" \"\")");
+                lspContent.AppendLine($"    (setq ang_t (list (car pt) (+ (cadr pt) {templateOuterRadiusMax + 30.0:F4})))");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"BC\" ang_t 15.0 0 \"0%%d\")");
+                lspContent.AppendLine($"    (setq ang_r (list (+ (car pt) {templateOuterRadiusMax + 30.0:F4}) (cadr pt)))");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"ML\" ang_r 15.0 0 \"90%%d\")");
+                lspContent.AppendLine($"    (setq ang_b (list (car pt) (- (cadr pt) {templateOuterRadiusMax + 30.0:F4})))");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"TC\" ang_b 15.0 0 \"180%%d\")");
+                lspContent.AppendLine($"    (setq ang_l (list (- (car pt) {templateOuterRadiusMax + 30.0:F4}) (cadr pt)))");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"MR\" ang_l 15.0 0 \"270%%d\")");
+                lspContent.AppendLine();
+                if (templateTubePoints.Count > 0)
+                {
+                    var tpRight = templateTubePoints.OrderByDescending(p => p.X + p.Y).First();
+                    lspContent.AppendLine($"    (setq t_p1 (list (+ (car pt) {tpRight.X + templateTubeRadius:F4}) (+ (cadr pt) {tpRight.Y:F4})))");
+                    lspContent.AppendLine($"    (setq t_p2 (list (+ (car pt) {templateOuterRadiusMax + 80.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 80.0:F4})))");
+                    lspContent.AppendLine($"    (setq t_p3 (list (+ (car pt) {templateOuterRadiusMax + 120.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 80.0:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" t_p1 t_p2 t_p3 \"\")");
+                    lspContent.AppendLine($"    (setq t_txt (list (+ (car pt) {templateOuterRadiusMax + 125.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 85.0:F4})))");
+                    lspContent.AppendLine($"    (command \"_.TEXT\" t_txt 15.0 0 \"{data.TubeQty} NOS. TUBE HOLES FOR %%c{data.TubeOD}\")");
+                }
+                lspContent.AppendLine($"    (setq b_p1 (list (- (car pt) {(templatePcdRadius + templateBoltHoleRadius) * 0.707:F4}) (+ (cadr pt) {(templatePcdRadius + templateBoltHoleRadius) * 0.707:F4})))");
+                lspContent.AppendLine($"    (setq b_p2 (list (- (car pt) {templateOuterRadiusMax + 80.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 80.0:F4})))");
+                lspContent.AppendLine($"    (setq b_p3 (list (- (car pt) {templateOuterRadiusMax + 120.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 80.0:F4})))");
+                lspContent.AppendLine("    (command \"_.LINE\" b_p1 b_p2 b_p3 \"\")");
+                lspContent.AppendLine($"    (setq b_txt (list (- (car pt) {templateOuterRadiusMax + 125.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 85.0:F4})))");
+                lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"BR\" b_txt 15.0 0 \"%%c{data.HoleDia}, {data.NoOfBolts} HOLES EQUI. ON {data.BoltPCD} P.C.D.\")");
+                lspContent.AppendLine();
+                
+                // Row Count Labels
+                lspContent.AppendLine("    ; 8. Row Count Labels (Left Side)");
+                for (int i = 0; i < templateGroupedY.Count; i++)
+                {
+                    double yPos = templateGroupedY[i].Key;
+                    double lY = templateLabelY[i];
+                    double minX = templateGroupedY[i].Min(p => p.X);
+                    int count = templateGroupedY[i].Count();
+                    
+                    double currentSafeMargin = templateBaseSafeMargin + (i % 2 == 0 ? 0 : 30.0);
+                    double startXOffset = minX - templateTubeRadius - 2.0;
+                    
+                    lspContent.AppendLine($"    (setq l_p1 (list (+ (car pt) {startXOffset:F4}) (+ (cadr pt) {yPos:F4})))");
+                    lspContent.AppendLine($"    (setq l_p2 (list (- (car pt) {currentSafeMargin:F4}) (+ (cadr pt) {lY:F4})))");
+                    lspContent.AppendLine($"    (setq l_p3 (list (- (car pt) {currentSafeMargin + 40.0:F4}) (+ (cadr pt) {lY:F4})))");
+                    lspContent.AppendLine("    (command \"_.LINE\" l_p1 l_p2 l_p3 \"\")");
+
+                    lspContent.AppendLine($"    (setq txt_pt (list (- (car pt) {currentSafeMargin + 45.0:F4}) (+ (cadr pt) {lY:F4})))");
+                    lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"MR\" txt_pt {templateTextHeight:F1} 0 \"{count}\")");
+                }
+                
+                lspContent.AppendLine("    ; Restore Layer 0");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+                lspContent.AppendLine("  )");
+                lspContent.AppendLine("  (prompt \"\\nFRONT_TS_ANCHOR NOT FOUND\")");
+                lspContent.AppendLine(")");
+                lspContent.AppendLine();
+                
+                lspContent.AppendLine("(command \"_.ZOOM\" \"_E\")");
+                lspContent.AppendLine("(princ \"\\nTubeSheet multi-anchor template views generated successfully.\")");
+                lspContent.AppendLine("(princ)");
+
+                // Save to Temp
+                File.WriteAllText(scriptPath, lspContent.ToString());
+                
+                // Save Backup
+                string generatedDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "GeneratedLisp");
+                if (!Directory.Exists(generatedDir)) Directory.CreateDirectory(generatedDir);
+                string backupPath = Path.Combine(generatedDir, scriptName);
+                File.WriteAllText(backupPath, lspContent.ToString());
+
+                // Generate SCR file for CAD Batch Launch
+                string scrName = $"TubeSheet_Launch_{data.ShellID}_{timestamp}.scr";
+                string scrPath = Path.Combine(tempDir, scrName);
+                string backupScrPath = Path.Combine(generatedDir, scrName);
+
+                string loadPath = scriptPath.Replace("\\", "/");
+                string outDwgPath = Path.Combine(generatedDir, $"TubeSheet_Output_{data.ShellID}_{timestamp}.dwg").Replace("\\", "/");
+                string safeTemplatePath = templatePath.Replace("\\", "/");
+
+                // Step 1 - Copy Template Before Launch
+                File.Copy(templatePath, outDwgPath, true);
+
+                // Phase T1F - COM Automation Diagnostic Mode
+
+                StringBuilder log = new StringBuilder();
+                log.AppendLine("--- CAD LAUNCH LOG (PHASE T1F COM AUTOMATION) ---");
+                log.AppendLine($"Target DWG: {outDwgPath}");
+
+                // 1. Launch CAD by opening the drawing directly
+                ProcessStartInfo startInfo = new ProcessStartInfo
+                {
+                    FileName = outDwgPath,
+                    UseShellExecute = true
+                };
+
+                log.AppendLine($"Launching Process: {outDwgPath}");
+                Process.Start(startInfo);
+
+                // 2. Wait for COM and connect
+                dynamic gstarApp = null;
+                string connectedProgId = "";
+                string[] progIds = { "GstarCAD.Application", "Gcad.Application", "GCAD.Application" };
+                
+                int attempts = 0;
+                while (gstarApp == null && attempts < 15)
+                {
+                    Thread.Sleep(1000);
+                    attempts++;
+                    foreach (var progId in progIds)
+                    {
+                        object obj = GetActiveCOMObject(progId);
+                        if (obj != null)
+                        {
+                            gstarApp = obj;
+                            connectedProgId = progId;
+                            break;
+                        }
+                    }
+                }
+
+                if (gstarApp == null)
+                {
+                    log.AppendLine("FAILED: Could not attach to GstarCAD COM Server.");
+                }
+                else
+                {
+                    log.AppendLine($"SUCCESS: Attached to COM via ProgID '{connectedProgId}'");
+
+                    // 3. Find the Document
+                    dynamic targetDoc = null;
+                    attempts = 0;
+                    while (targetDoc == null && attempts < 15)
+                    {
+                        Thread.Sleep(1000);
+                        attempts++;
+                        try
+                        {
+                            dynamic docs = gstarApp.Documents;
+                            int count = docs.Count;
+                            log.AppendLine($"Poll {attempts}: {count} open documents.");
+
+                            for (int i = 0; i < count; i++)
+                            {
+                                try
+                                {
+                                    dynamic doc = docs.Item(i);
+                                    string docName = doc.FullName;
+                                    log.AppendLine($"  Inspecting [0-index {i}]: {docName}");
+                                    
+                                    if (docName.Replace("\\", "/").Equals(outDwgPath, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        targetDoc = doc;
+                                        break;
+                                    }
+                                }
+                                catch
+                                {
+                                    // 1-indexed fallback
+                                    try
+                                    {
+                                        dynamic doc = docs.Item(i + 1);
+                                        string docName = doc.FullName;
+                                        log.AppendLine($"  Inspecting [1-index {i + 1}]: {docName}");
+                                        
+                                        if (docName.Replace("\\", "/").Equals(outDwgPath, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            targetDoc = doc;
+                                            break;
+                                        }
+                                    }
+                                    catch (Exception exInner)
+                                    {
+                                        log.AppendLine($"  COM Exception on doc {i}: {exInner.Message}");
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            log.AppendLine($"  COM Exception accessing Documents collection: {ex.Message}");
+                        }
+                    }
+
+                    if (targetDoc != null)
+                    {
+                        log.AppendLine("SUCCESS: Found target document.");
+                        
+                        log.AppendLine("Activating document...");
+                        targetDoc.Activate();
+                        Thread.Sleep(1000); // Give it a moment to initialize the UI
+
+                        try
+                        {
+                            log.AppendLine("Skipping diagnostic CIRCLE and TEXT; Proceeding to load LISP directly.");
+                            
+                            // Send Zoom Extents before loading
+                            string cmd3 = "_.ZOOM\n_E\n";
+                            log.AppendLine($"  SendCommand: {cmd3.Replace("\n", "\\n")}");
+                            targetDoc.SendCommand(cmd3);
+                            
+                            log.AppendLine($"Sending LISP load command...");
+                            string cmd4 = $"(load \"{loadPath}\")\n";
+                            log.AppendLine($"  SendCommand: {cmd4.Replace("\n", "\\n")}");
+                            targetDoc.SendCommand(cmd4);
+                            
+                            log.AppendLine("SUCCESS: Commands dispatched.");
+                        }
+                        catch (Exception cmdEx)
+                        {
+                            log.AppendLine($"FAILED: Exception during SendCommand - {cmdEx.Message}");
+                            log.AppendLine($"Stack Trace: {cmdEx.StackTrace}");
+                        }
+                    }
+                    else
+                    {
+                        log.AppendLine("FAILED: Could not find target document within 15 seconds.");
+                    }
+                }
+
+                log.AppendLine("-------------------------------------------------");
+                string logMessage = log.ToString();
+
+                System.Diagnostics.Debug.WriteLine(logMessage);
+                File.WriteAllText(Path.Combine(generatedDir, $"TubeSheet_LaunchLog_{data.ShellID}_{timestamp}.txt"), logMessage);
+
+                return new DrawingAutomationResult
+                {
+                    ScriptPath = scriptPath,
+                    BackupPath = backupPath,
+                    ScrPath = "",
+                    BackupScrPath = "",
+                    CadExecutable = "COM Launch",
+                    Arguments = outDwgPath,
+                    ScrContent = logMessage
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to launch CAD automation: {ex.Message}");
+            }
+        }
+    }
+}
