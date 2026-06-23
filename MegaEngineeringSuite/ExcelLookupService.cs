@@ -6,7 +6,7 @@ namespace MegaEngineeringSuite
 {
     public class ExcelLookupService
     {
-        private readonly string excelFilePath = @"C:\Users\PARTH\Downloads\Heat Exchanger BOM Details.xlsx";
+        private readonly string excelFilePath = @"C:\MEGA_SUITE_DATA\Heat Exchanger BOM Details.xlsx";
         private readonly string sheetName = "Heat Exchanger Data";
 
         /// <summary>

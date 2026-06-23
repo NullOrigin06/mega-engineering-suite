@@ -392,7 +392,7 @@ namespace MegaEngineeringSuite
                 var tempService = new TemplateDrawingService();
                 var groupedViews = tempService.GenerateTemplateViews(currentGeometry, currentData);
 
-                string templatePath = @"C:\Users\PARTH\OneDrive\Desktop\MEGA_TEMPLATES\FINAL TUBESHEET.dwg";
+                string templatePath = @"C:\MEGA_SUITE_DATA\FINAL TUBESHEET.dwg";
                 DrawingAutomationResult result = drawingService.GenerateTemplateLispAndLaunchCAD(groupedViews, currentData, templatePath);
                 
                 lastGeneratedLispPath = result.BackupPath;
