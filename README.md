@@ -26,34 +26,6 @@ The platform is designed around a modular architecture, allowing multiple equipm
 * Side-view generation
 * Automated annotations and dimensions
 
-### Flange Module
-
-* Parametric flange generation
-* Standard flange configurations
-* Automated dimensions and callouts
-
-### Nozzle Module
-
-* Nozzle geometry generation
-* Orientation and placement automation
-
-### Tank Module
-
-* Tank component drafting
-* Parametric vessel features
-
-### Pipe Support Module
-
-* Support geometry generation
-* Standardized support configurations
-
-### Reports Module
-
-* Engineering summaries
-* Bill of Materials generation
-* Design output documentation
-
----
 
 ## Key Features
 
@@ -102,6 +74,7 @@ Final Engineering Drawings
 
 ## Future Roadmap
 
+*More advanced and usable modules
 * Advanced report generation
 * BOM automation
 * Additional equipment modules
@@ -117,6 +90,4 @@ Final Engineering Drawings
 Copyright © MEGA Engineering Projects Pvt. Ltd.
 All Rights Reserved.
 
-No MIT license.
 
-No public source distribution.
