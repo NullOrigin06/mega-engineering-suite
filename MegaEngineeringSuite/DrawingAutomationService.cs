@@ -29,9 +29,9 @@ namespace MegaEngineeringSuite
         [DllImport("oleaut32.dll", PreserveSig = false)]
         static extern void GetActiveObject(ref Guid rclsid, IntPtr pvReserved, [MarshalAs(UnmanagedType.IUnknown)] out object ppunk);
 
-        private object GetActiveCOMObject(string progId)
+        private object? GetActiveCOMObject(string progId)
         {
-            Type type = Type.GetTypeFromProgID(progId);
+            Type? type = Type.GetTypeFromProgID(progId);
             if (type == null) return null;
             Guid clsid = type.GUID;
             try

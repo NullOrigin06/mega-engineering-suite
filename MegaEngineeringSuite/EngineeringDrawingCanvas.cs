@@ -88,7 +88,7 @@ namespace MegaEngineeringSuite
             ZoomFit();
         }
 
-        private void UpdateBounds()
+        private new void UpdateBounds()
         {
             if (CurrentModel == null || CurrentModel.Entities.Count == 0) return;
 
