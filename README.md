@@ -74,7 +74,7 @@ Final Engineering Drawings
 
 ## Future Roadmap
 
-*More advanced and usable modules
+* More advanced and usable modules
 * Advanced report generation
 * BOM automation
 * Additional equipment modules
