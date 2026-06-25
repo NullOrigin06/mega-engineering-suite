@@ -49,6 +49,7 @@ The platform is designed around a modular architecture, allowing multiple equipm
 * AutoLISP
 * GstarCAD
 * CAD Template Automation
+* Python 
 
 ---
 
