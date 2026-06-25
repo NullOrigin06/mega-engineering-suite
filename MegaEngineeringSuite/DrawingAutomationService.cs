@@ -1517,12 +1517,16 @@ namespace MegaEngineeringSuite
             else if (entity is CadMText cmt) colorCode = GetAcadColor(cmt.EntityColor);
 
             string layer = "0";
-            if (entity is CadDimension) layer = "DIM";
+            if (entity is CadDimension) layer = "DIMENSIONS";
             else if (entity is CadText || entity is CadMText) layer = "TEXT";
-            else if (entity is CadLine cl2 && cl2.EntityColor == System.Drawing.Color.Red) layer = "CL";
+            else if (entity is CadLeader) layer = "LEADERS";
+            else if (entity is CadLine cl2 && cl2.EntityColor == System.Drawing.Color.Red) layer = "CENTERLINE";
+            else if ((entity is CadCircle cc2 && cc2.EntityColor == System.Drawing.Color.Blue) || 
+                     (entity is CadArc ca2 && ca2.EntityColor == System.Drawing.Color.Blue)) layer = "TUBE_HOLES";
             else layer = "BAFFLE_OUTLINE";
 
-            lspContent.AppendLine($"    (command \"-LAYER\" \"M\" \"{layer}\" \"C\" \"{colorCode}\" \"\" \"L\" \"CONTINUOUS\" \"\" \"\")");
+            string linetype = layer == "CENTERLINE" ? "CENTER" : "CONTINUOUS";
+            lspContent.AppendLine($"    (command \"-LAYER\" \"M\" \"{layer}\" \"C\" \"{colorCode}\" \"\" \"L\" \"{linetype}\" \"\" \"\")");
 
             if (entity is CadLine line)
             {
@@ -1598,6 +1602,18 @@ namespace MegaEngineeringSuite
                 else
                 {
                     lspContent.AppendLine($"    (command \"_.DIMLINEAR\" d_p1 d_p2 \"T\" \"{overrideStr}\" d_loc)");
+                }
+            }
+            else if (entity is CadLeader leader)
+            {
+                if (leader.Vertices.Count >= 2)
+                {
+                    lspContent.Append("    (command \"_.LEADER\"");
+                    foreach (var v in leader.Vertices)
+                    {
+                        lspContent.Append($" (list (+ (car pt) {v.X:F4}) (+ (cadr pt) {v.Y:F4}))");
+                    }
+                    lspContent.AppendLine(" \"\" \"\" \"N\")");
                 }
             }
             lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");

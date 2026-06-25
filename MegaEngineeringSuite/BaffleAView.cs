@@ -16,49 +16,121 @@ namespace MegaEngineeringSuite
             // Phase B1: Shell ID Reference
             float baffleRad = baffleGeometry.BaffleOD / 2f;
 
+            // Centerlines
+            float clLen = baffleRad + 25f;
+            entities.Add(new CadLine { Start = new PointF(-clLen, 0), End = new PointF(clLen, 0), EntityColor = Color.Red, DashStyle = System.Drawing.Drawing2D.DashStyle.DashDot });
+            entities.Add(new CadLine { Start = new PointF(0, -clLen), End = new PointF(0, clLen), EntityColor = Color.Red, DashStyle = System.Drawing.Drawing2D.DashStyle.DashDot });
+
             // Phase B4 & B5 Annotations
             float dimTextHeight = 10f; // Standard dim text height
             float actualCutY = -(-geometry.ShellRadius - baffleGeometry.ActualCutDepth);
 
-            // 1. Baffle OD Dimension
-            entities.Add(new CadDimension 
-            { 
-                StartPoint = new PointF(0, baffleRad),
-                EndPoint = new PointF(0, -baffleRad),
-                DimensionLineLocation = new PointF(baffleRad + 15, 0),
-                Type = DimensionType.Vertical,
-                OverrideText = "BAFFLE O.D. <>",
-                EntityColor = Color.Yellow,
-                TargetPaperSpaceHeight = dimTextHeight
-            });
-
-            // 2. Cut Depth Dimension
+            // --- DRAFTING & ANNOTATIONS ---
+            float dimOffset = 60f;
+            float leftX = -baffleRad - dimOffset;
+            
+            // 1. Overall Diameter Dimension
+            float odDimY = actualCutY + dimOffset;
             entities.Add(new CadDimension 
             {
-                StartPoint = new PointF(-100, -geometry.ShellRadius),
-                EndPoint = new PointF(-100, actualCutY),
-                DimensionLineLocation = new PointF(-baffleRad - 15, (-geometry.ShellRadius + actualCutY) / 2f),
-                Type = DimensionType.Vertical,
-                EntityColor = Color.Yellow,
-                TargetPaperSpaceHeight = dimTextHeight
+                StartPoint = new PointF(-baffleRad, 0),
+                EndPoint = new PointF(baffleRad, 0),
+                DimensionLineLocation = new PointF(0, odDimY),
+                Type = DimensionType.Horizontal,
+                OverrideText = "%%c<>",
+                EntityColor = Color.White
             });
 
-            // 3. Information Callout (MText)
-            int qty = true ? (int)Math.Ceiling(data.BaffleQty / 2.0) : (int)Math.Floor(data.BaffleQty / 2.0);
-            string calloutText = $"BAFFLE A (TOP)\\P\\P" +
-                                 $"Baffle O.D. : {data.BaffleOD:F2} mm\\P" +
-                                 $"THK         : {data.BaffleTHK:F2} mm\\P" +
-                                 $"CUT         : 25 %\\P" +
-                                 $"QTY         : {qty} Nos.\\P" +
-                                 $"M.O.C.      : {data.Material}";
+            // 2. Vertical Dimensions
+            // Overall Height
+            float bottomY = -baffleRad;
+            float topY = actualCutY;
+            
+            entities.Add(new CadDimension 
+            {
+                StartPoint = new PointF(0, bottomY),
+                EndPoint = new PointF(0, topY),
+                DimensionLineLocation = new PointF(leftX - 25f, 0),
+                Type = DimensionType.Vertical,
+                EntityColor = Color.White
+            });
+            
+            // Center to Top
+            entities.Add(new CadDimension 
+            {
+                StartPoint = new PointF(0, 0),
+                EndPoint = new PointF(0, topY),
+                DimensionLineLocation = new PointF(leftX, topY / 2f),
+                Type = DimensionType.Vertical,
+                EntityColor = Color.White
+            });
+            
+            // Center to Bottom
+            entities.Add(new CadDimension 
+            {
+                StartPoint = new PointF(0, bottomY),
+                EndPoint = new PointF(0, 0),
+                DimensionLineLocation = new PointF(leftX, bottomY / 2f),
+                Type = DimensionType.Vertical,
+                EntityColor = Color.White
+            });
 
+            // 3. Tube Hole Leader Note
+            PointF? targetHole = null;
+            if (baffleGeometry.ActiveTubeCenters.Count > 0)
+            {
+                float maxDist = 0;
+                foreach (var pt in baffleGeometry.ActiveTubeCenters)
+                {
+                    if (pt.X > 0)
+                    {
+                        float dist = (float)Math.Sqrt(pt.X * pt.X + pt.Y * pt.Y);
+                        if (dist > maxDist)
+                        {
+                            maxDist = dist;
+                            targetHole = pt;
+                        }
+                    }
+                }
+            }
+            
+            if (targetHole.HasValue)
+            {
+                string pitchStr = "TRIANGULAR";
+                string leaderText = $"HOLES FOR TUBES %%c{data.TubeOD}\\PON {pitchStr} PITCH";
+                
+                float lStartX = targetHole.Value.X;
+                float lStartY = targetHole.Value.Y;
+                float lMidX = lStartX + 40f;
+                float lMidY = lStartY + 40f;
+                float lEndX = lMidX + 20f;
+                
+                entities.Add(new CadLeader
+                {
+                    Vertices = new List<PointF> { new PointF(lStartX, lStartY), new PointF(lMidX, lMidY), new PointF(lEndX, lMidY) },
+                    HasArrowHead = true,
+                    EntityColor = Color.White
+                });
+                
+                entities.Add(new CadMText
+                {
+                    Position = new PointF(lEndX + 5f, lMidY),
+                    Text = leaderText,
+                    Alignment = StringAlignment.Near,
+                    LineAlignment = StringAlignment.Center,
+                    TargetPaperSpaceHeight = dimTextHeight,
+                    EntityColor = Color.White
+                });
+            }
+
+            // 4. Baffle Identification Text
             entities.Add(new CadMText
             {
-                Text = calloutText,
-                Position = new PointF(0, -baffleRad - 45),
+                Text = "BAFFLE #1,#3,#5",
+                Position = new PointF(0, -baffleRad - 70f),
                 EntityColor = Color.White,
                 Alignment = StringAlignment.Center,
-                TargetPaperSpaceHeight = DraftingScaleManager.GetPaperSpaceStandardNotesHeight()
+                TargetPaperSpaceHeight = 12f
             });
 
             // Shift geometry for visual balance and spacing

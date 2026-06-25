@@ -26,6 +26,15 @@ The platform is designed around a modular architecture, allowing multiple equipm
 * Side-view generation
 * Automated annotations and dimensions
 
+### Baffle Module
+
+* Baffle geometry generation (Top-cut Baffle A and Bottom-cut Baffle B)
+* Dynamic computation of baffle boundaries and cut depths
+* Intersected tube semi-circular cutout generation along baffle boundaries
+* Partition plate collision detection and clearance handling
+* Full drafting automation (dynamic centerlines, dimensioning, leader annotations, and title placement)
+* Standardized CAD layer assignments (`BAFFLE_OUTLINE`, `CENTERLINE`, `DIMENSIONS`, `LEADERS`, `TEXT`)
+
 
 ## Key Features
 
