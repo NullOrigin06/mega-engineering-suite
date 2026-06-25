@@ -7,7 +7,7 @@ namespace MegaEngineeringSuite
 {
     public class BaffleGeometryGenerator
     {
-        public BaffleGeometry GenerateBaffleGeometry(GeometryModel geometry, EngineeringDataModel data, bool isTopCut)
+                public BaffleGeometry GenerateBaffleGeometry(GeometryModel geometry, EngineeringDataModel data, bool isTopCut)
         {
             var baffle = new BaffleGeometry();
             
@@ -34,40 +34,20 @@ namespace MegaEngineeringSuite
 
             baffle.ActualCutDepth = geometry.ShellRadius - Math.Abs(actualCutY);
 
-            // 3. Filter Tubes
-            float tRad = geometry.TubeRadius;
-            if (geometry.TubeCoordinates != null)
-            {
-                foreach (var pt in geometry.TubeCoordinates)
-                {
-                    if (Math.Abs(pt.Y - actualCutY) < 1.0f) // Tolerance for being on the cut line
-                    {
-                        baffle.SemicircleTubeCenters.Add(pt);
-                    }
-                    else if (isTopCut)
-                    {
-                        if (pt.Y < actualCutY) baffle.RemovedTubeCenters.Add(pt);
-                        else baffle.ActiveTubeCenters.Add(pt);
-                    }
-                    else
-                    {
-                        if (pt.Y > actualCutY) baffle.RemovedTubeCenters.Add(pt);
-                        else baffle.ActiveTubeCenters.Add(pt);
-                    }
-                }
-            }
-
-            // 4. Generate Entities
+            // 3. Generate Boundary Entities
             // Center lines
-            float clLen = baffleRadius + 30;
+            float clLen = baffleRadius + 15f;
             baffle.Entities.Add(new CadLine { Start = new PointF(-clLen, 0), End = new PointF(clLen, 0), EntityColor = Color.Red, DashStyle = System.Drawing.Drawing2D.DashStyle.DashDot });
             baffle.Entities.Add(new CadLine { Start = new PointF(0, -clLen), End = new PointF(0, clLen), EntityColor = Color.Red, DashStyle = System.Drawing.Drawing2D.DashStyle.DashDot });
 
-            // Baffle Outline (Arc instead of Circle)
+            float startAngle = 0f;
+            float endAngle = 360f;
+            System.Drawing.Drawing2D.GraphicsPath boundaryPath = new System.Drawing.Drawing2D.GraphicsPath();
+
+            // Baffle Outline
             if (Math.Abs(actualCutY) < baffleRadius)
             {
                 float intersectRad = (float)Math.Asin(actualCutY / baffleRadius);
-                float startAngle, endAngle;
 
                 if (isTopCut)
                 {
@@ -86,23 +66,69 @@ namespace MegaEngineeringSuite
                     if (endAngle < 0) endAngle += 360f;
                 }
 
-                baffle.Entities.Add(new CadArc 
-                { 
-                    Center = new PointF(0, 0), 
-                    Radius = baffleRadius, 
-                    StartAngle = startAngle, 
-                    EndAngle = endAngle, 
-                    EntityColor = Color.Magenta 
-                });
+                float sweepDeg = endAngle - startAngle;
+                if (sweepDeg < 0) sweepDeg += 360f;
+                float sweepRad = (float)(sweepDeg * Math.PI / 180.0);
+                float bulge = (float)Math.Tan(sweepRad / 4.0);
 
-                // Cut Line
-                float cutX = (float)Math.Sqrt(baffleRadius * baffleRadius - actualCutY * actualCutY);
-                baffle.Entities.Add(new CadLine { Start = new PointF(-cutX, actualCutY), End = new PointF(cutX, actualCutY), EntityColor = Color.Magenta });
+                float startX = baffleRadius * (float)Math.Cos(startAngle * Math.PI / 180.0);
+                float startY = baffleRadius * (float)Math.Sin(startAngle * Math.PI / 180.0);
+
+                float endX = baffleRadius * (float)Math.Cos(endAngle * Math.PI / 180.0);
+                float endY = baffleRadius * (float)Math.Sin(endAngle * Math.PI / 180.0);
+
+                var poly = new CadPolyline
+                {
+                    EntityColor = Color.Magenta,
+                    IsClosed = true,
+                    Vertices = new System.Collections.Generic.List<CadPolylineVertex>
+                    {
+                        new CadPolylineVertex(new PointF(startX, startY), bulge),
+                        new CadPolylineVertex(new PointF(endX, endY), 0f)
+                    }
+                };
+                baffle.Entities.Add(poly);
+
+                float sweep = endAngle - startAngle;
+                if (sweep < 0) sweep += 360f;
+                boundaryPath.AddArc(-baffleRadius, -baffleRadius, baffleRadius * 2, baffleRadius * 2, startAngle, sweep);
+                boundaryPath.CloseFigure();
             }
             else
             {
                 // Fallback if cut is outside radius
                 baffle.Entities.Add(new CadCircle { Center = new PointF(0, 0), Radius = baffleRadius, EntityColor = Color.Magenta });
+                boundaryPath.AddEllipse(-baffleRadius, -baffleRadius, baffleRadius * 2, baffleRadius * 2);
+            }
+
+            // 4. Filter Tubes using exact boundary
+            float tRad = geometry.TubeRadius;
+            if (geometry.TubeCoordinates != null)
+            {
+                foreach (var pt in geometry.TubeCoordinates)
+                {
+                    if (Math.Abs(pt.Y - actualCutY) < 1.0f) // Semicircles on cut line
+                    {
+                        // Even if it's on the cut line, verify it's inside the horizontal span of the cut
+                        float maxCutX = (float)Math.Sqrt(baffleRadius * baffleRadius - actualCutY * actualCutY);
+                        if (Math.Abs(pt.X) <= maxCutX)
+                        {
+                            baffle.SemicircleTubeCenters.Add(pt);
+                        }
+                        else
+                        {
+                            baffle.RemovedTubeCenters.Add(pt);
+                        }
+                    }
+                    else if (boundaryPath.IsVisible(pt))
+                    {
+                        baffle.ActiveTubeCenters.Add(pt);
+                    }
+                    else
+                    {
+                        baffle.RemovedTubeCenters.Add(pt);
+                    }
+                }
             }
 
             // Active Tube Holes
@@ -114,16 +140,14 @@ namespace MegaEngineeringSuite
             // Semicircular Tube Holes (Cut Row)
             foreach (var pt in baffle.SemicircleTubeCenters)
             {
-                // Baffle A (isTopCut = true): Keep the +Y half of the hole. In Cartesian, this is the upper half.
-                // Baffle B (isTopCut = false): Keep the -Y half of the hole. In Cartesian, this is the lower half.
-                float startAngle = isTopCut ? 0f : 180f;
-                float endAngle = isTopCut ? 180f : 360f; 
+                float sAngle = isTopCut ? 0f : 180f;
+                float eAngle = isTopCut ? 180f : 360f; 
                 baffle.Entities.Add(new CadArc 
                 { 
                     Center = new PointF(pt.X, pt.Y), 
                     Radius = tRad, 
-                    StartAngle = startAngle, 
-                    EndAngle = endAngle, 
+                    StartAngle = sAngle, 
+                    EndAngle = eAngle, 
                     EntityColor = Color.Blue 
                 });
             }

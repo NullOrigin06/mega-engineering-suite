@@ -288,9 +288,9 @@ namespace MegaEngineeringSuite
                     using (Pen p = new Pen(polyline.EntityColor, 1f / zoomScale))
                     {
                         if (polyline.IsClosed)
-                            g.DrawPolygon(p, polyline.Vertices.ToArray());
+                            g.DrawPolygon(p, polyline.Vertices.Select(v => v.Point).ToArray());
                         else
-                            g.DrawLines(p, polyline.Vertices.ToArray());
+                            g.DrawLines(p, polyline.Vertices.Select(v => v.Point).ToArray());
                     }
                 }
                 else if (entity is CadHatch hatch && hatch.BoundaryVertices.Count > 2)

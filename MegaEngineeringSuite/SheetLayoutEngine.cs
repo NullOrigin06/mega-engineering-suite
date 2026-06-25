@@ -264,7 +264,7 @@ namespace MegaEngineeringSuite
                     }
                     else if (baffleZones.Contains(zoneGroup.Key) && uniformBaffleScale != float.MaxValue)
                     {
-                        scale = uniformBaffleScale;
+                        scale = uniformBaffleScale * 1.75f;
                     }
 
                     float currentX = zoneRect.X + (zoneRect.Width - (totalW * scale)) / 2f;
@@ -287,6 +287,10 @@ namespace MegaEngineeringSuite
 
                         float dx = currentX - b.Bounds.MinX;
                         float dy = centerY - (b.Bounds.MinY + b.Bounds.Height / 2f);
+                        if (baffleZones.Contains(zoneGroup.Key))
+                        {
+                            dy -= (b.Bounds.Height * 0.1f); // Shift down visually to leave space for title above
+                        }
                         if (zoneGroup.Key == SheetZone.DocColumnBottom)
                         {
                             dy = (zoneRect.Y + zonePadding) - b.Bounds.MinY;
@@ -344,6 +348,11 @@ namespace MegaEngineeringSuite
                     text.Position = new PointF(text.Position.X * scale, text.Position.Y * scale);
                     text.FontSize = text.TargetPaperSpaceHeight;
                 }
+                else if (entity is CadMText mtext)
+                {
+                    mtext.Position = new PointF(mtext.Position.X * scale, mtext.Position.Y * scale);
+                    mtext.FontSize = mtext.TargetPaperSpaceHeight;
+                }
                 else if (entity is CadDimension dim)
                 {
                     dim.StartPoint = new PointF(dim.StartPoint.X * scale, dim.StartPoint.Y * scale);
@@ -367,7 +376,7 @@ namespace MegaEngineeringSuite
                 {
                     for (int i = 0; i < polyline.Vertices.Count; i++)
                     {
-                        polyline.Vertices[i] = new PointF(polyline.Vertices[i].X * scale, polyline.Vertices[i].Y * scale);
+                        polyline.Vertices[i].Point = new PointF(polyline.Vertices[i].Point.X * scale, polyline.Vertices[i].Point.Y * scale);
                     }
                 }
                 else if (entity is CadHatch hatch)
@@ -402,6 +411,10 @@ namespace MegaEngineeringSuite
                 {
                     text.Position = new PointF(text.Position.X + dx, text.Position.Y + dy);
                 }
+                else if (entity is CadMText mtext)
+                {
+                    mtext.Position = new PointF(mtext.Position.X + dx, mtext.Position.Y + dy);
+                }
                 else if (entity is CadDimension dim)
                 {
                     dim.StartPoint = new PointF(dim.StartPoint.X + dx, dim.StartPoint.Y + dy);
@@ -420,7 +433,7 @@ namespace MegaEngineeringSuite
                 {
                     for (int i = 0; i < polyline.Vertices.Count; i++)
                     {
-                        polyline.Vertices[i] = new PointF(polyline.Vertices[i].X + dx, polyline.Vertices[i].Y + dy);
+                        polyline.Vertices[i].Point = new PointF(polyline.Vertices[i].Point.X + dx, polyline.Vertices[i].Point.Y + dy);
                     }
                 }
                 else if (entity is CadHatch hatch)

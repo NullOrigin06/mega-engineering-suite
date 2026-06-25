@@ -339,6 +339,31 @@ namespace MegaEngineeringSuite
             {
                 MessageBox.Show(aex.Message, "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
+            catch (System.IO.FileNotFoundException fnfEx)
+            {
+                if (fnfEx.Message.Contains("engineering data file"))
+                {
+                    DialogResult res = MessageBox.Show("Engineering data file not found. Would you like to locate it?", "File Missing", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    if (res == DialogResult.Yes)
+                    {
+                        using (OpenFileDialog ofd = new OpenFileDialog())
+                        {
+                            ofd.Filter = "Excel Files|*.xlsx;*.xls";
+                            ofd.Title = "Select Excel Data File";
+                            if (ofd.ShowDialog() == DialogResult.OK)
+                            {
+                                AppConfigManager.Current.ExcelTemplatePath = ofd.FileName;
+                                AppConfigManager.Save();
+                                BtnCalculate_Click(sender, e); // Retry calculation
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    MessageBox.Show(fnfEx.Message, "File Missing", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
             catch (Exception ex)
             {
                 MessageBox.Show($"An error occurred during calculation: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -392,8 +417,36 @@ namespace MegaEngineeringSuite
                 var tempService = new TemplateDrawingService();
                 var groupedViews = tempService.GenerateTemplateViews(currentGeometry, currentData);
 
-                string templatePath = @"C:\MEGA_SUITE_DATA\FINAL TUBESHEET.dwg";
-                DrawingAutomationResult result = drawingService.GenerateTemplateLispAndLaunchCAD(groupedViews, currentData, templatePath);
+                string templatePath = AppConfigManager.Current.DwgTemplatePath;
+                
+                if (!System.IO.File.Exists(templatePath))
+                {
+                    DialogResult res = MessageBox.Show("DWG Template file not found. Would you like to locate it?", "File Missing", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    if (res == DialogResult.Yes)
+                    {
+                        using (OpenFileDialog ofd = new OpenFileDialog())
+                        {
+                            ofd.Filter = "DWG Files|*.dwg";
+                            ofd.Title = "Select DWG Template";
+                            if (ofd.ShowDialog() == DialogResult.OK)
+                            {
+                                AppConfigManager.Current.DwgTemplatePath = ofd.FileName;
+                                AppConfigManager.Save();
+                                templatePath = ofd.FileName;
+                            }
+                            else
+                            {
+                                return;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+                
+                DrawingAutomationResult result = drawingService.GenerateTemplateLispAndLaunchCAD(groupedViews, currentData, currentGeometry, templatePath);
                 
                 lastGeneratedLispPath = result.BackupPath;
                 lastGeneratedScrPath = result.BackupScrPath;

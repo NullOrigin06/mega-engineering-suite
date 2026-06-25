@@ -74,7 +74,7 @@ namespace MegaEngineeringSuite
                 }
                 else if (entity is CadPolyline polyline)
                 {
-                    foreach (var pt in polyline.Vertices)
+                    foreach (var pt in polyline.Vertices.Select(v => v.Point))
                     {
                         box.AddPoint(pt);
                     }

@@ -6,7 +6,6 @@ namespace MegaEngineeringSuite
 {
     public class ExcelLookupService
     {
-        private readonly string excelFilePath = @"C:\MEGA_SUITE_DATA\Heat Exchanger BOM Details.xlsx";
         private readonly string sheetName = "Heat Exchanger Data";
 
         /// <summary>
@@ -16,6 +15,8 @@ namespace MegaEngineeringSuite
         /// <returns>Populated EngineeringDataModel</returns>
         public EngineeringDataModel LoadByShellId(int shellId)
         {
+            string excelFilePath = AppConfigManager.Current.ExcelTemplatePath;
+
             if (!File.Exists(excelFilePath))
             {
                 throw new FileNotFoundException($"The required engineering data file was not found at {excelFilePath}");

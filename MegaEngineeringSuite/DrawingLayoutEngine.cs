@@ -189,7 +189,7 @@ namespace MegaEngineeringSuite
                 {
                     for (int i = 0; i < polyline.Vertices.Count; i++)
                     {
-                        polyline.Vertices[i] = new PointF(polyline.Vertices[i].X + dx, polyline.Vertices[i].Y + dy);
+                        polyline.Vertices[i].Point = new PointF(polyline.Vertices[i].Point.X + dx, polyline.Vertices[i].Point.Y + dy);
                     }
                 }
                 else if (entity is CadHatch hatch)

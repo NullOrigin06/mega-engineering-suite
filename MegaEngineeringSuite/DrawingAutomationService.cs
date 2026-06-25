@@ -8,10 +8,7 @@ using System.Threading;
 using System.Runtime.InteropServices;
 namespace MegaEngineeringSuite
 {
-    public class AppSettings
-    {
-        public string CadPath { get; set; } = @"C:\Program Files\Gstarsoft\GstarCAD2026\gcad.exe";
-    }
+
 
     public class DrawingAutomationResult
     {
@@ -57,54 +54,11 @@ namespace MegaEngineeringSuite
                 throw new ArgumentNullException("Drawing model and engineering data must be provided.");
             }
 
-            // 1. Manage Settings.json
-            string settingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.json");
-            AppSettings settings = new AppSettings();
-            bool settingsUpdated = false;
-            
-            if (File.Exists(settingsPath))
+            string cadExecutable = AppConfigManager.Current.CadPath;
+
+            if (!File.Exists(cadExecutable))
             {
-                string json = File.ReadAllText(settingsPath);
-                settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
-            }
-
-            // 2. Auto-Detect if configured path does not exist
-            if (!File.Exists(settings.CadPath))
-            {
-                string[] commonPaths = new string[]
-                {
-                    @"C:\Program Files\Gstarsoft\GstarCAD2026\gcad.exe",
-                    @"C:\Program Files\Gstarsoft\GstarCAD2025\gcad.exe",
-                    @"C:\Program Files\Gstarsoft\GstarCAD2024\gcad.exe"
-                };
-
-                bool found = false;
-                foreach (string path in commonPaths)
-                {
-                    if (File.Exists(path))
-                    {
-                        settings.CadPath = path;
-                        found = true;
-                        settingsUpdated = true;
-                        break;
-                    }
-                }
-
-                if (!found)
-                {
-                    // Update Settings file anyway so the user has the template to edit
-                    string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
-                    File.WriteAllText(settingsPath, json);
-
-                    throw new FileNotFoundException($"CAD executable not found.\nAuto-detection failed.\n\nPlease edit Settings.json in the application directory to point to your installed CAD software.");
-                }
-            }
-
-            // 3. Save Settings if missing or updated by auto-detect
-            if (!File.Exists(settingsPath) || settingsUpdated)
-            {
-                string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(settingsPath, json);
+                throw new FileNotFoundException($"CAD executable not found.\nAuto-detection failed.\n\nPlease edit Settings.json in the application directory to point to your installed CAD software.");
             }
 
             try
@@ -641,7 +595,7 @@ namespace MegaEngineeringSuite
 
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
-                    FileName = settings.CadPath,
+                    FileName = cadExecutable,
                     Arguments = arguments,
                     UseShellExecute = true
                 };
@@ -654,7 +608,7 @@ namespace MegaEngineeringSuite
                     BackupPath = backupPath,
                     ScrPath = scrPath,
                     BackupScrPath = backupScrPath,
-                    CadExecutable = settings.CadPath,
+                    CadExecutable = cadExecutable,
                     Arguments = arguments,
                     ScrContent = scrContent
                 };
@@ -664,58 +618,99 @@ namespace MegaEngineeringSuite
                 throw new Exception($"Failed to launch CAD automation: {ex.Message}");
             }
         }
-        public DrawingAutomationResult GenerateTemplateLispAndLaunchCAD(Dictionary<string, List<ICadEntity>> views, EngineeringDataModel data, string templatePath)
+        private void AppendSideViewGeometryLisp(StringBuilder lspContent, EngineeringDataModel data, string anchorName, string phaseName)
+        {
+            lspContent.AppendLine("; -----------------------------------------");
+            lspContent.AppendLine($"; {phaseName}");
+            lspContent.AppendLine("; -----------------------------------------");
+            lspContent.AppendLine("(setq side_blk");
+            lspContent.AppendLine("      (ssget \"_X\"");
+            lspContent.AppendLine("             '((0 . \"INSERT\")");
+            lspContent.AppendLine($"               (2 . \"{anchorName}\"))))");
+            lspContent.AppendLine();
+            lspContent.AppendLine("(if side_blk");
+            lspContent.AppendLine("  (progn");
+            lspContent.AppendLine("    (setq side_pt");
+            lspContent.AppendLine("          (cdr");
+            lspContent.AppendLine("           (assoc 10");
+            lspContent.AppendLine("                  (entget (ssname side_blk 0)))))");
+            lspContent.AppendLine();
+            lspContent.AppendLine($"    (setq ts_thk {data.TubeSheetFinishTHK:F4})");
+            lspContent.AppendLine($"    (setq ts_height {data.TubeSheetFinishOD:F4})");
+            lspContent.AppendLine("    (setq half_thk (/ ts_thk 2.0))");
+            lspContent.AppendLine("    (setq half_h (/ ts_height 2.0))");
+            lspContent.AppendLine();
+            lspContent.AppendLine("    (setq p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
+            lspContent.AppendLine("    (setq p2 (list (+ (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
+            lspContent.AppendLine("    (setq p3 (list (+ (car side_pt) half_thk) (+ (cadr side_pt) half_h)))");
+            lspContent.AppendLine("    (setq p4 (list (- (car side_pt) half_thk) (+ (cadr side_pt) half_h)))");
+            lspContent.AppendLine();
+            lspContent.AppendLine("    (setq ssHatch (ssadd))");
+            lspContent.AppendLine("    (command \"_.LINE\" p1 p2 \"\")");
+            lspContent.AppendLine("    (ssadd (entlast) ssHatch)");
+            lspContent.AppendLine("    (command \"_.LINE\" p2 p3 \"\")");
+            lspContent.AppendLine("    (ssadd (entlast) ssHatch)");
+            lspContent.AppendLine("    (command \"_.LINE\" p3 p4 \"\")");
+            lspContent.AppendLine("    (ssadd (entlast) ssHatch)");
+            lspContent.AppendLine("    (command \"_.LINE\" p4 p1 \"\")");
+            lspContent.AppendLine("    (ssadd (entlast) ssHatch)");
+            lspContent.AppendLine();
+            lspContent.AppendLine("    ; Hatch Generation");
+            lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"HATCH\" \"\")");
+            lspContent.AppendLine("    (command \"_.-HATCH\" \"P\" \"ANSI31\" \"5.0\" \"0\" \"S\" ssHatch \"\" \"\")");
+            lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+            lspContent.AppendLine();
+            lspContent.AppendLine("    ; Dimensions");
+            lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"DIM\" \"\")");
+            lspContent.AppendLine();
+            lspContent.AppendLine($"    (setq shell_id {data.ShellID:F4})");
+            lspContent.AppendLine($"    (setq flange_id {data.FlangeID:F4})");
+            lspContent.AppendLine("    (setq half_shell (/ shell_id 2.0))");
+            lspContent.AppendLine("    (setq half_flange (/ flange_id 2.0))");
+            lspContent.AppendLine();
+            lspContent.AppendLine("    ; 1. Shell ID");
+            lspContent.AppendLine("    (setq d1_p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_shell)))");
+            lspContent.AppendLine("    (setq d1_p2 (list (- (car side_pt) half_thk) (+ (cadr side_pt) half_shell)))");
+            lspContent.AppendLine("    (setq d1_loc (list (- (car side_pt) (+ half_thk 60.0)) (cadr side_pt)))");
+            lspContent.AppendLine("    (command \"_.DIMLINEAR\" d1_p1 d1_p2 \"T\" \"%%C<>\" d1_loc)");
+            lspContent.AppendLine();
+            lspContent.AppendLine("    ; 2. Flange ID");
+            lspContent.AppendLine("    (setq d2_p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_flange)))");
+            lspContent.AppendLine("    (setq d2_p2 (list (- (car side_pt) half_thk) (+ (cadr side_pt) half_flange)))");
+            lspContent.AppendLine("    (setq d2_loc (list (- (car side_pt) (+ half_thk 120.0)) (cadr side_pt)))");
+            lspContent.AppendLine("    (command \"_.DIMLINEAR\" d2_p1 d2_p2 \"T\" \"%%C<>\" d2_loc)");
+            lspContent.AppendLine();
+            lspContent.AppendLine("    ; 3. TubeSheet Finish OD");
+            lspContent.AppendLine("    (setq d3_p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
+            lspContent.AppendLine("    (setq d3_p2 (list (- (car side_pt) half_thk) (+ (cadr side_pt) half_h)))");
+            lspContent.AppendLine("    (setq d3_loc (list (- (car side_pt) (+ half_thk 180.0)) (cadr side_pt)))");
+            lspContent.AppendLine("    (command \"_.DIMLINEAR\" d3_p1 d3_p2 \"T\" \"%%C<>\" d3_loc)");
+            lspContent.AppendLine();
+            lspContent.AppendLine("    ; 4. TubeSheet Finish THK");
+            lspContent.AppendLine("    (setq d4_p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
+            lspContent.AppendLine("    (setq d4_p2 (list (+ (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
+            lspContent.AppendLine("    (setq d4_loc (list (car side_pt) (- (cadr side_pt) (+ half_h 60.0))))");
+            lspContent.AppendLine("    (command \"_.DIMLINEAR\" d4_p1 d4_p2 \"T\" \"<> THK\" d4_loc)");
+            lspContent.AppendLine();
+            lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+            lspContent.AppendLine("  )");
+            lspContent.AppendLine($"  (prompt \"\\n{anchorName} NOT FOUND\")");
+            lspContent.AppendLine(")");
+            lspContent.AppendLine();
+        }
+
+        public DrawingAutomationResult GenerateTemplateLispAndLaunchCAD(Dictionary<string, List<ICadEntity>> views, EngineeringDataModel data, GeometryModel geometry, string templatePath)
         {
             if (views == null || data == null)
             {
                 throw new ArgumentNullException("Views and engineering data must be provided.");
             }
 
-            // 1. Manage Settings.json
-            string settingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.json");
-            AppSettings settings = new AppSettings();
-            bool settingsUpdated = false;
-            
-            if (File.Exists(settingsPath))
+            string cadExecutable = AppConfigManager.Current.CadPath;
+
+            if (!File.Exists(cadExecutable))
             {
-                string json = File.ReadAllText(settingsPath);
-                settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
-            }
-
-            // 2. Auto-Detect if configured path does not exist
-            if (!File.Exists(settings.CadPath))
-            {
-                string[] commonPaths = new string[]
-                {
-                    @"C:\Program Files\Gstarsoft\GstarCAD2026\gcad.exe",
-                    @"C:\Program Files\Gstarsoft\GstarCAD2025\gcad.exe",
-                    @"C:\Program Files\Gstarsoft\GstarCAD2024\gcad.exe"
-                };
-
-                bool found = false;
-                foreach (string path in commonPaths)
-                {
-                    if (File.Exists(path))
-                    {
-                        settings.CadPath = path;
-                        found = true;
-                        settingsUpdated = true;
-                        break;
-                    }
-                }
-
-                if (!found)
-                {
-                    string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
-                    File.WriteAllText(settingsPath, json);
-                    throw new FileNotFoundException($"CAD executable not found.\nAuto-detection failed.\n\nPlease edit Settings.json in the application directory to point to your installed CAD software.");
-                }
-            }
-
-            if (!File.Exists(settingsPath) || settingsUpdated)
-            {
-                string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(settingsPath, json);
+                throw new FileNotFoundException($"CAD executable not found.\nAuto-detection failed.\n\nPlease edit Settings.json in the application directory to point to your installed CAD software.");
             }
 
             try
@@ -1020,84 +1015,10 @@ namespace MegaEngineeringSuite
                 lspContent.AppendLine();
 
                 // Phase T10B - Rear Tubesheet Side View Geometry
-                lspContent.AppendLine("; -----------------------------------------");
-                lspContent.AppendLine("; PHASE T10B - REAR TUBESHEET SIDE VIEW GEOMETRY (TEMPLATE)");
-                lspContent.AppendLine("; -----------------------------------------");
-                lspContent.AppendLine("(setq side_blk");
-                lspContent.AppendLine("      (ssget \"_X\"");
-                lspContent.AppendLine("             '((0 . \"INSERT\")");
-                lspContent.AppendLine("               (2 . \"REAR_SIDEVIEW_ANCHOR\"))))");
-                lspContent.AppendLine();
-                lspContent.AppendLine("(if side_blk");
-                lspContent.AppendLine("  (progn");
-                lspContent.AppendLine("    (setq side_pt");
-                lspContent.AppendLine("          (cdr");
-                lspContent.AppendLine("           (assoc 10");
-                lspContent.AppendLine("                  (entget (ssname side_blk 0)))))");
-                lspContent.AppendLine();
-                lspContent.AppendLine($"    (setq ts_thk {data.TubeSheetFinishTHK:F4})");
-                lspContent.AppendLine($"    (setq ts_height {data.TubeSheetFinishOD:F4})");
-                lspContent.AppendLine("    (setq half_thk (/ ts_thk 2.0))");
-                lspContent.AppendLine("    (setq half_h (/ ts_height 2.0))");
-                lspContent.AppendLine();
-                lspContent.AppendLine("    (setq p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
-                lspContent.AppendLine("    (setq p2 (list (+ (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
-                lspContent.AppendLine("    (setq p3 (list (+ (car side_pt) half_thk) (+ (cadr side_pt) half_h)))");
-                lspContent.AppendLine("    (setq p4 (list (- (car side_pt) half_thk) (+ (cadr side_pt) half_h)))");
-                lspContent.AppendLine();
-                lspContent.AppendLine("    (setq ssHatch (ssadd))");
-                lspContent.AppendLine("    (command \"_.LINE\" p1 p2 \"\")");
-                lspContent.AppendLine("    (ssadd (entlast) ssHatch)");
-                lspContent.AppendLine("    (command \"_.LINE\" p2 p3 \"\")");
-                lspContent.AppendLine("    (ssadd (entlast) ssHatch)");
-                lspContent.AppendLine("    (command \"_.LINE\" p3 p4 \"\")");
-                lspContent.AppendLine("    (ssadd (entlast) ssHatch)");
-                lspContent.AppendLine("    (command \"_.LINE\" p4 p1 \"\")");
-                lspContent.AppendLine("    (ssadd (entlast) ssHatch)");
-                lspContent.AppendLine();
-                lspContent.AppendLine("    ; Phase T10C - Side View Hatch Generation");
-                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"HATCH\" \"\")");
-                lspContent.AppendLine("    (command \"_.-HATCH\" \"P\" \"ANSI31\" \"5.0\" \"0\" \"S\" ssHatch \"\" \"\")");
-                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
-                lspContent.AppendLine();
-                lspContent.AppendLine("    ; Phase T10D - Side View Dimensions");
-                lspContent.AppendLine("    ; -----------------------------------------");
-                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"DIM\" \"\")");
-                lspContent.AppendLine();
-                    lspContent.AppendLine($"    (setq shell_id {data.ShellID:F4})");
-                lspContent.AppendLine($"    (setq flange_id {data.FlangeID:F4})");
-                lspContent.AppendLine("    (setq half_shell (/ shell_id 2.0))");
-                lspContent.AppendLine("    (setq half_flange (/ flange_id 2.0))");
-                lspContent.AppendLine();
-                lspContent.AppendLine("    ; 1. Shell ID");
-                lspContent.AppendLine("    (setq d1_p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_shell)))");
-                lspContent.AppendLine("    (setq d1_p2 (list (- (car side_pt) half_thk) (+ (cadr side_pt) half_shell)))");
-                lspContent.AppendLine("    (setq d1_loc (list (- (car side_pt) (+ half_thk 60.0)) (cadr side_pt)))");
-                lspContent.AppendLine("    (command \"_.DIMLINEAR\" d1_p1 d1_p2 \"T\" \"%%C<>\" d1_loc)");
-                lspContent.AppendLine();
-                lspContent.AppendLine("    ; 2. Flange ID");
-                lspContent.AppendLine("    (setq d2_p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_flange)))");
-                lspContent.AppendLine("    (setq d2_p2 (list (- (car side_pt) half_thk) (+ (cadr side_pt) half_flange)))");
-                lspContent.AppendLine("    (setq d2_loc (list (- (car side_pt) (+ half_thk 120.0)) (cadr side_pt)))");
-                lspContent.AppendLine("    (command \"_.DIMLINEAR\" d2_p1 d2_p2 \"T\" \"%%C<>\" d2_loc)");
-                lspContent.AppendLine();
-                lspContent.AppendLine("    ; 3. TubeSheet Finish OD");
-                lspContent.AppendLine("    (setq d3_p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
-                lspContent.AppendLine("    (setq d3_p2 (list (- (car side_pt) half_thk) (+ (cadr side_pt) half_h)))");
-                lspContent.AppendLine("    (setq d3_loc (list (- (car side_pt) (+ half_thk 180.0)) (cadr side_pt)))");
-                lspContent.AppendLine("    (command \"_.DIMLINEAR\" d3_p1 d3_p2 \"T\" \"%%C<>\" d3_loc)");
-                lspContent.AppendLine();
-                lspContent.AppendLine("    ; 4. TubeSheet Finish THK");
-                lspContent.AppendLine("    (setq d4_p1 (list (- (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
-                lspContent.AppendLine("    (setq d4_p2 (list (+ (car side_pt) half_thk) (- (cadr side_pt) half_h)))");
-                lspContent.AppendLine("    (setq d4_loc (list (car side_pt) (- (cadr side_pt) (+ half_h 60.0))))");
-                lspContent.AppendLine("    (command \"_.DIMLINEAR\" d4_p1 d4_p2 \"T\" \"<> THK\" d4_loc)");
-                lspContent.AppendLine();
-                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
-                lspContent.AppendLine("  )");
-                lspContent.AppendLine("  (prompt \"\\nREAR_SIDEVIEW_ANCHOR NOT FOUND\")");
-                lspContent.AppendLine(")");
-                lspContent.AppendLine();
+                AppendSideViewGeometryLisp(lspContent, data, "REAR_SIDEVIEW_ANCHOR", "PHASE T10B - REAR TUBESHEET SIDE VIEW GEOMETRY (TEMPLATE)");
+
+                // Phase T10E - Front Tubesheet Side View Geometry
+                AppendSideViewGeometryLisp(lspContent, data, "FRONT_SIDEVIEW_ANCHOR", "PHASE T10E - FRONT TUBESHEET SIDE VIEW GEOMETRY (TEMPLATE)");
 
                 // -----------------------------------------
                 // PHASE T11 - FRONT TUBESHEET GENERATION (TEMPLATE VIEW)
@@ -1248,6 +1169,154 @@ namespace MegaEngineeringSuite
                 lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
                 lspContent.AppendLine("  )");
                 lspContent.AppendLine("  (prompt \"\\nFRONT_TS_ANCHOR NOT FOUND\")");
+                lspContent.AppendLine(")");
+                lspContent.AppendLine();
+
+                // Phase B1 - Baffle Geometry Foundation
+                // BAFFLE A Phase Translation
+                if (views.ContainsKey("BAFFLE_A_ANCHOR"))
+                {
+                    lspContent.AppendLine("; -----------------------------------------");
+                    lspContent.AppendLine("; PHASE - TRANSLATE BAFFLE_A_ANCHOR");
+                    lspContent.AppendLine("; -----------------------------------------");
+                    lspContent.AppendLine("(setq blk (ssget \"_X\" '((0 . \"INSERT\") (2 . \"BAFFLE_A_ANCHOR\"))))");
+                    lspContent.AppendLine("(if blk");
+                    lspContent.AppendLine("  (progn");
+                    lspContent.AppendLine("    (setq pt (cdr (assoc 10 (entget (ssname blk 0)))))");
+                    foreach (var entity in views["BAFFLE_A_ANCHOR"])
+                    {
+                        TranslateCadEntityToLisp(lspContent, entity);
+                    }
+
+                    lspContent.AppendLine("  )");
+                    lspContent.AppendLine(")");
+                    lspContent.AppendLine();
+                }
+
+                // BAFFLE B Phase Translation
+                if (views.ContainsKey("BAFFLE_B_ANCHOR"))
+                {
+                    lspContent.AppendLine("; -----------------------------------------");
+                    lspContent.AppendLine("; PHASE - TRANSLATE BAFFLE_B_ANCHOR");
+                    lspContent.AppendLine("; -----------------------------------------");
+                    lspContent.AppendLine("(setq blk (ssget \"_X\" '((0 . \"INSERT\") (2 . \"BAFFLE_B_ANCHOR\"))))");
+                    lspContent.AppendLine("(if blk");
+                    lspContent.AppendLine("  (progn");
+                    lspContent.AppendLine("    (setq pt (cdr (assoc 10 (entget (ssname blk 0)))))");
+                    foreach (var entity in views["BAFFLE_B_ANCHOR"])
+                    {
+                        TranslateCadEntityToLisp(lspContent, entity);
+                    }
+
+                    lspContent.AppendLine("  )");
+                    lspContent.AppendLine(")");
+                    lspContent.AppendLine();
+                }
+
+                // -----------------------------------------
+                // PHASE T12 - SPECIFICATION BLOCK
+                // -----------------------------------------
+                lspContent.AppendLine("; -----------------------------------------");
+                lspContent.AppendLine("; PHASE T12 - SPECIFICATION BLOCK");
+                lspContent.AppendLine("; -----------------------------------------");
+                lspContent.AppendLine("(setq spec_blk");
+                lspContent.AppendLine("      (ssget \"_X\"");
+                lspContent.AppendLine("             '((0 . \"INSERT\")");
+                lspContent.AppendLine("               (2 . \"SPECIFICATION_ANCHOR\"))))");
+                lspContent.AppendLine();
+                lspContent.AppendLine("(if spec_blk");
+                lspContent.AppendLine("  (progn");
+                lspContent.AppendLine("    (setq spec_pt");
+                lspContent.AppendLine("          (cdr");
+                lspContent.AppendLine("           (assoc 10");
+                lspContent.AppendLine("                  (entget (ssname spec_blk 0)))))");
+                lspContent.AppendLine();
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"SPECIFICATION\" \"C\" \"7\" \"\" \"\")");
+                
+                lspContent.AppendLine("    (setq heading_y (cadr spec_pt))");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"TL\" (list (car spec_pt) heading_y) 45.0 0 \"%%uSPECIFICATION :-\")");
+
+                lspContent.AppendLine("    (setq row_spacing 45.0)");
+                lspContent.AppendLine("    (setq col1_x (car spec_pt))");
+                lspContent.AppendLine("    (setq col2_x (+ col1_x 500.0))");
+                lspContent.AppendLine("    (setq col3_x (+ col2_x 40.0))");
+                lspContent.AppendLine("    (setq current_y (- heading_y 70.0))");
+                lspContent.AppendLine();
+
+                var specRows = new List<(string Label, string Value)>
+                {
+                    ("HTA", data.HTA > 0 ? $"{data.HTA:F2} m%%178" : "-"),
+                    ("SHELL DIAMETER", data.ShellID > 0 ? $"{data.ShellID} mm" : "-"),
+                    ("NO. OF TUBES", data.TubeQty > 0 ? $"{data.TubeQty} NOS." : "-"),
+                    ("TUBE (ERW)", data.TubeOD > 0 ? $"%%c{data.TubeOD:F1} x 1.6 x {data.TubeLength} LG" : "-"),
+                    ("NO. OF PASSES", data.NoOfPass > 0 ? $"{data.NoOfPass} PASS" : "-"),
+                    ("TUBE HOLE", data.TubeOD > 0 ? $"{(data.TubeOD + data.TubeHoleChamfer * 2):F2} mm" : "-"),
+                    ("TRIANGULAR PITCH", "-"),
+                    ("M.O.C.", string.IsNullOrEmpty(data.Material) ? "-" : data.Material),
+                    ("TUBESHEET QTY.", "2 NOS."),
+                    ("T.S. FINISH THK", data.TubeSheetFinishTHK > 0 ? $"{data.TubeSheetFinishTHK:F2} mm" : "-"),
+                    ("T.S. RAW THK", data.TubeSheetRawTHK > 0 ? $"{data.TubeSheetRawTHK:F2} mm" : "-"),
+                    ("BODY FLANGE FINISH THK", data.BodyFlangeFinishTHK > 0 ? $"{data.BodyFlangeFinishTHK:F2} mm" : "-"),
+                    ("BODY FLANGE RAW THK", data.BodyFlangeRawTHK > 0 ? $"{data.BodyFlangeRawTHK:F2} mm" : "-"),
+                    ("PARTITION PLATE THK", data.PartitionPlateTHK > 0 ? $"{data.PartitionPlateTHK:F2} mm" : "-"),
+                    ("BAFFLE THK", data.BaffleTHK > 0 ? $"{data.BaffleTHK:F2} mm" : "-"),
+                    ("BOLT SIZE", string.IsNullOrEmpty(data.BoltSize) ? "-" : data.BoltSize),
+                    ("BOLT LENGTH", data.BoltLength > 0 ? $"{data.BoltLength:F2} mm" : "-"),
+                    ("NO OF BOLTS", data.NoOfBolts > 0 ? $"{data.NoOfBolts} NOS." : "-"),
+                    ("HOLE DIA.", data.HoleDia > 0 ? $"%%c{data.HoleDia:F2} mm" : "-"),
+                    ("FLANGE I.D.", data.FlangeID > 0 ? $"{data.FlangeID:F2} mm" : "-"),
+                    ("BOLT P.C.D.", data.BoltPCD > 0 ? $"{data.BoltPCD:F2} mm" : "-"),
+                    ("T.S. FINISH O.D.", data.TubeSheetFinishOD > 0 ? $"{data.TubeSheetFinishOD:F2} mm" : "-"),
+                    ("T.S. RAW O.D.", data.TubeSheetRawOD > 0 ? $"{data.TubeSheetRawOD:F2} mm" : "-"),
+                    ("LINER / GASKET O.D.", data.LinerGasketOD > 0 ? $"{data.LinerGasketOD:F2} mm" : "-"),
+                    ("TIE ROD DIA.", data.TieRodDia > 0 ? $"%%c{data.TieRodDia:F2} mm" : "-"),
+                    ("TIE ROD QTY.", data.TieRodQty > 0 ? $"{data.TieRodQty} NOS." : "-"),
+                    ("SPACER TUBE", data.SpacerTube > 0 ? $"{data.SpacerTube:F2} mm" : "-")
+                };
+
+                foreach (var row in specRows)
+                {
+                    lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"TL\" (list col1_x current_y) 25.0 0 \"{row.Label}\")");
+                    lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"TL\" (list col2_x current_y) 25.0 0 \":\")");
+
+                    string val = row.Value;
+                    if (val.Length > 28)
+                    {
+                        string[] words = val.Split(' ');
+                        List<string> lines = new List<string>();
+                        string currentLine = "";
+                        foreach(var word in words) 
+                        {
+                            if(currentLine.Length + word.Length > 28) 
+                            {
+                                lines.Add(currentLine.Trim());
+                                currentLine = word + " ";
+                            } 
+                            else 
+                            {
+                                currentLine += word + " ";
+                            }
+                        }
+                        if(!string.IsNullOrWhiteSpace(currentLine)) lines.Add(currentLine.Trim());
+
+                        for(int i = 0; i < lines.Count; i++) 
+                        {
+                            lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"TL\" (list col3_x current_y) 25.0 0 \"{lines[i]}\")");
+                            if (i < lines.Count - 1)
+                                lspContent.AppendLine("    (setq current_y (- current_y 35.0))");
+                        }
+                    }
+                    else
+                    {
+                        lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"TL\" (list col3_x current_y) 25.0 0 \"{val}\")");
+                    }
+
+                    lspContent.AppendLine("    (setq current_y (- current_y row_spacing))");
+                }
+
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+                lspContent.AppendLine("  )");
+                lspContent.AppendLine("  (prompt \"\\nSPECIFICATION_ANCHOR NOT FOUND\")");
                 lspContent.AppendLine(")");
                 lspContent.AppendLine();
                 
@@ -1435,5 +1504,116 @@ namespace MegaEngineeringSuite
                 throw new Exception($"Failed to launch CAD automation: {ex.Message}");
             }
         }
+        
+        private void TranslateCadEntityToLisp(StringBuilder lspContent, ICadEntity entity)
+        {
+            string colorCode = "7";
+            if (entity is CadLine cl) colorCode = GetAcadColor(cl.EntityColor);
+            else if (entity is CadArc ca) colorCode = GetAcadColor(ca.EntityColor);
+            else if (entity is CadCircle cc) colorCode = GetAcadColor(cc.EntityColor);
+            else if (entity is CadPolyline cp) colorCode = GetAcadColor(cp.EntityColor);
+            else if (entity is CadDimension cd) colorCode = GetAcadColor(cd.EntityColor);
+            else if (entity is CadText ct) colorCode = GetAcadColor(ct.EntityColor);
+            else if (entity is CadMText cmt) colorCode = GetAcadColor(cmt.EntityColor);
+
+            string layer = "0";
+            if (entity is CadDimension) layer = "DIM";
+            else if (entity is CadText || entity is CadMText) layer = "TEXT";
+            else if (entity is CadLine cl2 && cl2.EntityColor == System.Drawing.Color.Red) layer = "CL";
+            else layer = "BAFFLE_OUTLINE";
+
+            lspContent.AppendLine($"    (command \"-LAYER\" \"M\" \"{layer}\" \"C\" \"{colorCode}\" \"\" \"L\" \"CONTINUOUS\" \"\" \"\")");
+
+            if (entity is CadLine line)
+            {
+                lspContent.AppendLine($"    (setq p1 (list (+ (car pt) {line.Start.X:F4}) (+ (cadr pt) {line.Start.Y:F4})))");
+                lspContent.AppendLine($"    (setq p2 (list (+ (car pt) {line.End.X:F4}) (+ (cadr pt) {line.End.Y:F4})))");
+                lspContent.AppendLine("    (command \"_.LINE\" p1 p2 \"\")");
+            }
+            else if (entity is CadCircle circle)
+            {
+                lspContent.AppendLine($"    (setq cen (list (+ (car pt) {circle.Center.X:F4}) (+ (cadr pt) {circle.Center.Y:F4})))");
+                lspContent.AppendLine($"    (command \"_.CIRCLE\" cen {circle.Radius:F4})");
+            }
+            else if (entity is CadArc arc)
+            {
+                float startRad = arc.StartAngle * (float)Math.PI / 180f;
+                float endRad = arc.EndAngle * (float)Math.PI / 180f;
+                lspContent.AppendLine($"    (setq cen (list (+ (car pt) {arc.Center.X:F4}) (+ (cadr pt) {arc.Center.Y:F4})))");
+                lspContent.AppendLine($"    (entmake (list '(0 . \"ARC\")");
+                lspContent.AppendLine($"                   '(8 . \"{layer}\")");
+                lspContent.AppendLine($"                   (cons 10 cen)");
+                lspContent.AppendLine($"                   (cons 40 {arc.Radius:F4})");
+                lspContent.AppendLine($"                   (cons 50 {startRad:F4})");
+                lspContent.AppendLine($"                   (cons 51 {endRad:F4})))");
+            }
+            else if (entity is CadPolyline polyline)
+            {
+                lspContent.AppendLine($"    (entmake (list '(0 . \"LWPOLYLINE\")");
+                lspContent.AppendLine($"                   '(100 . \"AcDbEntity\")");
+                lspContent.AppendLine($"                   '(8 . \"{layer}\")");
+                lspContent.AppendLine($"                   '(100 . \"AcDbPolyline\")");
+                lspContent.AppendLine($"                   (cons 90 {polyline.Vertices.Count})");
+                lspContent.AppendLine($"                   (cons 70 {(polyline.IsClosed ? 1 : 0)})");
+                foreach (var v in polyline.Vertices)
+                {
+                    lspContent.AppendLine($"                   (list 10 (+ (car pt) {v.Point.X:F4}) (+ (cadr pt) {v.Point.Y:F4}))");
+                    if (v.Bulge != 0f)
+                    {
+                        lspContent.AppendLine($"                   (cons 42 {v.Bulge:F4})");
+                    }
+                }
+                lspContent.AppendLine("    ))");
+            }
+            else if (entity is CadText text)
+            {
+                lspContent.AppendLine($"    (setq txt_pt (list (+ (car pt) {text.Position.X:F4}) (+ (cadr pt) {text.Position.Y:F4})))");
+                string align = text.Alignment == System.Drawing.StringAlignment.Center ? "MC" : "ML";
+                lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"{align}\" txt_pt {text.TargetPaperSpaceHeight:F1} 0 \"{text.Text.Replace("\n", "\\P")}\")");
+            }
+            else if (entity is CadMText mtext)
+            {
+                lspContent.AppendLine($"    (setq txt_pt (list (+ (car pt) {mtext.Position.X:F4}) (+ (cadr pt) {mtext.Position.Y:F4})))");
+                lspContent.AppendLine("    (entmake (list '(0 . \"MTEXT\")");
+                lspContent.AppendLine("                   '(100 . \"AcDbEntity\")");
+                lspContent.AppendLine($"                   '(8 . \"{layer}\")");
+                lspContent.AppendLine("                   '(100 . \"AcDbMText\")");
+                lspContent.AppendLine("                   (cons 10 txt_pt)");
+                lspContent.AppendLine($"                   (cons 40 {mtext.TargetPaperSpaceHeight:F4})");
+                lspContent.AppendLine("                   (cons 71 1)");
+                lspContent.AppendLine($"                   (cons 1 \"{mtext.Text}\")))");
+            }
+            else if (entity is CadDimension dim)
+            {
+                lspContent.AppendLine($"    (setq d_p1 (list (+ (car pt) {dim.StartPoint.X:F4}) (+ (cadr pt) {dim.StartPoint.Y:F4})))");
+                lspContent.AppendLine($"    (setq d_p2 (list (+ (car pt) {dim.EndPoint.X:F4}) (+ (cadr pt) {dim.EndPoint.Y:F4})))");
+                lspContent.AppendLine($"    (setq d_loc (list (+ (car pt) {dim.DimensionLineLocation.X:F4}) (+ (cadr pt) {dim.DimensionLineLocation.Y:F4})))");
+                string overrideStr = string.IsNullOrEmpty(dim.OverrideText) ? "" : dim.OverrideText;
+                
+                if (dim.Type == DimensionType.Diameter)
+                {
+                    lspContent.AppendLine($"    (setq sel_pt (list (+ (car pt) {dim.SelectionPoint.X:F4}) (+ (cadr pt) {dim.SelectionPoint.Y:F4})))");
+                    lspContent.AppendLine($"    (command \"_.DIMDIAMETER\" sel_pt \"T\" \"{overrideStr}\" d_loc)");
+                }
+                else
+                {
+                    lspContent.AppendLine($"    (command \"_.DIMLINEAR\" d_p1 d_p2 \"T\" \"{overrideStr}\" d_loc)");
+                }
+            }
+            lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+        }
+
+        private string GetAcadColor(System.Drawing.Color color)
+        {
+            if (color == System.Drawing.Color.Red) return "1";
+            if (color == System.Drawing.Color.Yellow) return "2";
+            if (color == System.Drawing.Color.Green) return "3";
+            if (color == System.Drawing.Color.Cyan) return "4";
+            if (color == System.Drawing.Color.Blue) return "5";
+            if (color == System.Drawing.Color.Magenta) return "6";
+            if (color == System.Drawing.Color.White) return "7";
+            return "7";
+        }
+
     }
 }

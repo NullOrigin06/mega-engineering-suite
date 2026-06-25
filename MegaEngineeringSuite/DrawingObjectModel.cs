@@ -46,6 +46,17 @@ namespace MegaEngineeringSuite
         public float TargetPaperSpaceHeight { get; set; } = 3.5f;
     }
 
+    public class CadMText : ICadEntity
+    {
+        public string Text { get; set; }
+        public PointF Position { get; set; }
+        public Color EntityColor { get; set; }
+        public StringAlignment Alignment { get; set; } = StringAlignment.Near;
+        public StringAlignment LineAlignment { get; set; } = StringAlignment.Near;
+        public float FontSize { get; set; } = 10f;
+        public float TargetPaperSpaceHeight { get; set; } = 3.5f;
+    }
+
     public class CadLeader : ICadEntity
     {
         public List<PointF> Vertices { get; set; } = new List<PointF>();
@@ -53,14 +64,25 @@ namespace MegaEngineeringSuite
         public bool HasArrowHead { get; set; } = false;
     }
 
-    public class CadPolyline : ICadEntity
+    public class CadPolylineVertex
     {
-        public List<PointF> Vertices { get; set; } = new List<PointF>();
-        public Color EntityColor { get; set; }
-        public bool IsClosed { get; set; } = false;
+        public PointF Point { get; set; }
+        public float Bulge { get; set; } = 0f;
+        
+        public CadPolylineVertex(PointF pt, float bulge = 0f)
+        {
+            Point = pt;
+            Bulge = bulge;
+        }
     }
 
-
+    public class CadPolyline : ICadEntity
+    {
+        public List<CadPolylineVertex> Vertices { get; set; } = new List<CadPolylineVertex>();
+        public Color EntityColor { get; set; }
+        public bool IsClosed { get; set; } = false;
+        public string LayerName { get; set; } = "0";
+    }
     public class CadDimension : ICadEntity
     {
         public PointF StartPoint { get; set; }

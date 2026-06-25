@@ -63,9 +63,9 @@ namespace MegaEngineeringSuite
             });
 
             // Draw Outlines
-            entities.Add(new CadPolyline { Vertices = pTopWave, EntityColor = Color.Gray });
-            entities.Add(new CadPolyline { Vertices = pRightHole, EntityColor = Color.White });
-            entities.Add(new CadPolyline { Vertices = pBottomWave, EntityColor = Color.Gray });
+            entities.Add(new CadPolyline { Vertices = pTopWave.Select(p => new CadPolylineVertex(p)).ToList(), EntityColor = Color.Gray });
+            entities.Add(new CadPolyline { Vertices = pRightHole.Select(p => new CadPolylineVertex(p)).ToList(), EntityColor = Color.White });
+            entities.Add(new CadPolyline { Vertices = pBottomWave.Select(p => new CadPolylineVertex(p)).ToList(), EntityColor = Color.Gray });
             entities.Add(new CadLine { Start = new PointF(-35, -50), End = new PointF(-35, 50), EntityColor = Color.White });
 
             // Centerline
@@ -156,7 +156,7 @@ namespace MegaEngineeringSuite
                 {
                     for (int i = 0; i < poly.Vertices.Count; i++)
                     {
-                        poly.Vertices[i] = new PointF(poly.Vertices[i].X + dx, poly.Vertices[i].Y + dy);
+                        poly.Vertices[i].Point = new PointF(poly.Vertices[i].Point.X + dx, poly.Vertices[i].Point.Y + dy);
                     }
                 }
                 else if (entity is CadDimension dim)
