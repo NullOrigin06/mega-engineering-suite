@@ -32,6 +32,8 @@ namespace MegaEngineeringSuite
             }
 
             baffle.ActualCutDepth = geometry.ShellRadius - Math.Abs(actualCutY);
+            baffle.SnappedCutLineY = actualCutY;
+            baffle.BaffleRadius = baffleRadius;
 
             // 3. Generate Boundary Entities
             // Center lines

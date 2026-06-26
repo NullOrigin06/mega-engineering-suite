@@ -33,6 +33,8 @@ namespace MegaEngineeringSuite
         public PointF End { get; set; }
         public Color EntityColor { get; set; }
         public System.Drawing.Drawing2D.DashStyle DashStyle { get; set; } = System.Drawing.Drawing2D.DashStyle.Solid;
+        public string LayerName { get; set; } = string.Empty;
+        public string LinetypeName { get; set; } = string.Empty;
     }
 
     public class CadText : ICadEntity
@@ -44,6 +46,7 @@ namespace MegaEngineeringSuite
         public StringAlignment LineAlignment { get; set; } = StringAlignment.Near;
         public float FontSize { get; set; } = 10f;
         public float TargetPaperSpaceHeight { get; set; } = 3.5f;
+        public string LayerName { get; set; } = string.Empty;
     }
 
     public class CadMText : ICadEntity
@@ -55,6 +58,7 @@ namespace MegaEngineeringSuite
         public StringAlignment LineAlignment { get; set; } = StringAlignment.Near;
         public float FontSize { get; set; } = 10f;
         public float TargetPaperSpaceHeight { get; set; } = 3.5f;
+        public string LayerName { get; set; } = string.Empty;
     }
 
     public class CadLeader : ICadEntity

@@ -1,75 +1,45 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-
 namespace MegaEngineeringSuite
 {
     public class RowCountRenderer
     {
+        private const string RowCountLayerName = "ROW_COUNT";
+        private readonly RowCountLayoutService rowCountLayoutService = new RowCountLayoutService();
+
         public IEnumerable<ICadEntity> GenerateRowCounts(GeometryModel geometry, bool alignLeft = false)
         {
             List<ICadEntity> entities = new List<ICadEntity>();
 
-            if (geometry.RowTubeCounts == null || geometry.TubeCoordinates == null || !geometry.TubeCoordinates.Any())
-                return entities;
-
-            var groupedY = geometry.TubeCoordinates
-                .GroupBy(pt => Math.Round(pt.Y, 2))
-                .OrderByDescending(gY => gY.Key)
-                .ToList();
-
-            bool denseMode = groupedY.Count > 10;
-
-            for (int i = 0; i < groupedY.Count && i < geometry.RowTubeCounts.Count; i++)
+            var rowReferences = rowCountLayoutService.GenerateLayout(geometry, alignLeft);
+            if (rowReferences.Count == 0)
             {
-                if (denseMode && i % 2 != 0) continue;
+                return entities;
+            }
 
-                float yPos = (float)groupedY[i].Key;
-                float safeMargin = geometry.OuterDiameter / 2f + 50f;
-
-                if (alignLeft)
+            foreach (var rowReference in rowReferences)
+            {
+                entities.Add(new CadLine
                 {
-                    float minX = groupedY[i].Min(pt => pt.X);
-                    float textX = -safeMargin;
-                    
-                    entities.Add(new CadText 
-                    { 
-                        Text = geometry.RowTubeCounts[i].ToString(), 
-                        Position = new PointF(textX - 10, yPos - (geometry.TubeRadius)), 
-                        EntityColor = Color.Magenta,
-                        Alignment = StringAlignment.Far,
-                        TargetPaperSpaceHeight = DraftingScaleManager.GetPaperSpaceRowCountHeight()
-                    });
+                    Start = new PointF(rowReference.LineStartX, rowReference.RowY),
+                    End = new PointF(rowReference.TextAnchorX, rowReference.RowY),
+                    EntityColor = Color.Red,
+                    DashStyle = System.Drawing.Drawing2D.DashStyle.DashDotDot,
+                    LayerName = RowCountLayerName,
+                    LinetypeName = "PHANTOM"
+                });
 
-                    entities.Add(new CadLine 
-                    { 
-                        Start = new PointF(minX - geometry.TubeRadius, yPos), 
-                        End = new PointF(textX - 5, yPos), 
-                        EntityColor = Color.Magenta 
-                    });
-                }
-                else
+                entities.Add(new CadText
                 {
-                    float maxX = groupedY[i].Max(pt => pt.X);
-                    float textX = safeMargin;
-                    
-                    entities.Add(new CadText 
-                    { 
-                        Text = geometry.RowTubeCounts[i].ToString(), 
-                        Position = new PointF(textX + 10, yPos - (geometry.TubeRadius)), 
-                        EntityColor = Color.Magenta,
-                        Alignment = StringAlignment.Near,
-                        TargetPaperSpaceHeight = DraftingScaleManager.GetPaperSpaceRowCountHeight()
-                    });
-
-                    entities.Add(new CadLine 
-                    { 
-                        Start = new PointF(maxX + geometry.TubeRadius, yPos), 
-                        End = new PointF(textX + 5, yPos), 
-                        EntityColor = Color.Magenta 
-                    });
-                }
+                    Text = rowReference.Count.ToString(),
+                    Position = new PointF(rowReference.TextAnchorX, rowReference.RowY),
+                    EntityColor = Color.Red,
+                    Alignment = alignLeft ? StringAlignment.Far : StringAlignment.Near,
+                    LineAlignment = StringAlignment.Center,
+                    TargetPaperSpaceHeight = DraftingScaleManager.GetPaperSpaceRowCountHeight(),
+                    LayerName = RowCountLayerName
+                });
             }
 
             return entities;

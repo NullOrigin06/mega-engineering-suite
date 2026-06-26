@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Runtime.InteropServices;
+using System.Linq;
 namespace MegaEngineeringSuite
 {
 
@@ -198,6 +199,7 @@ namespace MegaEngineeringSuite
                     data.NoOfPass
                 );
                 double tubeRadius = data.TubeOD / 2.0;
+                RowCountLayoutService rowCountLayoutService = new RowCountLayoutService();
                 
                 lspContent.AppendLine("    ; -----------------------------------------");
                 lspContent.AppendLine("    ; PHASE T6 - TUBE HOLE GENERATION");
@@ -293,68 +295,13 @@ namespace MegaEngineeringSuite
 
                 // Tube Limit, PCD, and Partition Notes have been removed per user request
 
-                // Phase T7E/T8R - Row Count Labels
-                var groupedY = tubePoints
-                    .GroupBy(p => Math.Round(p.Y, 2))
-                    .OrderByDescending(g => g.Key)
-                    .ToList();
-                
-                double textHeight = 15.0; 
-                double minSpacing = textHeight * 1.5; 
-                double clearX = (data.TubeSheetFinishOD / 2.0) + 20.0;
-                double baseSafeMargin = clearX + 20.0;
-                
-                double[] labelY = new double[groupedY.Count];
-                for (int i = 0; i < groupedY.Count; i++) labelY[i] = groupedY[i].Key;
-
-                if (groupedY.Count > 1) {
-                    double requiredSpan = (groupedY.Count - 1) * minSpacing;
-                    double totalSpan = labelY[0] - labelY[groupedY.Count - 1];
-
-                    if (totalSpan < requiredSpan) {
-                        double centerY = (labelY[0] + labelY[groupedY.Count - 1]) / 2.0;
-                        double startY = centerY + requiredSpan / 2.0;
-                        for (int i = 0; i < groupedY.Count; i++) {
-                            labelY[i] = startY - i * minSpacing;
-                        }
-                    } else {
-                        // Top-down pass to ensure minimum spacing
-                        for (int i = 1; i < groupedY.Count; i++) {
-                            if (labelY[i - 1] - labelY[i] < minSpacing) {
-                                labelY[i] = labelY[i - 1] - minSpacing;
-                            }
-                        }
-                        // Bottom-up adjustment if we pushed too far down
-                        double overshot = groupedY.Last().Key - labelY.Last();
-                        if (overshot > 0) {
-                            for (int i = 0; i < groupedY.Count; i++) {
-                                labelY[i] += overshot;
-                            }
-                        }
-                    }
-                }
-
-                lspContent.AppendLine("    ; -----------------------------------------");
-                lspContent.AppendLine("    ; PHASE T7E/T8R - ROW COUNT LABELS");
-                lspContent.AppendLine("    ; -----------------------------------------");
-                
-                for (int i = 0; i < groupedY.Count; i++)
-                {
-                    double yPos = groupedY[i].Key;
-                    double lY = labelY[i];
-                    double maxX = groupedY[i].Max(p => p.X);
-                    int count = groupedY[i].Count();
-                    
-                    double currentSafeMargin = baseSafeMargin + (i % 2 == 0 ? 0 : 30.0);
-                    
-                    lspContent.AppendLine($"    (setq l_p1 (list (+ (car pt) {maxX + tubeRadius + 2.0:F4}) (+ (cadr pt) {yPos:F4})))");
-                    lspContent.AppendLine($"    (setq l_p2 (list (+ (car pt) {currentSafeMargin:F4}) (+ (cadr pt) {lY:F4})))");
-                    lspContent.AppendLine($"    (setq l_p3 (list (+ (car pt) {currentSafeMargin + 40.0:F4}) (+ (cadr pt) {lY:F4})))");
-                    lspContent.AppendLine("    (command \"_.LINE\" l_p1 l_p2 l_p3 \"\")");
-
-                    lspContent.AppendLine($"    (setq txt_pt (list (+ (car pt) {currentSafeMargin + 45.0:F4}) (+ (cadr pt) {lY:F4})))");
-                    lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"ML\" txt_pt {textHeight:F1} 0 \"{count}\")");
-                }
+                double textHeight = 15.0;
+                AppendRowCountReferenceLinesLisp(
+                    lspContent,
+                    rowCountLayoutService.GenerateLayout(tubePoints, (float)tubeRadius, (float)data.TubeSheetFinishOD),
+                    textHeight,
+                    alignLeft: false,
+                    "PHASE T7E/T8R - ROW COUNT LABELS");
 
                 // Restore Layer 0
                 lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
@@ -525,26 +472,12 @@ namespace MegaEngineeringSuite
                 lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"BR\" b_txt 15.0 0 \"%%c{data.HoleDia}, {data.NoOfBolts} HOLES EQUI. ON {data.BoltPCD} P.C.D.\")");
                 lspContent.AppendLine();
                 
-                // Row Count Labels
-                lspContent.AppendLine("    ; 7. Row Count Labels (Left Side)");
-                for (int i = 0; i < groupedY.Count; i++)
-                {
-                    double yPos = groupedY[i].Key;
-                    double lY = labelY[i];
-                    double minX = groupedY[i].Min(p => p.X);
-                    int count = groupedY[i].Count();
-                    
-                    double currentSafeMargin = baseSafeMargin + (i % 2 == 0 ? 0 : 30.0);
-                    double startXOffset = minX - tubeRadius - 2.0;
-                    
-                    lspContent.AppendLine($"    (setq l_p1 (list (+ (car pt) {startXOffset:F4}) (+ (cadr pt) {yPos:F4})))");
-                    lspContent.AppendLine($"    (setq l_p2 (list (- (car pt) {currentSafeMargin:F4}) (+ (cadr pt) {lY:F4})))");
-                    lspContent.AppendLine($"    (setq l_p3 (list (- (car pt) {currentSafeMargin + 40.0:F4}) (+ (cadr pt) {lY:F4})))");
-                    lspContent.AppendLine("    (command \"_.LINE\" l_p1 l_p2 l_p3 \"\")");
-
-                    lspContent.AppendLine($"    (setq txt_pt (list (- (car pt) {currentSafeMargin + 45.0:F4}) (+ (cadr pt) {lY:F4})))");
-                    lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"MR\" txt_pt {textHeight:F1} 0 \"{count}\")");
-                }
+                AppendRowCountReferenceLinesLisp(
+                    lspContent,
+                    rowCountLayoutService.GenerateLayout(tubePoints, (float)tubeRadius, (float)data.TubeSheetFinishOD, alignLeft: true),
+                    textHeight,
+                    alignLeft: true,
+                    "7. ROW COUNT LABELS (LEFT SIDE)");
                 
                 lspContent.AppendLine("    ; Restore Layer 0");
                 lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
@@ -699,6 +632,36 @@ namespace MegaEngineeringSuite
             lspContent.AppendLine();
         }
 
+        private void AppendRowCountReferenceLinesLisp(
+            StringBuilder lspContent,
+            IEnumerable<RowCountReference> rowReferences,
+            double textHeight,
+            bool alignLeft,
+            string phaseName)
+        {
+            List<RowCountReference> references = rowReferences?.ToList() ?? new List<RowCountReference>();
+            if (references.Count == 0)
+            {
+                return;
+            }
+
+            string textJustification = alignLeft ? "MR" : "ML";
+
+            lspContent.AppendLine("    ; -----------------------------------------");
+            lspContent.AppendLine($"    ; {phaseName}");
+            lspContent.AppendLine("    ; -----------------------------------------");
+            lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ROW_COUNT\" \"C\" \"1\" \"\" \"L\" \"PHANTOM\" \"\" \"\")");
+
+            foreach (var rowReference in references)
+            {
+                lspContent.AppendLine($"    (setq rc_p1 (list (+ (car pt) {rowReference.LineStartX:F4}) (+ (cadr pt) {rowReference.RowY:F4})))");
+                lspContent.AppendLine($"    (setq rc_p2 (list (+ (car pt) {rowReference.TextAnchorX:F4}) (+ (cadr pt) {rowReference.RowY:F4})))");
+                lspContent.AppendLine("    (command \"_.LINE\" rc_p1 rc_p2 \"\")");
+                lspContent.AppendLine($"    (setq rc_txt (list (+ (car pt) {rowReference.TextAnchorX:F4}) (+ (cadr pt) {rowReference.RowY:F4})))");
+                lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"{textJustification}\" rc_txt {textHeight:F1} 0 \"{rowReference.Count}\")");
+            }
+        }
+
         public DrawingAutomationResult GenerateTemplateLispAndLaunchCAD(Dictionary<string, List<ICadEntity>> views, EngineeringDataModel data, GeometryModel geometry, string templatePath)
         {
             if (views == null || data == null)
@@ -848,6 +811,7 @@ namespace MegaEngineeringSuite
                     data.NoOfPass
                 );
                 double templateTubeRadius = data.TubeOD / 2.0;
+                RowCountLayoutService rowCountLayoutService = new RowCountLayoutService();
                 
                 lspContent.AppendLine("    ; -----------------------------------------");
                 lspContent.AppendLine("    ; PHASE T6 - TUBE HOLE GENERATION (TEMPLATE VIEW)");
@@ -944,68 +908,13 @@ namespace MegaEngineeringSuite
 
                 // Tube Limit, PCD, and Partition Notes have been removed per user request
 
-                // Phase T7E/T8R - Row Count Labels (Template View)
-                var templateGroupedY = templateTubePoints
-                    .GroupBy(p => Math.Round(p.Y, 2))
-                    .OrderByDescending(g => g.Key)
-                    .ToList();
-                
-                double templateTextHeight = 15.0; 
-                double templateMinSpacing = templateTextHeight * 1.5; 
-                double templateClearX = (data.TubeSheetFinishOD / 2.0) + 20.0;
-                double templateBaseSafeMargin = templateClearX + 20.0;
-                
-                double[] templateLabelY = new double[templateGroupedY.Count];
-                for (int i = 0; i < templateGroupedY.Count; i++) templateLabelY[i] = templateGroupedY[i].Key;
-
-                if (templateGroupedY.Count > 1) {
-                    double reqSpan = (templateGroupedY.Count - 1) * templateMinSpacing;
-                    double totSpan = templateLabelY[0] - templateLabelY[templateGroupedY.Count - 1];
-
-                    if (totSpan < reqSpan) {
-                        double centerY = (templateLabelY[0] + templateLabelY[templateGroupedY.Count - 1]) / 2.0;
-                        double startY = centerY + reqSpan / 2.0;
-                        for (int i = 0; i < templateGroupedY.Count; i++) {
-                            templateLabelY[i] = startY - i * templateMinSpacing;
-                        }
-                    } else {
-                        // Top-down pass
-                        for (int i = 1; i < templateGroupedY.Count; i++) {
-                            if (templateLabelY[i - 1] - templateLabelY[i] < templateMinSpacing) {
-                                templateLabelY[i] = templateLabelY[i - 1] - templateMinSpacing;
-                            }
-                        }
-                        // Bottom-up adjustment
-                        double overshot = templateGroupedY.Last().Key - templateLabelY.Last();
-                        if (overshot > 0) {
-                            for (int i = 0; i < templateGroupedY.Count; i++) {
-                                templateLabelY[i] += overshot;
-                            }
-                        }
-                    }
-                }
-                
-                lspContent.AppendLine("    ; -----------------------------------------");
-                lspContent.AppendLine("    ; PHASE T7E/T8R - ROW COUNT LABELS (TEMPLATE)");
-                lspContent.AppendLine("    ; -----------------------------------------");
-                
-                for (int i = 0; i < templateGroupedY.Count; i++)
-                {
-                    double yPos = templateGroupedY[i].Key;
-                    double lY = templateLabelY[i];
-                    double maxX = templateGroupedY[i].Max(p => p.X);
-                    int count = templateGroupedY[i].Count();
-                    
-                    double currentSafeMargin = templateBaseSafeMargin + (i % 2 == 0 ? 0 : 30.0);
-                    
-                    lspContent.AppendLine($"    (setq l_p1 (list (+ (car pt) {maxX + templateTubeRadius + 2.0:F4}) (+ (cadr pt) {yPos:F4})))");
-                    lspContent.AppendLine($"    (setq l_p2 (list (+ (car pt) {currentSafeMargin:F4}) (+ (cadr pt) {lY:F4})))");
-                    lspContent.AppendLine($"    (setq l_p3 (list (+ (car pt) {currentSafeMargin + 40.0:F4}) (+ (cadr pt) {lY:F4})))");
-                    lspContent.AppendLine("    (command \"_.LINE\" l_p1 l_p2 l_p3 \"\")");
-
-                    lspContent.AppendLine($"    (setq txt_pt (list (+ (car pt) {currentSafeMargin + 45.0:F4}) (+ (cadr pt) {lY:F4})))");
-                    lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"ML\" txt_pt {templateTextHeight:F1} 0 \"{count}\")");
-                }
+                double templateTextHeight = 15.0;
+                AppendRowCountReferenceLinesLisp(
+                    lspContent,
+                    rowCountLayoutService.GenerateLayout(templateTubePoints, (float)templateTubeRadius, (float)data.TubeSheetFinishOD),
+                    templateTextHeight,
+                    alignLeft: false,
+                    "PHASE T7E/T8R - ROW COUNT LABELS (TEMPLATE)");
 
                 // Restore Layer 0
                 lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
@@ -1144,26 +1053,12 @@ namespace MegaEngineeringSuite
                 lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"BR\" b_txt 15.0 0 \"%%c{data.HoleDia}, {data.NoOfBolts} HOLES EQUI. ON {data.BoltPCD} P.C.D.\")");
                 lspContent.AppendLine();
                 
-                // Row Count Labels
-                lspContent.AppendLine("    ; 8. Row Count Labels (Left Side)");
-                for (int i = 0; i < templateGroupedY.Count; i++)
-                {
-                    double yPos = templateGroupedY[i].Key;
-                    double lY = templateLabelY[i];
-                    double minX = templateGroupedY[i].Min(p => p.X);
-                    int count = templateGroupedY[i].Count();
-                    
-                    double currentSafeMargin = templateBaseSafeMargin + (i % 2 == 0 ? 0 : 30.0);
-                    double startXOffset = minX - templateTubeRadius - 2.0;
-                    
-                    lspContent.AppendLine($"    (setq l_p1 (list (+ (car pt) {startXOffset:F4}) (+ (cadr pt) {yPos:F4})))");
-                    lspContent.AppendLine($"    (setq l_p2 (list (- (car pt) {currentSafeMargin:F4}) (+ (cadr pt) {lY:F4})))");
-                    lspContent.AppendLine($"    (setq l_p3 (list (- (car pt) {currentSafeMargin + 40.0:F4}) (+ (cadr pt) {lY:F4})))");
-                    lspContent.AppendLine("    (command \"_.LINE\" l_p1 l_p2 l_p3 \"\")");
-
-                    lspContent.AppendLine($"    (setq txt_pt (list (- (car pt) {currentSafeMargin + 45.0:F4}) (+ (cadr pt) {lY:F4})))");
-                    lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"MR\" txt_pt {templateTextHeight:F1} 0 \"{count}\")");
-                }
+                AppendRowCountReferenceLinesLisp(
+                    lspContent,
+                    rowCountLayoutService.GenerateLayout(templateTubePoints, (float)templateTubeRadius, (float)data.TubeSheetFinishOD, alignLeft: true),
+                    templateTextHeight,
+                    alignLeft: true,
+                    "8. ROW COUNT LABELS (LEFT SIDE)");
                 
                 lspContent.AppendLine("    ; Restore Layer 0");
                 lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
@@ -1516,16 +1411,8 @@ namespace MegaEngineeringSuite
             else if (entity is CadText ct) colorCode = GetAcadColor(ct.EntityColor);
             else if (entity is CadMText cmt) colorCode = GetAcadColor(cmt.EntityColor);
 
-            string layer = "0";
-            if (entity is CadDimension) layer = "DIMENSIONS";
-            else if (entity is CadText || entity is CadMText) layer = "TEXT";
-            else if (entity is CadLeader) layer = "LEADERS";
-            else if (entity is CadLine cl2 && cl2.EntityColor == System.Drawing.Color.Red) layer = "CENTERLINE";
-            else if ((entity is CadCircle cc2 && cc2.EntityColor == System.Drawing.Color.Blue) || 
-                     (entity is CadArc ca2 && ca2.EntityColor == System.Drawing.Color.Blue)) layer = "TUBE_HOLES";
-            else layer = "BAFFLE_OUTLINE";
-
-            string linetype = layer == "CENTERLINE" ? "CENTER" : "CONTINUOUS";
+            string layer = ResolveLayerName(entity);
+            string linetype = ResolveLinetypeName(entity, layer);
             lspContent.AppendLine($"    (command \"-LAYER\" \"M\" \"{layer}\" \"C\" \"{colorCode}\" \"\" \"L\" \"{linetype}\" \"\" \"\")");
 
             if (entity is CadLine line)
@@ -1572,7 +1459,12 @@ namespace MegaEngineeringSuite
             else if (entity is CadText text)
             {
                 lspContent.AppendLine($"    (setq txt_pt (list (+ (car pt) {text.Position.X:F4}) (+ (cadr pt) {text.Position.Y:F4})))");
-                string align = text.Alignment == System.Drawing.StringAlignment.Center ? "MC" : "ML";
+                string align = text.Alignment switch
+                {
+                    System.Drawing.StringAlignment.Center => "MC",
+                    System.Drawing.StringAlignment.Far => "MR",
+                    _ => "ML"
+                };
                 lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"{align}\" txt_pt {text.TargetPaperSpaceHeight:F1} 0 \"{text.Text.Replace("\n", "\\P")}\")");
             }
             else if (entity is CadMText mtext)
@@ -1617,6 +1509,35 @@ namespace MegaEngineeringSuite
                 }
             }
             lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
+        }
+
+        private string ResolveLayerName(ICadEntity entity)
+        {
+            if (entity is CadDimension dimension && !string.IsNullOrWhiteSpace(dimension.LayerName)) return dimension.LayerName;
+            if (entity is CadPolyline polyline && !string.IsNullOrWhiteSpace(polyline.LayerName)) return polyline.LayerName;
+            if (entity is CadHatch hatch && !string.IsNullOrWhiteSpace(hatch.LayerName)) return hatch.LayerName;
+            if (entity is CadLine line && !string.IsNullOrWhiteSpace(line.LayerName)) return line.LayerName;
+            if (entity is CadText text && !string.IsNullOrWhiteSpace(text.LayerName)) return text.LayerName;
+            if (entity is CadMText mtext && !string.IsNullOrWhiteSpace(mtext.LayerName)) return mtext.LayerName;
+
+            if (entity is CadDimension) return "DIMENSIONS";
+            if (entity is CadText || entity is CadMText) return "TEXT";
+            if (entity is CadLeader) return "LEADERS";
+            if (entity is CadLine centerline && centerline.EntityColor == System.Drawing.Color.Red) return "CENTERLINE";
+            if ((entity is CadCircle circle && circle.EntityColor == System.Drawing.Color.Blue) ||
+                (entity is CadArc arc && arc.EntityColor == System.Drawing.Color.Blue)) return "TUBE_HOLES";
+
+            return "BAFFLE_OUTLINE";
+        }
+
+        private string ResolveLinetypeName(ICadEntity entity, string layer)
+        {
+            if (entity is CadLine line && !string.IsNullOrWhiteSpace(line.LinetypeName))
+            {
+                return line.LinetypeName;
+            }
+
+            return layer == "CENTERLINE" ? "CENTER" : "CONTINUOUS";
         }
 
         private string GetAcadColor(System.Drawing.Color color)
