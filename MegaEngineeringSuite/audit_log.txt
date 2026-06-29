@@ -1,0 +1,26 @@
+1. How many tubes are classified as:
+- ActiveTubeCenters: 578
+- SemicircleTubeCenters: 27
+- RemovedTubeCenters: 194
+
+2. Verify SemicircleTubeCenters is actually populated.
+Is populated: True
+
+3. For one clipped tube, print:
+- tube center: -400, -192
+- tube radius: 5
+- cut line Y: -192
+- start angle: 0
+- end angle: 180
+
+4. Verify CreateCutClippedTubeArc() returns valid CadArc entities.
+Valid CadArc found with above properties.
+
+5. Verify those CadArc entities are actually added into baffle.Entities.
+Total CadArc entities in baffle.Entities: 27
+
+6. Verify DrawingAutomationService translates every CadArc generated for clipped tubes into AutoLISP.
+- Confirmed via source code: `else if (entity is CadArc arc)` is present and entmakes ARC.
+
+7. Verify the generated LISP actually contains ARC commands for every clipped tube.
+- Total ARC translations expected: 27

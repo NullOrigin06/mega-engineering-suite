@@ -26,6 +26,30 @@ namespace MegaEngineeringSuite
         private TextBox txtShellID;
         private DataGridView dgvProperties;
         private EngineeringDrawingCanvas drawingCanvas;
+        private Label lblValidationStatus;
+        private readonly HashSet<Control> invalidControls = new HashSet<Control>();
+        private static readonly string[] EngineeringPropertyNames =
+        {
+            "Shell I.D.",
+            "Tube Sheet Finish THK",
+            "Tube Sheet Raw THK",
+            "Body Flange Finish THK",
+            "Body Flange Raw THK",
+            "Partition Plate THK",
+            "Baffle THK",
+            "Bolt Size",
+            "Bolt Length",
+            "No Of Bolts",
+            "Hole Dia.",
+            "Flange I.D.",
+            "Bolt P.C.D.",
+            "Tube Sheet Finish O.D.",
+            "Tube Sheet Raw O.D.",
+            "Liner / Gasket O.D.",
+            "Tie Rod Dia.",
+            "Tie Rod Qty.",
+            "Spacer Tube"
+        };
 
         // Services
         private ExcelLookupService lookupService;
@@ -55,12 +79,14 @@ namespace MegaEngineeringSuite
         {
             this.Text = "TubeSheet Design Module";
             this.WindowState = FormWindowState.Maximized;
+            this.MinimumSize = new Size(1400, 800);
             this.BackColor = Color.FromArgb(240, 244, 248); // Subtle professional background
 
             Font titleFont = new Font("Segoe UI", 20, FontStyle.Bold);
             Font sectionFont = new Font("Segoe UI", 14, FontStyle.Bold);
             Font labelFont = new Font("Segoe UI", 11);
             Font inputFont = new Font("Segoe UI", 11);
+            Font smallStatusFont = new Font("Segoe UI", 9, FontStyle.Bold);
 
             // 1. MAIN LAYOUT
             TableLayoutPanel mainTable = new TableLayoutPanel
@@ -68,12 +94,12 @@ namespace MegaEngineeringSuite
                 Dock = DockStyle.Fill,
                 ColumnCount = 3,
                 RowCount = 2,
-                Padding = new Padding(20)
+                Padding = new Padding(20, 0, 20, 16)
             };
             
-            mainTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
-            mainTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33F));
-            mainTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.34F));
+            mainTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33F));
+            mainTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32F));
+            mainTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35F));
 
             mainTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             mainTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 80F));
@@ -83,24 +109,27 @@ namespace MegaEngineeringSuite
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 3,
-                Padding = new Padding(10)
+                RowCount = 4,
+                Padding = new Padding(10),
+                Margin = new Padding(0)
             };
+            pnlInputs.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             pnlInputs.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             pnlInputs.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             pnlInputs.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             
-            Label lblTitle = new Label { Text = "3 PHASE TUBESHEET(1/2/4 PASS)", Font = titleFont, AutoSize = true, ForeColor = Color.FromArgb(20, 40, 80), Margin = new Padding(0, 0, 0, 20) };
+            Label lblTitle = new Label { Text = "3 PHASE TUBESHEET(1/2/4 PASS)", Font = titleFont, AutoSize = true, ForeColor = Color.FromArgb(20, 40, 80), Margin = new Padding(0, 0, 0, 18) };
             pnlInputs.Controls.Add(lblTitle, 0, 0);
 
-            Label lblInputsHeader = new Label { Text = "User Inputs", Font = sectionFont, AutoSize = true, Margin = new Padding(0, 0, 0, 10) };
+            Label lblInputsHeader = new Label { Text = "User Inputs", Font = sectionFont, AutoSize = true, Margin = new Padding(0, 0, 0, 12) };
             pnlInputs.Controls.Add(lblInputsHeader, 0, 1);
 
             TableLayoutPanel inputGrid = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
                 ColumnCount = 2,
-                AutoSize = true
+                AutoSize = true,
+                Padding = new Padding(0)
             };
             inputGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45F));
             inputGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55F));
@@ -110,7 +139,7 @@ namespace MegaEngineeringSuite
             txtTubeLength = AddInputRow(inputGrid, "Tube Length (mm)", labelFont, inputFont, 2);
             txtTubeTHK = AddInputRow(inputGrid, "Tube THK (mm)", labelFont, inputFont, 3);
             
-            Label lblPass = new Label { Text = "No Of Pass", Font = labelFont, Anchor = AnchorStyles.Left, AutoSize = true };
+            Label lblPass = CreateInputLabel("No Of Pass", labelFont);
             cmbNoOfPass = new ComboBox { Font = inputFont, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Left | AnchorStyles.Right, Margin = new Padding(3, 8, 3, 8) };
             cmbNoOfPass.Items.AddRange(new object[] { "1", "2", "4" });
             cmbNoOfPass.SelectedIndex = 2; 
@@ -121,6 +150,17 @@ namespace MegaEngineeringSuite
             txtBaffleQty = AddInputRow(inputGrid, "Baffle Qty", labelFont, inputFont, 5);
 
             pnlInputs.Controls.Add(inputGrid, 0, 2);
+
+            lblValidationStatus = new Label
+            {
+                Text = string.Empty,
+                Font = smallStatusFont,
+                AutoSize = true,
+                ForeColor = Color.FromArgb(248, 113, 113),
+                Margin = new Padding(0, 10, 0, 0)
+            };
+            pnlInputs.Controls.Add(lblValidationStatus, 0, 3);
+
             mainTable.Controls.Add(pnlInputs, 0, 0);
 
             // 3. CENTER PANEL: CALCULATED VALUES
@@ -130,6 +170,7 @@ namespace MegaEngineeringSuite
                 ColumnCount = 1,
                 RowCount = 6,
                 Padding = new Padding(20), 
+                Margin = new Padding(0),
                 BackColor = Color.FromArgb(220, 230, 240) 
             }; 
             pnlCalculated.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -155,12 +196,13 @@ namespace MegaEngineeringSuite
             Panel canvasScrollPanel = new Panel 
             { 
                 Dock = DockStyle.Fill, 
-                AutoScroll = true, 
+                AutoScroll = false, 
                 Margin = new Padding(0, 20, 0, 0), 
-                BorderStyle = BorderStyle.FixedSingle 
+                BorderStyle = BorderStyle.None,
+                BackColor = Color.FromArgb(14, 16, 24)
             };
             
-            drawingCanvas = new EngineeringDrawingCanvas { Margin = new Padding(0) };
+            drawingCanvas = new EngineeringDrawingCanvas { Dock = DockStyle.Fill, Margin = new Padding(0) };
             canvasScrollPanel.Controls.Add(drawingCanvas);
             pnlCalculated.Controls.Add(canvasScrollPanel, 0, 5);
 
@@ -172,12 +214,14 @@ namespace MegaEngineeringSuite
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
                 RowCount = 2,
-                Padding = new Padding(10) 
+                Padding = new Padding(14, 12, 4, 0),
+                Margin = new Padding(18, 0, 0, 0),
+                MinimumSize = new Size(500, 0)
             };
             pnlGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             pnlGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             
-            Label lblGridHeader = new Label { Text = "Engineering Properties (Excel Lookup)", Font = sectionFont, AutoSize = true, Margin = new Padding(0, 0, 0, 10) };
+            Label lblGridHeader = new Label { Text = "Engineering Properties (Excel Lookup)", Font = sectionFont, AutoSize = true, Margin = new Padding(0, 0, 0, 12) };
             pnlGrid.Controls.Add(lblGridHeader, 0, 0);
 
             dgvProperties = new DataGridView
@@ -190,11 +234,27 @@ namespace MegaEngineeringSuite
                 RowHeadersVisible = false,
                 BackgroundColor = Color.White,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                Font = labelFont
+                Font = labelFont,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+                ColumnHeadersHeight = 44,
+                RowTemplate = { Height = 36 },
+                AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.None,
+                BorderStyle = BorderStyle.FixedSingle,
+                CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
+                GridColor = Color.FromArgb(70, 76, 90),
+                MinimumSize = new Size(480, 0),
+                Margin = new Padding(0)
             };
+            dgvProperties.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dgvProperties.DefaultCellStyle.Padding = new Padding(8, 2, 8, 2);
+            dgvProperties.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dgvProperties.ColumnHeadersDefaultCellStyle.Padding = new Padding(8, 4, 8, 4);
             
-            dgvProperties.Columns.Add("Parameter", "Parameter Name");
-            dgvProperties.Columns.Add("Value", "Value");
+            DataGridViewTextBoxColumn parameterColumn = new DataGridViewTextBoxColumn { Name = "Parameter", HeaderText = "Parameter Name", FillWeight = 64F };
+            DataGridViewTextBoxColumn valueColumn = new DataGridViewTextBoxColumn { Name = "Value", HeaderText = "Value", FillWeight = 36F };
+            dgvProperties.Columns.Add(parameterColumn);
+            dgvProperties.Columns.Add(valueColumn);
+            PopulateEmptyEngineeringProperties();
 
             pnlGrid.Controls.Add(dgvProperties, 0, 1);
             mainTable.Controls.Add(pnlGrid, 2, 0);
@@ -204,29 +264,30 @@ namespace MegaEngineeringSuite
             {
                 Dock = DockStyle.Fill,
                 FlowDirection = FlowDirection.LeftToRight,
-                Padding = new Padding(0),
-                WrapContents = false
+                Padding = new Padding(0, 8, 0, 0),
+                WrapContents = false,
+                AutoScroll = true
             };
             mainTable.SetColumnSpan(pnlButtons, 3);
 
-            Button btnCalculate = new Button { Text = "Calculate", Font = sectionFont, Size = new Size(180, 50), BackColor = Color.FromArgb(0, 120, 215), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Margin = new Padding(0, 10, 15, 10) };
+            Button btnCalculate = new Button { Name = "btnCalculate", Text = "Calculate", Tag = ThemeManager.PositiveActionButtonTag, Font = sectionFont, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly, MinimumSize = new Size(210, 50), Padding = new Padding(16, 0, 16, 0), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Margin = new Padding(0, 0, 12, 0) };
             btnCalculate.Click += BtnCalculate_Click;
             
-            Button btnGenerate = new Button { Text = "Generate Drawing", Font = sectionFont, Size = new Size(220, 50), Margin = new Padding(0, 10, 15, 10) };
+            Button btnGenerate = new Button { Name = "btnGenerate", Text = "Generate Drawing", Font = sectionFont, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly, MinimumSize = new Size(250, 50), Padding = new Padding(16, 0, 16, 0), Margin = new Padding(0, 0, 12, 0) };
             btnGenerate.Click += BtnGenerate_Click;
             
-            Button btnOpenLisp = new Button { Text = "Open Generated LISP", Font = sectionFont, Size = new Size(250, 50), Margin = new Padding(0, 10, 15, 10) };
+            Button btnOpenLisp = new Button { Name = "btnOpenLisp", Text = "Open Generated LISP", Font = sectionFont, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly, MinimumSize = new Size(280, 50), Padding = new Padding(16, 0, 16, 0), Margin = new Padding(0, 0, 12, 0) };
             btnOpenLisp.Click += BtnOpenLisp_Click;
 
 
             
-            Button btnOpenScr = new Button { Text = "Open Generated SCR", Font = sectionFont, Size = new Size(250, 50), Margin = new Padding(0, 10, 15, 10) };
+            Button btnOpenScr = new Button { Name = "btnOpenScr", Text = "Open Generated SCR", Font = sectionFont, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly, MinimumSize = new Size(280, 50), Padding = new Padding(16, 0, 16, 0), Margin = new Padding(0, 0, 12, 0) };
             btnOpenScr.Click += BtnOpenScr_Click;
             
-            Button btnExport = new Button { Text = "Export Data", Font = sectionFont, Size = new Size(180, 50), Margin = new Padding(0, 10, 15, 10) };
+            Button btnExport = new Button { Name = "btnExport", Text = "Export Data", Font = sectionFont, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly, MinimumSize = new Size(200, 50), Padding = new Padding(16, 0, 16, 0), Margin = new Padding(0, 0, 12, 0) };
             btnExport.Click += BtnExport_Click;
             
-            Button btnBack = new Button { Text = "Back", Font = sectionFont, Size = new Size(150, 50), Margin = new Padding(0, 10, 0, 10) };
+            Button btnBack = new Button { Name = "btnBack", Text = "Back", Tag = ThemeManager.DangerActionButtonTag, Font = sectionFont, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly, MinimumSize = new Size(160, 50), Padding = new Padding(16, 0, 16, 0), Margin = new Padding(0, 0, 0, 0) };
             btnBack.Click += BtnBack_Click;
 
             pnlButtons.Controls.Add(btnCalculate);
@@ -246,8 +307,9 @@ namespace MegaEngineeringSuite
 
         private TextBox AddInputRow(TableLayoutPanel panel, string labelText, Font lblFont, Font txtFont, int row)
         {
-            Label lbl = new Label { Text = labelText, Font = lblFont, Anchor = AnchorStyles.Left, AutoSize = true };
+            Label lbl = CreateInputLabel(labelText, lblFont);
             TextBox txt = new TextBox { Font = txtFont, Anchor = AnchorStyles.Left | AnchorStyles.Right, Margin = new Padding(3, 8, 3, 8) };
+            txt.TextChanged += (s, e) => ClearInputValidation(txt);
             
             panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             panel.Controls.Add(lbl, 0, row);
@@ -256,10 +318,25 @@ namespace MegaEngineeringSuite
             return txt;
         }
 
+        private static Label CreateInputLabel(string text, Font font)
+        {
+            return new Label
+            {
+                Text = text,
+                Font = font,
+                AutoSize = false,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Margin = new Padding(0, 4, 12, 4),
+                MinimumSize = new Size(160, 34)
+            };
+        }
+
         private bool ValidateInputs()
         {
             bool isValid = true;
             errorProvider.Clear();
+            ClearValidationStyles();
 
             if (!ValidateNumericGreaterThanZero(txtHTA, "HTA must be a numeric value greater than 0.")) isValid = false;
             if (!ValidateNumericGreaterThanZero(txtTubeOD, "Tube OD must be a numeric value greater than 0.")) isValid = false;
@@ -270,9 +347,12 @@ namespace MegaEngineeringSuite
             if (!int.TryParse(txtBaffleQty.Text, out baffleQty) || baffleQty <= 0)
             {
                 errorProvider.SetError(txtBaffleQty, "Baffle Qty must be an integer greater than 0.");
+                SetInvalidInput(txtBaffleQty);
                 isValid = false;
             }
 
+            lblValidationStatus.ForeColor = Color.FromArgb(248, 113, 113);
+            lblValidationStatus.Text = isValid ? string.Empty : "Highlighted inputs need valid positive numeric values.";
             return isValid;
         }
 
@@ -282,9 +362,55 @@ namespace MegaEngineeringSuite
             if (!double.TryParse(txt.Text, out val) || val <= 0)
             {
                 errorProvider.SetError(txt, errorMessage);
+                SetInvalidInput(txt);
                 return false;
             }
             return true;
+        }
+
+        private void SetInvalidInput(TextBox textBox)
+        {
+            invalidControls.Add(textBox);
+            textBox.BackColor = ThemeManager.IsDarkMode ? Color.FromArgb(82, 32, 38) : Color.FromArgb(255, 235, 238);
+            textBox.ForeColor = ThemeManager.IsDarkMode ? Color.White : Color.FromArgb(120, 20, 30);
+            textBox.BorderStyle = BorderStyle.FixedSingle;
+        }
+
+        private void ClearInputValidation(TextBox textBox)
+        {
+            if (!invalidControls.Remove(textBox))
+            {
+                return;
+            }
+
+            errorProvider.SetError(textBox, string.Empty);
+            RestoreInputTheme(textBox);
+
+            if (invalidControls.Count == 0)
+            {
+                lblValidationStatus.Text = string.Empty;
+            }
+        }
+
+        private void ClearValidationStyles()
+        {
+            foreach (Control control in invalidControls.ToList())
+            {
+                if (control is TextBox textBox)
+                {
+                    RestoreInputTheme(textBox);
+                }
+            }
+
+            invalidControls.Clear();
+            lblValidationStatus.Text = string.Empty;
+        }
+
+        private static void RestoreInputTheme(TextBox textBox)
+        {
+            textBox.BackColor = ThemeManager.IsDarkMode ? Color.FromArgb(50, 50, 55) : Color.White;
+            textBox.ForeColor = ThemeManager.IsDarkMode ? Color.White : Color.FromArgb(20, 40, 80);
+            textBox.BorderStyle = BorderStyle.FixedSingle;
         }
 
         private void BtnCalculate_Click(object? sender, EventArgs e)
@@ -374,10 +500,30 @@ namespace MegaEngineeringSuite
         {
             dgvProperties.Rows.Clear();
             var dict = data.ToDisplayDictionary();
-            foreach (var kvp in dict)
+            foreach (string parameterName in EngineeringPropertyNames)
             {
-                dgvProperties.Rows.Add(kvp.Key, kvp.Value);
+                dict.TryGetValue(parameterName, out string? value);
+                dgvProperties.Rows.Add(parameterName, value ?? string.Empty);
             }
+
+            ClearPropertiesSelection();
+        }
+
+        private void PopulateEmptyEngineeringProperties()
+        {
+            dgvProperties.Rows.Clear();
+            foreach (string parameterName in EngineeringPropertyNames)
+            {
+                dgvProperties.Rows.Add(parameterName, string.Empty);
+            }
+
+            ClearPropertiesSelection();
+        }
+
+        private void ClearPropertiesSelection()
+        {
+            dgvProperties.ClearSelection();
+            dgvProperties.CurrentCell = null;
         }
 
         private void BtnBack_Click(object? sender, EventArgs e)

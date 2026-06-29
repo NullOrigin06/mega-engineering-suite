@@ -49,9 +49,9 @@ namespace MegaEngineeringSuite
             float stdTextHeight = DraftingScaleManager.GetPaperSpaceStandardNotesHeight();
             float titleTextHeight = DraftingScaleManager.GetPaperSpaceMainTitleHeight();
             // Labels A, B, C
-            entities.Add(new CadText { Text = "'A'", Position = new PointF(tsThk / 2f + 10, -tsHeight / 2f + 10), EntityColor = Color.Cyan, TargetPaperSpaceHeight = stdTextHeight });
-            entities.Add(new CadText { Text = "'B'", Position = new PointF(tsThk / 2f + 10, -tsHeight / 4f), EntityColor = Color.Cyan, TargetPaperSpaceHeight = stdTextHeight });
-            entities.Add(new CadText { Text = "<-- 'C'", Position = new PointF(tsThk / 2f + 25, 0), EntityColor = Color.DodgerBlue, Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, TargetPaperSpaceHeight = stdTextHeight });
+            entities.Add(new CadText { Text = "'A'", Position = new PointF(tsThk / 2f + 10, -tsHeight / 2f + 10), EntityColor = Color.Blue, TargetPaperSpaceHeight = 31f });
+            entities.Add(new CadText { Text = "'B'", Position = new PointF(tsThk / 2f + 10, -tsHeight / 4f), EntityColor = Color.Blue, TargetPaperSpaceHeight = 31f });
+            entities.Add(new CadText { Text = "<-- 'C'", Position = new PointF(tsThk / 2f + 25, 0), EntityColor = Color.Blue, Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, TargetPaperSpaceHeight = 31f });
 
             // Dimension Chains using DimensionRenderer
             float dimX = -tsThk / 2f - 40;

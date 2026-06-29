@@ -221,11 +221,7 @@ namespace MegaEngineeringSuite
                 // Switch to DIM layer and set magenta color for dimensions
                 lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"DIM\" \"C\" \"6\" \"\" \"\")");
                 
-                // 1. Tube Limit Dimension
-                lspContent.AppendLine($"    (setq d3_p1 (list (- (car pt) {tubeLimitRadius:F4}) (cadr pt)))");
-                lspContent.AppendLine($"    (setq d3_p2 (list (+ (car pt) {tubeLimitRadius:F4}) (cadr pt)))");
-                lspContent.AppendLine($"    (setq d3_loc (list (car pt) (+ (cadr pt) {tubeLimitRadius + 100:F4})))");
-                lspContent.AppendLine("    (command \"_.DIMLINEAR\" d3_p1 d3_p2 \"T\" \"TUBE LIMIT %%c<>\" d3_loc)");
+
 
                 // 5. Bolt PCD Dimension
                 lspContent.AppendLine($"    (setq d5_p1 (list (- (car pt) {pcdRadius:F4}) (cadr pt)))");
@@ -265,13 +261,21 @@ namespace MegaEngineeringSuite
                 // 1. Angular Markers (P1)
                 double angRadius = outerRadiusMax + 30.0;
                 lspContent.AppendLine($"    (setq ang_t (list (car pt) (+ (cadr pt) {angRadius:F4})))");
-                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"BC\" ang_t 15.0 0 \"0%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"BC\" ang_t 31.0 0 \"0%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 lspContent.AppendLine($"    (setq ang_r (list (+ (car pt) {angRadius:F4}) (cadr pt)))");
-                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"ML\" ang_r 15.0 0 \"90%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"ML\" ang_r 31.0 0 \"90%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 lspContent.AppendLine($"    (setq ang_b (list (car pt) (- (cadr pt) {angRadius:F4})))");
-                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"TC\" ang_b 15.0 0 \"180%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"TC\" ang_b 31.0 0 \"180%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 lspContent.AppendLine($"    (setq ang_l (list (- (car pt) {angRadius:F4}) (cadr pt)))");
-                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"MR\" ang_l 15.0 0 \"270%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"MR\" ang_l 31.0 0 \"270%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
 
                 // 2. Tube Note (Top Right)
                 if (tubePoints.Count > 0)
@@ -282,7 +286,9 @@ namespace MegaEngineeringSuite
                     lspContent.AppendLine($"    (setq t_p3 (list (+ (car pt) {outerRadiusMax + 120.0:F4}) (+ (cadr pt) {outerRadiusMax + 80.0:F4})))");
                     lspContent.AppendLine("    (command \"_.LINE\" t_p1 t_p2 t_p3 \"\")");
                     lspContent.AppendLine($"    (setq t_txt (list (+ (car pt) {outerRadiusMax + 125.0:F4}) (+ (cadr pt) {outerRadiusMax + 85.0:F4})))");
-                    lspContent.AppendLine($"    (command \"_.TEXT\" t_txt 15.0 0 \"{data.TubeQty} NOS. TUBE HOLES FOR %%c{data.TubeOD}\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                    lspContent.AppendLine($"    (command \"_.MTEXT\" t_txt \"H\" 31.0 \"W\" 0 \"{data.TubeQty} NOS. TUBE HOLES\\\\PFOR %%c{data.TubeOD} ON TRIANGULAR PITCH\" \"\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 }
 
                 // 3. Bolt Note (Top Left)
@@ -291,7 +297,9 @@ namespace MegaEngineeringSuite
                 lspContent.AppendLine($"    (setq b_p3 (list (- (car pt) {outerRadiusMax + 120.0:F4}) (+ (cadr pt) {outerRadiusMax + 80.0:F4})))");
                 lspContent.AppendLine("    (command \"_.LINE\" b_p1 b_p2 b_p3 \"\")");
                 lspContent.AppendLine($"    (setq b_txt (list (- (car pt) {outerRadiusMax + 125.0:F4}) (+ (cadr pt) {outerRadiusMax + 85.0:F4})))");
-                lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"BR\" b_txt 15.0 0 \"%%c{data.HoleDia}, {data.NoOfBolts} HOLES EQUI. ON {data.BoltPCD} P.C.D.\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine($"    (command \"_.MTEXT\" b_txt \"H\" 31.0 \"W\" 0 \"%%c{data.HoleDia}, {data.NoOfBolts} HOLES EQUI.\\\\PON {data.BoltPCD} P.C.D.\" \"\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
 
                 // Tube Limit, PCD, and Partition Notes have been removed per user request
 
@@ -303,6 +311,7 @@ namespace MegaEngineeringSuite
                     alignLeft: false,
                     "PHASE T7E/T8R - ROW COUNT LABELS");
 
+                AppendOffsetDimensionsLisp(lspContent, tubePoints, (float)data.TubeSheetFinishOD);
                 // Restore Layer 0
                 lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
 
@@ -438,21 +447,28 @@ namespace MegaEngineeringSuite
                 lspContent.AppendLine();
                 lspContent.AppendLine("    ; 5. Dimensions");
                 lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"DIM\" \"C\" \"6\" \"\" \"\")");
-                lspContent.AppendLine($"    (setq d1_loc (list (car pt) (+ (cadr pt) {tubeLimitRadius + 100:F4})))");
-                lspContent.AppendLine("    (command \"_.DIMLINEAR\" (list (- (car pt) " + tubeLimitRadius + ") (cadr pt)) (list (+ (car pt) " + tubeLimitRadius + ") (cadr pt)) \"T\" \"TUBE LIMIT %%c<>\" d1_loc)");
+
                 lspContent.AppendLine($"    (setq d2_loc (list (car pt) (- (cadr pt) {pcdRadius + 150:F4})))");
                 lspContent.AppendLine("    (command \"_.DIMLINEAR\" (list (- (car pt) " + pcdRadius + ") (cadr pt)) (list (+ (car pt) " + pcdRadius + ") (cadr pt)) \"T\" \"PCD %%c<>\" d2_loc)");
                 lspContent.AppendLine();
                 lspContent.AppendLine("    ; 6. Annotations");
                 lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION\" \"C\" \"3\" \"\" \"\")");
                 lspContent.AppendLine($"    (setq ang_t (list (car pt) (+ (cadr pt) {outerRadiusMax + 30.0:F4})))");
-                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"BC\" ang_t 15.0 0 \"0%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"BC\" ang_t 31.0 0 \"0%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 lspContent.AppendLine($"    (setq ang_r (list (+ (car pt) {outerRadiusMax + 30.0:F4}) (cadr pt)))");
-                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"ML\" ang_r 15.0 0 \"90%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"ML\" ang_r 31.0 0 \"90%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 lspContent.AppendLine($"    (setq ang_b (list (car pt) (- (cadr pt) {outerRadiusMax + 30.0:F4})))");
-                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"TC\" ang_b 15.0 0 \"180%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"TC\" ang_b 31.0 0 \"180%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 lspContent.AppendLine($"    (setq ang_l (list (- (car pt) {outerRadiusMax + 30.0:F4}) (cadr pt)))");
-                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"MR\" ang_l 15.0 0 \"270%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"MR\" ang_l 31.0 0 \"270%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 lspContent.AppendLine();
                 if (tubePoints.Count > 0)
                 {
@@ -462,23 +478,28 @@ namespace MegaEngineeringSuite
                     lspContent.AppendLine($"    (setq t_p3 (list (+ (car pt) {outerRadiusMax + 120.0:F4}) (+ (cadr pt) {outerRadiusMax + 80.0:F4})))");
                     lspContent.AppendLine("    (command \"_.LINE\" t_p1 t_p2 t_p3 \"\")");
                     lspContent.AppendLine($"    (setq t_txt (list (+ (car pt) {outerRadiusMax + 125.0:F4}) (+ (cadr pt) {outerRadiusMax + 85.0:F4})))");
-                    lspContent.AppendLine($"    (command \"_.TEXT\" t_txt 15.0 0 \"{data.TubeQty} NOS. TUBE HOLES FOR %%c{data.TubeOD}\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                    lspContent.AppendLine($"    (command \"_.MTEXT\" t_txt \"H\" 31.0 \"W\" 0 \"{data.TubeQty} NOS. TUBE HOLES\\\\PFOR %%c{data.TubeOD} ON TRIANGULAR PITCH\" \"\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 }
                 lspContent.AppendLine($"    (setq b_p1 (list (- (car pt) {(pcdRadius + boltHoleRadius) * 0.707:F4}) (+ (cadr pt) {(pcdRadius + boltHoleRadius) * 0.707:F4})))");
                 lspContent.AppendLine($"    (setq b_p2 (list (- (car pt) {outerRadiusMax + 80.0:F4}) (+ (cadr pt) {outerRadiusMax + 80.0:F4})))");
                 lspContent.AppendLine($"    (setq b_p3 (list (- (car pt) {outerRadiusMax + 120.0:F4}) (+ (cadr pt) {outerRadiusMax + 80.0:F4})))");
                 lspContent.AppendLine("    (command \"_.LINE\" b_p1 b_p2 b_p3 \"\")");
                 lspContent.AppendLine($"    (setq b_txt (list (- (car pt) {outerRadiusMax + 125.0:F4}) (+ (cadr pt) {outerRadiusMax + 85.0:F4})))");
-                lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"BR\" b_txt 15.0 0 \"%%c{data.HoleDia}, {data.NoOfBolts} HOLES EQUI. ON {data.BoltPCD} P.C.D.\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine($"    (command \"_.MTEXT\" b_txt \"H\" 31.0 \"W\" 0 \"%%c{data.HoleDia}, {data.NoOfBolts} HOLES EQUI.\\\\PON {data.BoltPCD} P.C.D.\" \"\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 lspContent.AppendLine();
                 
                 AppendRowCountReferenceLinesLisp(
                     lspContent,
                     rowCountLayoutService.GenerateLayout(tubePoints, (float)tubeRadius, (float)data.TubeSheetFinishOD, alignLeft: false),
                     textHeight,
-                    alignLeft: false,
-                    "7. ROW COUNT LABELS (RIGHT SIDE)");
+                    alignLeft: true,
+                    "7. ROW COUNT LABELS (LEFT SIDE)");
                 
+                AppendOffsetDimensionsLisp(lspContent, tubePoints, (float)data.TubeSheetFinishOD);
                 lspContent.AppendLine("    ; Restore Layer 0");
                 lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
                 lspContent.AppendLine("  )");
@@ -651,15 +672,46 @@ namespace MegaEngineeringSuite
             lspContent.AppendLine($"    ; {phaseName}");
             lspContent.AppendLine("    ; -----------------------------------------");
             lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ROW_COUNT\" \"C\" \"1\" \"\" \"L\" \"PHANTOM\" \"\" \"\")");
+            lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ROW_COUNT_TEXT\" \"C\" \"5\" \"\" \"\")");
 
             foreach (var rowReference in references)
             {
                 lspContent.AppendLine($"    (setq rc_p1 (list (+ (car pt) {rowReference.LineStartX:F4}) (+ (cadr pt) {rowReference.RowY:F4})))");
                 lspContent.AppendLine($"    (setq rc_p2 (list (+ (car pt) {rowReference.TextAnchorX:F4}) (+ (cadr pt) {rowReference.RowY:F4})))");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ROW_COUNT\" \"\")");
                 lspContent.AppendLine("    (command \"_.LINE\" rc_p1 rc_p2 \"\")");
-                lspContent.AppendLine($"    (setq rc_txt (list (+ (car pt) {rowReference.TextAnchorX:F4}) (+ (cadr pt) {rowReference.RowY:F4})))");
+                lspContent.AppendLine($"    (setq rc_txt (list (+ (car pt) {rowReference.TextPositionX:F4}) (+ (cadr pt) {rowReference.RowY:F4})))");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ROW_COUNT_TEXT\" \"\")");
                 lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"{textJustification}\" rc_txt {textHeight:F1} 0 \"{rowReference.Count}\")");
             }
+        }
+
+        private void AppendOffsetDimensionsLisp(StringBuilder lspContent, IEnumerable<PointF> tubePoints, float outerDiameter)
+        {
+            if (tubePoints == null) return;
+            var candidates = tubePoints.Where(p => p.X > 0 && p.Y > 0).ToList();
+            if (!candidates.Any()) return;
+            var refHole = candidates.OrderBy(p => p.X * p.X + p.Y * p.Y).First();
+
+            lspContent.AppendLine("    ; -----------------------------------------");
+            lspContent.AppendLine("    ; OFFSET DIMENSIONS FROM CENTRE LINES");
+            lspContent.AppendLine("    ; -----------------------------------------");
+            lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"CENTER\" \"C\" \"2\" \"\" \"L\" \"CENTER\" \"\" \"\")");
+            lspContent.AppendLine($"    (setq ref_pt (list (+ (car pt) {refHole.X:F4}) (+ (cadr pt) {refHole.Y:F4})))");
+            lspContent.AppendLine($"    (setq proj_x (list (+ (car pt) {refHole.X:F4}) (cadr pt)))");
+            lspContent.AppendLine($"    (setq proj_y (list (car pt) (+ (cadr pt) {refHole.Y:F4})))");
+            lspContent.AppendLine("    (command \"_.LINE\" ref_pt proj_x \"\")");
+            lspContent.AppendLine("    (command \"_.LINE\" ref_pt proj_y \"\")");
+            lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"DIM\" \"C\" \"6\" \"\" \"\")");
+            // Horizontal dimension
+            float outerRadius = outerDiameter / 2f;
+              float dimOffset = outerRadius + 80f;
+              lspContent.AppendLine($"    (setq d_loc_x (list (+ (car pt) {(refHole.X / 2f):F4}) (- (cadr pt) {dimOffset:F4})))");
+            lspContent.AppendLine($"    (command \"_.DIMLINEAR\" pt proj_x \"T\" \"{Math.Round(refHole.X, 1)}\" d_loc_x)");
+            // Vertical dimension
+            lspContent.AppendLine($"    (setq d_loc_y (list (- (car pt) {dimOffset:F4}) (+ (cadr pt) {(refHole.Y / 2f):F4})))");
+            lspContent.AppendLine($"    (command \"_.DIMLINEAR\" pt proj_y \"T\" \"{Math.Round(refHole.Y, 1)}\" d_loc_y)");
+            lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
         }
 
         public DrawingAutomationResult GenerateTemplateLispAndLaunchCAD(Dictionary<string, List<ICadEntity>> views, EngineeringDataModel data, GeometryModel geometry, string templatePath)
@@ -833,11 +885,6 @@ namespace MegaEngineeringSuite
                 // Switch to DIM layer and set magenta color for dimensions
                 lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"DIM\" \"C\" \"6\" \"\" \"\")");
                 
-                // 1. Tube Limit Circle Dimension
-                lspContent.AppendLine($"    (setq d3_p1 (list (- (car pt) {templateTubeLimitRadius:F4}) (cadr pt)))");
-                lspContent.AppendLine($"    (setq d3_p2 (list (+ (car pt) {templateTubeLimitRadius:F4}) (cadr pt)))");
-                lspContent.AppendLine($"    (setq d4_loc (list (car pt) (- (cadr pt) {templateTubeLimitRadius + 150:F4})))");
-                lspContent.AppendLine("    (command \"_.DIMLINEAR\" d3_p1 d3_p2 \"_T\" \"TUBE LIMIT %%c<>\" d4_loc)");
 
                 // 5. Bolt PCD Dimension
                 lspContent.AppendLine($"    (setq d5_p1 (list (- (car pt) {templatePcdRadius:F4}) (cadr pt)))");
@@ -878,13 +925,21 @@ namespace MegaEngineeringSuite
                 // 1. Angular Markers (P1)
                 double templateAngRadius = templateOuterRadiusMax + 30.0;
                 lspContent.AppendLine($"    (setq ang_t (list (car pt) (+ (cadr pt) {templateAngRadius:F4})))");
-                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"BC\" ang_t 15.0 0 \"0%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"BC\" ang_t 31.0 0 \"0%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 lspContent.AppendLine($"    (setq ang_r (list (+ (car pt) {templateAngRadius:F4}) (cadr pt)))");
-                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"ML\" ang_r 15.0 0 \"90%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"ML\" ang_r 31.0 0 \"90%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 lspContent.AppendLine($"    (setq ang_b (list (car pt) (- (cadr pt) {templateAngRadius:F4})))");
-                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"TC\" ang_b 15.0 0 \"180%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"TC\" ang_b 31.0 0 \"180%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 lspContent.AppendLine($"    (setq ang_l (list (- (car pt) {templateAngRadius:F4}) (cadr pt)))");
-                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"MR\" ang_l 15.0 0 \"270%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"MR\" ang_l 31.0 0 \"270%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
 
                 // 2. Tube Note (Top Right)
                 if (templateTubePoints.Count > 0)
@@ -895,7 +950,9 @@ namespace MegaEngineeringSuite
                     lspContent.AppendLine($"    (setq t_p3 (list (+ (car pt) {templateOuterRadiusMax + 120.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 80.0:F4})))");
                     lspContent.AppendLine("    (command \"_.LINE\" t_p1 t_p2 t_p3 \"\")");
                     lspContent.AppendLine($"    (setq t_txt (list (+ (car pt) {templateOuterRadiusMax + 125.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 85.0:F4})))");
-                    lspContent.AppendLine($"    (command \"_.TEXT\" t_txt 15.0 0 \"{data.TubeQty} NOS. TUBE HOLES FOR %%c{data.TubeOD}\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                    lspContent.AppendLine($"    (command \"_.MTEXT\" t_txt \"H\" 31.0 \"W\" 0 \"{data.TubeQty} NOS. TUBE HOLES\\\\PFOR %%c{data.TubeOD} ON TRIANGULAR PITCH\" \"\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 }
 
                 // 3. Bolt Note (Top Left)
@@ -904,7 +961,9 @@ namespace MegaEngineeringSuite
                 lspContent.AppendLine($"    (setq b_p3 (list (- (car pt) {templateOuterRadiusMax + 120.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 80.0:F4})))");
                 lspContent.AppendLine("    (command \"_.LINE\" b_p1 b_p2 b_p3 \"\")");
                 lspContent.AppendLine($"    (setq b_txt (list (- (car pt) {templateOuterRadiusMax + 125.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 85.0:F4})))");
-                lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"BR\" b_txt 15.0 0 \"%%c{data.HoleDia}, {data.NoOfBolts} HOLES EQUI. ON {data.BoltPCD} P.C.D.\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine($"    (command \"_.MTEXT\" b_txt \"H\" 31.0 \"W\" 0 \"%%c{data.HoleDia}, {data.NoOfBolts} HOLES EQUI.\\\\PON {data.BoltPCD} P.C.D.\" \"\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
 
                 // Tube Limit, PCD, and Partition Notes have been removed per user request
 
@@ -916,6 +975,7 @@ namespace MegaEngineeringSuite
                     alignLeft: false,
                     "PHASE T7E/T8R - ROW COUNT LABELS (TEMPLATE)");
 
+                AppendOffsetDimensionsLisp(lspContent, templateTubePoints, (float)data.TubeSheetFinishOD);
                 // Restore Layer 0
                 lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
 
@@ -1018,8 +1078,7 @@ namespace MegaEngineeringSuite
                 lspContent.AppendLine();
                 lspContent.AppendLine("    ; 6. Dimensions");
                 lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"DIM\" \"C\" \"6\" \"\" \"\")");
-                lspContent.AppendLine($"    (setq d1_loc (list (car pt) (+ (cadr pt) {templateTubeLimitRadius + 100:F4})))");
-                lspContent.AppendLine("    (command \"_.DIMLINEAR\" (list (- (car pt) " + templateTubeLimitRadius + ") (cadr pt)) (list (+ (car pt) " + templateTubeLimitRadius + ") (cadr pt)) \"T\" \"TUBE LIMIT %%c<>\" d1_loc)");
+
                 lspContent.AppendLine($"    (setq d2_loc (list (car pt) (- (cadr pt) {templatePcdRadius + 150:F4})))");
                 lspContent.AppendLine("    (command \"_.DIMLINEAR\" (list (- (car pt) " + templatePcdRadius + ") (cadr pt)) (list (+ (car pt) " + templatePcdRadius + ") (cadr pt)) \"T\" \"PCD %%c<>\" d2_loc)");
                 lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
@@ -1027,13 +1086,21 @@ namespace MegaEngineeringSuite
                 lspContent.AppendLine("    ; 7. Annotations");
                 lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION\" \"C\" \"3\" \"\" \"\")");
                 lspContent.AppendLine($"    (setq ang_t (list (car pt) (+ (cadr pt) {templateOuterRadiusMax + 30.0:F4})))");
-                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"BC\" ang_t 15.0 0 \"0%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"BC\" ang_t 31.0 0 \"0%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 lspContent.AppendLine($"    (setq ang_r (list (+ (car pt) {templateOuterRadiusMax + 30.0:F4}) (cadr pt)))");
-                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"ML\" ang_r 15.0 0 \"90%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"ML\" ang_r 31.0 0 \"90%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 lspContent.AppendLine($"    (setq ang_b (list (car pt) (- (cadr pt) {templateOuterRadiusMax + 30.0:F4})))");
-                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"TC\" ang_b 15.0 0 \"180%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"TC\" ang_b 31.0 0 \"180%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 lspContent.AppendLine($"    (setq ang_l (list (- (car pt) {templateOuterRadiusMax + 30.0:F4}) (cadr pt)))");
-                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"MR\" ang_l 15.0 0 \"270%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"MR\" ang_l 31.0 0 \"270%%d\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 lspContent.AppendLine();
                 if (templateTubePoints.Count > 0)
                 {
@@ -1043,23 +1110,28 @@ namespace MegaEngineeringSuite
                     lspContent.AppendLine($"    (setq t_p3 (list (+ (car pt) {templateOuterRadiusMax + 120.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 80.0:F4})))");
                     lspContent.AppendLine("    (command \"_.LINE\" t_p1 t_p2 t_p3 \"\")");
                     lspContent.AppendLine($"    (setq t_txt (list (+ (car pt) {templateOuterRadiusMax + 125.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 85.0:F4})))");
-                    lspContent.AppendLine($"    (command \"_.TEXT\" t_txt 15.0 0 \"{data.TubeQty} NOS. TUBE HOLES FOR %%c{data.TubeOD}\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                    lspContent.AppendLine($"    (command \"_.MTEXT\" t_txt \"H\" 31.0 \"W\" 0 \"{data.TubeQty} NOS. TUBE HOLES\\\\PFOR %%c{data.TubeOD} ON TRIANGULAR PITCH\" \"\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 }
                 lspContent.AppendLine($"    (setq b_p1 (list (- (car pt) {(templatePcdRadius + templateBoltHoleRadius) * 0.707:F4}) (+ (cadr pt) {(templatePcdRadius + templateBoltHoleRadius) * 0.707:F4})))");
                 lspContent.AppendLine($"    (setq b_p2 (list (- (car pt) {templateOuterRadiusMax + 80.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 80.0:F4})))");
                 lspContent.AppendLine($"    (setq b_p3 (list (- (car pt) {templateOuterRadiusMax + 120.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 80.0:F4})))");
                 lspContent.AppendLine("    (command \"_.LINE\" b_p1 b_p2 b_p3 \"\")");
                 lspContent.AppendLine($"    (setq b_txt (list (- (car pt) {templateOuterRadiusMax + 125.0:F4}) (+ (cadr pt) {templateOuterRadiusMax + 85.0:F4})))");
-                lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"BR\" b_txt 15.0 0 \"%%c{data.HoleDia}, {data.NoOfBolts} HOLES EQUI. ON {data.BoltPCD} P.C.D.\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"ANNOTATION_TEXT\" \"C\" \"5\" \"\" \"\")");
+                lspContent.AppendLine($"    (command \"_.MTEXT\" b_txt \"H\" 31.0 \"W\" 0 \"%%c{data.HoleDia}, {data.NoOfBolts} HOLES EQUI.\\\\PON {data.BoltPCD} P.C.D.\" \"\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"ANNOTATION\" \"\")");
                 lspContent.AppendLine();
                 
                 AppendRowCountReferenceLinesLisp(
                     lspContent,
                     rowCountLayoutService.GenerateLayout(templateTubePoints, (float)templateTubeRadius, (float)data.TubeSheetFinishOD, alignLeft: false),
                     templateTextHeight,
-                    alignLeft: false,
-                    "8. ROW COUNT LABELS (RIGHT SIDE)");
+                    alignLeft: true,
+                    "8. ROW COUNT LABELS (LEFT SIDE)");
                 
+                AppendOffsetDimensionsLisp(lspContent, templateTubePoints, (float)data.TubeSheetFinishOD);
                 lspContent.AppendLine("    ; Restore Layer 0");
                 lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
                 lspContent.AppendLine("  )");
@@ -1126,53 +1198,35 @@ namespace MegaEngineeringSuite
                 lspContent.AppendLine("           (assoc 10");
                 lspContent.AppendLine("                  (entget (ssname spec_blk 0)))))");
                 lspContent.AppendLine();
-                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"SPECIFICATION\" \"C\" \"7\" \"\" \"\")");
+                lspContent.AppendLine("    (command \"-LAYER\" \"M\" \"SPECIFICATION\" \"C\" \"5\" \"\" \"\")");
                 
                 lspContent.AppendLine("    (setq heading_y (cadr spec_pt))");
-                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"TL\" (list (car spec_pt) heading_y) 45.0 0 \"%%uSPECIFICATION :-\")");
+                lspContent.AppendLine("    (command \"_.TEXT\" \"J\" \"TL\" (list (car spec_pt) heading_y) 31.0 0 \"%%uSPECIFICATION :-\")");
 
-                lspContent.AppendLine("    (setq row_spacing 45.0)");
+                lspContent.AppendLine("    (setq row_spacing 31.0)");
                 lspContent.AppendLine("    (setq col1_x (car spec_pt))");
                 lspContent.AppendLine("    (setq col2_x (+ col1_x 500.0))");
                 lspContent.AppendLine("    (setq col3_x (+ col2_x 40.0))");
-                lspContent.AppendLine("    (setq current_y (- heading_y 70.0))");
+                lspContent.AppendLine("    (setq current_y (- heading_y (* 2.5 row_spacing)))");
                 lspContent.AppendLine();
 
                 var specRows = new List<(string Label, string Value)>
                 {
-                    ("HTA", data.HTA > 0 ? $"{data.HTA:F2} m%%178" : "-"),
-                    ("SHELL DIAMETER", data.ShellID > 0 ? $"{data.ShellID} mm" : "-"),
-                    ("NO. OF TUBES", data.TubeQty > 0 ? $"{data.TubeQty} NOS." : "-"),
-                    ("TUBE (ERW)", data.TubeOD > 0 ? $"%%c{data.TubeOD:F1} x 1.6 x {data.TubeLength} LG" : "-"),
-                    ("NO. OF PASSES", data.NoOfPass > 0 ? $"{data.NoOfPass} PASS" : "-"),
-                    ("TUBE HOLE", data.TubeOD > 0 ? $"{(data.TubeOD + data.TubeHoleChamfer * 2):F2} mm" : "-"),
-                    ("TRIANGULAR PITCH", "-"),
-                    ("M.O.C.", string.IsNullOrEmpty(data.Material) ? "-" : data.Material),
-                    ("TUBESHEET QTY.", "2 NOS."),
-                    ("T.S. FINISH THK", data.TubeSheetFinishTHK > 0 ? $"{data.TubeSheetFinishTHK:F2} mm" : "-"),
-                    ("T.S. RAW THK", data.TubeSheetRawTHK > 0 ? $"{data.TubeSheetRawTHK:F2} mm" : "-"),
-                    ("BODY FLANGE FINISH THK", data.BodyFlangeFinishTHK > 0 ? $"{data.BodyFlangeFinishTHK:F2} mm" : "-"),
-                    ("BODY FLANGE RAW THK", data.BodyFlangeRawTHK > 0 ? $"{data.BodyFlangeRawTHK:F2} mm" : "-"),
-                    ("PARTITION PLATE THK", data.PartitionPlateTHK > 0 ? $"{data.PartitionPlateTHK:F2} mm" : "-"),
-                    ("BAFFLE THK", data.BaffleTHK > 0 ? $"{data.BaffleTHK:F2} mm" : "-"),
-                    ("BOLT SIZE", string.IsNullOrEmpty(data.BoltSize) ? "-" : data.BoltSize),
-                    ("BOLT LENGTH", data.BoltLength > 0 ? $"{data.BoltLength:F2} mm" : "-"),
-                    ("NO OF BOLTS", data.NoOfBolts > 0 ? $"{data.NoOfBolts} NOS." : "-"),
-                    ("HOLE DIA.", data.HoleDia > 0 ? $"%%c{data.HoleDia:F2} mm" : "-"),
-                    ("FLANGE I.D.", data.FlangeID > 0 ? $"{data.FlangeID:F2} mm" : "-"),
-                    ("BOLT P.C.D.", data.BoltPCD > 0 ? $"{data.BoltPCD:F2} mm" : "-"),
-                    ("T.S. FINISH O.D.", data.TubeSheetFinishOD > 0 ? $"{data.TubeSheetFinishOD:F2} mm" : "-"),
-                    ("T.S. RAW O.D.", data.TubeSheetRawOD > 0 ? $"{data.TubeSheetRawOD:F2} mm" : "-"),
-                    ("LINER / GASKET O.D.", data.LinerGasketOD > 0 ? $"{data.LinerGasketOD:F2} mm" : "-"),
-                    ("TIE ROD DIA.", data.TieRodDia > 0 ? $"%%c{data.TieRodDia:F2} mm" : "-"),
-                    ("TIE ROD QTY.", data.TieRodQty > 0 ? $"{data.TieRodQty} NOS." : "-"),
-                    ("SPACER TUBE", data.SpacerTube > 0 ? $"{data.SpacerTube:F2} mm" : "-")
+                    ("1) H.T.A.", data.HTA > 0 ? $"{data.HTA:F2} m%%178" : "-"),
+                    ("2) SHELL DIAMETER", geometry.ShellRadius > 0 ? $"{(geometry.ShellRadius * 2):F1} mm" : "-"),
+                    ("3) NO. OF TUBES", data.TubeQty > 0 ? $"{data.TubeQty} NOS." : "-"),
+                    ("4) TUBE (ERW)", data.TubeOD > 0 ? $"%%c{data.TubeOD:F1} x 1.6 x {data.TubeLength} LG" : "-"),
+                    ("5) NO. OF PASSES", data.NoOfPass > 0 ? $"{data.NoOfPass} PASS" : "-"),
+                    ("6) TUBE HOLE", data.TubeOD > 0 ? $"{(data.TubeOD + data.TubeHoleChamfer * 2):F2} mm" : "-"),
+                    ("7) TRIANGULAR PITCH", geometry.TubePitch > 0 ? $"{geometry.TubePitch:F1} mm" : "-"),
+                    ("8) M.O.C.", string.IsNullOrEmpty(data.Material) ? "-" : data.Material),
+                    ("9) TUBESHEET QTY.", "2 NOS.")
                 };
 
                 foreach (var row in specRows)
                 {
-                    lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"TL\" (list col1_x current_y) 25.0 0 \"{row.Label}\")");
-                    lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"TL\" (list col2_x current_y) 25.0 0 \":\")");
+                    lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"TL\" (list col1_x current_y) 31.0 0 \"{row.Label}\")");
+                    lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"TL\" (list col2_x current_y) 31.0 0 \":\")");
 
                     string val = row.Value;
                     if (val.Length > 28)
@@ -1196,17 +1250,17 @@ namespace MegaEngineeringSuite
 
                         for(int i = 0; i < lines.Count; i++) 
                         {
-                            lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"TL\" (list col3_x current_y) 25.0 0 \"{lines[i]}\")");
+                            lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"TL\" (list col3_x current_y) 31.0 0 \"{lines[i]}\")");
                             if (i < lines.Count - 1)
                                 lspContent.AppendLine("    (setq current_y (- current_y 35.0))");
                         }
                     }
                     else
                     {
-                        lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"TL\" (list col3_x current_y) 25.0 0 \"{val}\")");
+                        lspContent.AppendLine($"    (command \"_.TEXT\" \"J\" \"TL\" (list col3_x current_y) 31.0 0 \"{val}\")");
                     }
 
-                    lspContent.AppendLine("    (setq current_y (- current_y row_spacing))");
+                    lspContent.AppendLine("    (setq current_y (- current_y (* 2.0 row_spacing)))");
                 }
 
                 lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
@@ -1477,7 +1531,7 @@ namespace MegaEngineeringSuite
                 lspContent.AppendLine("                   (cons 10 txt_pt)");
                 lspContent.AppendLine($"                   (cons 40 {mtext.TargetPaperSpaceHeight:F4})");
                 lspContent.AppendLine("                   (cons 71 1)");
-                lspContent.AppendLine($"                   (cons 1 \"{mtext.Text}\")))");
+                lspContent.AppendLine($"                   (cons 1 \"{mtext.Text.Replace("\n", "\\\\P")}\")))");
             }
             else if (entity is CadDimension dim)
             {

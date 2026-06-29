@@ -126,6 +126,9 @@ namespace MegaEngineeringSuite
             btnLogout.Text =
                 "Logout";
 
+            btnLogout.Tag =
+                ThemeManager.DangerActionButtonTag;
+
             btnLogout.Font =
                 buttonFont;
 

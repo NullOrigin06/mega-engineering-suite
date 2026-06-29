@@ -6,7 +6,15 @@ namespace MegaEngineeringSuite
 {
     public static class ThemeManager
     {
-        public static bool IsDarkMode { get; private set; } = true;
+        public const string PositiveActionButtonTag = "PositiveAction";
+        public const string DangerActionButtonTag = "DangerAction";
+
+        private static readonly Color PositiveActionBackColor = Color.FromArgb(22, 128, 78);
+        private static readonly Color PositiveActionHoverColor = Color.FromArgb(18, 112, 69);
+        private static readonly Color DangerActionBackColor = Color.FromArgb(185, 28, 28);
+        private static readonly Color DangerActionHoverColor = Color.FromArgb(153, 27, 27);
+
+        public static bool IsDarkMode { get; private set; } = false;
         
         public static event EventHandler ThemeChanged = delegate { };
 
@@ -47,10 +55,7 @@ namespace MegaEngineeringSuite
             }
             else if (control is Button btn)
             {
-                btn.BackColor = buttonBackColor;
-                btn.ForeColor = buttonForeColor;
-                btn.FlatStyle = FlatStyle.Flat;
-                btn.FlatAppearance.BorderSize = 0;
+                ApplyButtonTheme(btn, buttonBackColor, buttonForeColor);
             }
             else if (control is TextBox txt)
             {
@@ -92,6 +97,47 @@ namespace MegaEngineeringSuite
                 // If HeaderControl, its buttons will be themed normally
                 ApplyThemeRecursive(child, backColor, foreColor, buttonBackColor, buttonForeColor, panelBackColor, gridBackColor, gridTextColor, textBoxBackColor);
             }
+        }
+
+        private static void ApplyButtonTheme(Button btn, Color buttonBackColor, Color buttonForeColor)
+        {
+            btn.UseVisualStyleBackColor = false;
+            btn.FlatStyle = FlatStyle.Flat;
+            btn.FlatAppearance.BorderSize = 0;
+            btn.ForeColor = buttonForeColor;
+
+            if (IsPositiveActionButton(btn))
+            {
+                btn.BackColor = PositiveActionBackColor;
+                btn.FlatAppearance.MouseOverBackColor = PositiveActionHoverColor;
+                btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(13, 94, 58);
+                return;
+            }
+
+            if (IsDangerActionButton(btn))
+            {
+                btn.BackColor = DangerActionBackColor;
+                btn.FlatAppearance.MouseOverBackColor = DangerActionHoverColor;
+                btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(127, 29, 29);
+                return;
+            }
+
+            btn.BackColor = buttonBackColor;
+        }
+
+        private static bool IsPositiveActionButton(Button btn)
+        {
+            return string.Equals(btn.Tag as string, PositiveActionButtonTag, StringComparison.Ordinal) ||
+                   string.Equals(btn.Text.Trim(), "Calculate", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsDangerActionButton(Button btn)
+        {
+            string text = btn.Text.Trim();
+
+            return string.Equals(btn.Tag as string, DangerActionButtonTag, StringComparison.Ordinal) ||
+                   string.Equals(text, "Back", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(text, "Logout", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

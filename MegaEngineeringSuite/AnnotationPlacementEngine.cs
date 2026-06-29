@@ -63,12 +63,14 @@ namespace MegaEngineeringSuite
                 }
 
                 // Draw Text
-                entities.Add(new CadText 
+                entities.Add(new CadMText 
                 { 
                     Text = callout.Text, 
                     Position = new PointF(textX, textY), 
-                    EntityColor = Color.DodgerBlue,
-                    TargetPaperSpaceHeight = noteHeight
+                    EntityColor = Color.Blue,
+                    Alignment = StringAlignment.Near,
+                    LineAlignment = StringAlignment.Near,
+                    TargetPaperSpaceHeight = 31f
                 });
 
                 // Leader Line: Target -> Diagonal Elbow -> Horizontal -> Text
@@ -83,7 +85,7 @@ namespace MegaEngineeringSuite
                 entities.Add(new CadLeader 
                 { 
                     Vertices = new List<PointF> { pTarget, pElbow, pTextEdge }, 
-                    EntityColor = Color.DodgerBlue,
+                    EntityColor = Color.Magenta,
                     HasArrowHead = true
                 });
             }

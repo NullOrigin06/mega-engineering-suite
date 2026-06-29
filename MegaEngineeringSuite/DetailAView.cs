@@ -116,10 +116,10 @@ namespace MegaEngineeringSuite
             {
                 Text = "4x45° COUNTER\nSUNK HOLE",
                 Position = new PointF(-35, 42),
-                EntityColor = Color.DodgerBlue,
+                EntityColor = Color.Blue,
                 Alignment = StringAlignment.Near,
                 LineAlignment = StringAlignment.Far,
-                TargetPaperSpaceHeight = DraftingScaleManager.GetPaperSpaceStandardNotesHeight()
+                TargetPaperSpaceHeight = 31f
             });
 
             // Title

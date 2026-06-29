@@ -186,7 +186,7 @@ namespace MegaEngineeringSuite
             if (targetHole.HasValue)
             {
                 string pitchStr = "TRIANGULAR";
-                string leaderText = $"HOLES FOR TUBES %%c{data.TubeOD}\\PON {pitchStr} PITCH";
+                string leaderText = $"HOLES FOR TUBES Ø{data.TubeOD:F1}\nON {pitchStr} PITCH";
                 
                 float lStartX = targetHole.Value.X;
                 float lStartY = targetHole.Value.Y;
@@ -207,19 +207,21 @@ namespace MegaEngineeringSuite
                     Text = leaderText,
                     Alignment = StringAlignment.Near,
                     LineAlignment = StringAlignment.Center,
-                    TargetPaperSpaceHeight = dimTextHeight,
-                    EntityColor = Color.White
+                    TargetPaperSpaceHeight = 31f,
+                    EntityColor = Color.Blue
                 });
             }
+
+
 
             // 4. Baffle Identification Text
             entities.Add(new CadMText
             {
                 Text = "BAFFLE #2,#4",
                 Position = new PointF(0, -baffleRad - 70f),
-                EntityColor = Color.White,
+                EntityColor = Color.Blue,
                 Alignment = StringAlignment.Center,
-                TargetPaperSpaceHeight = 12f
+                TargetPaperSpaceHeight = 31f
             });
 
             // Shift geometry for visual balance and spacing

@@ -33,11 +33,11 @@ namespace MegaEngineeringSuite
                 entities.Add(new CadText
                 {
                     Text = rowReference.Count.ToString(),
-                    Position = new PointF(rowReference.TextAnchorX, rowReference.RowY),
-                    EntityColor = Color.Red,
+                    Position = new PointF(rowReference.TextPositionX, rowReference.RowY),
+                    EntityColor = Color.Blue,
                     Alignment = alignLeft ? StringAlignment.Far : StringAlignment.Near,
                     LineAlignment = StringAlignment.Center,
-                    TargetPaperSpaceHeight = DraftingScaleManager.GetPaperSpaceRowCountHeight(),
+                    TargetPaperSpaceHeight = 31f,
                     LayerName = RowCountLayerName
                 });
             }

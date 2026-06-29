@@ -313,7 +313,156 @@ namespace MegaEngineeringSuite
             // 7. Paper Space Elements
             DrawBorder(finalSheet);
 
+            // 8. Enforce Text Boundaries
+            EnforceTextBoundaries(finalSheet);
+
             return finalSheet;
+        }
+
+                private void EnforceTextBoundaries(DrawingModel model)
+        {
+            float minAllowedX = marginL;
+            float maxAllowedX = sheetWidth - marginR;
+            float minAllowedY = marginB;
+            float maxAllowedY = sheetHeight - marginT;
+
+            foreach (var entity in model.Entities)
+            {
+                if (entity is CadText text || entity is CadMText)
+                {
+                    string textStr = entity is CadText t ? t.Text : ((CadMText)entity).Text;
+                    float fontSize = entity is CadText t2 ? t2.FontSize : ((CadMText)entity).TargetPaperSpaceHeight;
+                    PointF pos = entity is CadText t3 ? t3.Position : ((CadMText)entity).Position;
+                    StringAlignment align = entity is CadText t4 ? t4.Alignment : ((CadMText)entity).Alignment;
+                    StringAlignment lineAlign = entity is CadText t5 ? t5.LineAlignment : ((CadMText)entity).LineAlignment;
+
+                    string[] lines = textStr.Split('\n');
+                    int maxLen = 0;
+                    foreach(var l in lines) if (l.Length > maxLen) maxLen = l.Length;
+                    
+                    float estimatedWidth = maxLen * fontSize * 0.85f;
+                    float estimatedHeight = lines.Length * fontSize * 1.5f;
+
+                    float textMinX = pos.X;
+                    float textMaxX = pos.X + estimatedWidth;
+                    
+                    if (align == StringAlignment.Center) {
+                        textMinX = pos.X - estimatedWidth / 2f;
+                        textMaxX = pos.X + estimatedWidth / 2f;
+                    } else if (align == StringAlignment.Far) {
+                        textMinX = pos.X - estimatedWidth;
+                        textMaxX = pos.X;
+                    }
+
+                    float textMinY = pos.Y;
+                    float textMaxY = pos.Y + estimatedHeight;
+                    if (lineAlign == StringAlignment.Center) {
+                        textMinY = pos.Y - estimatedHeight / 2f;
+                        textMaxY = pos.Y + estimatedHeight / 2f;
+                    } else if (lineAlign == StringAlignment.Far) {
+                        textMinY = pos.Y - estimatedHeight;
+                        textMaxY = pos.Y;
+                    }
+
+                    // Find associated leader
+                    CadLeader associatedLeader = null;
+                    foreach (var other in model.Entities)
+                    {
+                        if (other is CadLeader leader && leader.Vertices.Count >= 2)
+                        {
+                            PointF lastV = leader.Vertices[leader.Vertices.Count - 1];
+                            if (lastV.X >= textMinX - 25f && lastV.X <= textMaxX + 25f &&
+                                lastV.Y >= textMinY - 25f && lastV.Y <= textMaxY + 25f)
+                            {
+                                associatedLeader = leader;
+                                break;
+                            }
+                        }
+                    }
+
+                    float shiftX = 0;
+                    float shiftY = 0;
+
+                    if (associatedLeader != null && associatedLeader.Vertices.Count >= 3)
+                    {
+                        PointF target = associatedLeader.Vertices[0];
+                        PointF elbow = associatedLeader.Vertices[associatedLeader.Vertices.Count - 2];
+                        float dx = elbow.X - target.X;
+                        float dy = elbow.Y - target.Y;
+
+                        // Calculate required shifts
+                        float reqShiftX = 0;
+                        if (textMaxX > maxAllowedX) reqShiftX = maxAllowedX - textMaxX - 5f;
+                        else if (textMinX < minAllowedX) reqShiftX = minAllowedX - textMinX + 5f;
+
+                        float reqShiftY = 0;
+                        if (textMaxY > maxAllowedY) reqShiftY = maxAllowedY - textMaxY - 5f;
+                        else if (textMinY < minAllowedY) reqShiftY = minAllowedY - textMinY + 5f;
+
+                        if (reqShiftX != 0 || reqShiftY != 0)
+                        {
+                            if (Math.Abs(dx) > 0.01f)
+                            {
+                                float slope = dy / dx;
+                                // Shift along the ray to satisfy X
+                                float slideX = reqShiftX;
+                                float slideY = slideX * slope;
+                                
+                                // Check if this satisfies Y, if not, slide more
+                                float newTextMaxY = textMaxY + slideY;
+                                float newTextMinY = textMinY + slideY;
+                                
+                                if (newTextMaxY > maxAllowedY || newTextMinY < minAllowedY)
+                                {
+                                    // Need to satisfy Y instead
+                                    slideY = reqShiftY;
+                                    if (Math.Abs(slope) > 0.001f)
+                                    {
+                                        slideX = slideY / slope;
+                                    }
+                                    else
+                                    {
+                                        slideX = reqShiftX;
+                                    }
+                                }
+                                
+                                shiftX = slideX;
+                                shiftY = slideY;
+                            }
+                            else
+                            {
+                                shiftX = reqShiftX;
+                                shiftY = reqShiftY;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (textMaxX > maxAllowedX) shiftX = maxAllowedX - textMaxX - 5f;
+                        else if (textMinX < minAllowedX) shiftX = minAllowedX - textMinX + 5f;
+
+                        if (textMaxY > maxAllowedY) shiftY = maxAllowedY - textMaxY - 5f;
+                        if (textMinY < minAllowedY) shiftY = minAllowedY - textMinY + 5f;
+                    }
+
+                    if (shiftX != 0 || shiftY != 0)
+                    {
+                        if (entity is CadText ct) ct.Position = new PointF(pos.X + shiftX, pos.Y + shiftY);
+                        else if (entity is CadMText mt) mt.Position = new PointF(pos.X + shiftX, pos.Y + shiftY);
+                        
+                        if (associatedLeader != null)
+                        {
+                            PointF lastV = associatedLeader.Vertices[associatedLeader.Vertices.Count - 1];
+                            associatedLeader.Vertices[associatedLeader.Vertices.Count - 1] = new PointF(lastV.X + shiftX, lastV.Y + shiftY);
+                            if (associatedLeader.Vertices.Count >= 3)
+                            {
+                                PointF elbow = associatedLeader.Vertices[associatedLeader.Vertices.Count - 2];
+                                associatedLeader.Vertices[associatedLeader.Vertices.Count - 2] = new PointF(elbow.X + shiftX, elbow.Y + shiftY);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private void DrawBorder(DrawingModel model)

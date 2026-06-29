@@ -10,13 +10,16 @@ namespace MegaEngineeringSuite
         public float RowY { get; set; }
         public float LineStartX { get; set; }
         public float TextAnchorX { get; set; }
+        public float TextPositionX { get; set; }
         public int Count { get; set; }
     }
 
     public class RowCountLayoutService
     {
         private const float TubeEdgeClearance = 2f;
-        private const float TextAnchorOffset = 85f;
+        private const float InnerTextOffset = 96f;
+        private const float StaggerOffset = 48f;
+        private const float LeaderTextGap = 10f;
 
         public List<RowCountReference> GenerateLayout(GeometryModel geometry, bool alignLeft = false)
         {
@@ -69,26 +72,36 @@ namespace MegaEngineeringSuite
                 return new List<RowCountReference>();
             }
 
-            float textAnchorX = (outerDiameter / 2f) + TextAnchorOffset;
-            if (alignLeft)
-            {
-                textAnchorX = -textAnchorX;
-            }
+            float outerRadius = outerDiameter / 2f;
+            float innerTextColumnX = outerRadius + InnerTextOffset;
+            float outerTextColumnX = innerTextColumnX + StaggerOffset;
 
             List<RowCountReference> layout = new List<RowCountReference>(groupedRows.Count);
             for (int i = 0; i < groupedRows.Count; i++)
             {
                 var row = groupedRows[i];
                 int count = i < rowTubeCounts.Count ? rowTubeCounts[i] : row.Count();
+                float y = (float)row.Key;
+                float val = (outerRadius * outerRadius) - (y * y);
+                float boundaryX = val > 0 ? (float)Math.Sqrt(val) : 0f;
+                
                 float lineStartX = alignLeft
-                    ? (float)row.Min(pt => pt.X) - tubeRadius - TubeEdgeClearance
-                    : (float)row.Max(pt => pt.X) + tubeRadius + TubeEdgeClearance;
+                    ? -boundaryX - TubeEdgeClearance
+                    : boundaryX + TubeEdgeClearance;
+
+                bool useOuterColumn = i % 2 != 0;
+                float textColumnX = useOuterColumn ? outerTextColumnX : innerTextColumnX;
+                float currentTextPosX = alignLeft ? -textColumnX : textColumnX;
+                float currentLeaderEndX = alignLeft
+                    ? currentTextPosX + LeaderTextGap
+                    : currentTextPosX - LeaderTextGap;
 
                 layout.Add(new RowCountReference
                 {
                     RowY = (float)row.Key,
                     LineStartX = lineStartX,
-                    TextAnchorX = textAnchorX,
+                    TextAnchorX = currentLeaderEndX,
+                    TextPositionX = currentTextPosX,
                     Count = count
                 });
             }

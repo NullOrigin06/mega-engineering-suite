@@ -7,46 +7,25 @@ namespace MegaEngineeringSuite
 {
     public class HeaderControl : UserControl
     {
-        private PictureBox pbLogo;
         private Button btnToggleTheme;
 
         public HeaderControl()
         {
-            this.Size = new Size(300, 70);
+            this.Size = new Size(90, 40);
             this.BackColor = Color.Transparent;
-
-            pbLogo = new PictureBox
-            {
-                SizeMode = PictureBoxSizeMode.Zoom,
-                BackColor = Color.Transparent,
-                Width = 200,
-                Height = 70,
-                Location = new Point(100, 0),
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
-            };
-
-            try
-            {
-                object logo = Properties.Resources.ResourceManager.GetObject("MegaLogo");
-                if (logo is Image img) pbLogo.Image = img;
-            }
-            catch { }
 
             btnToggleTheme = new Button
             {
                 Text = ThemeManager.IsDarkMode ? "☀️ Light" : "🌙 Dark",
-                Size = new Size(80, 40),
-                Location = new Point(10, 15),
+                Dock = DockStyle.Fill,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                Cursor = Cursors.Hand,
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
+                Cursor = Cursors.Hand
             };
             btnToggleTheme.FlatAppearance.BorderSize = 0;
             btnToggleTheme.Click += BtnToggleTheme_Click;
 
             this.Controls.Add(btnToggleTheme);
-            this.Controls.Add(pbLogo);
 
             ThemeManager.ThemeChanged += OnThemeChanged;
             UpdateThemeButton();

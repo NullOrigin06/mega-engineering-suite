@@ -21,7 +21,7 @@ namespace MegaEngineeringSuite
             List<ICadEntity> entities = new List<ICadEntity>();
 
             float width = 180f;
-            float stdTextHeight = DraftingScaleManager.GetPaperSpaceStandardNotesHeight();
+            float stdTextHeight = 31f;
             float headerHeight = DraftingScaleManager.GetPaperSpaceSpecHeaderHeight();
             
             float lineSpacing = stdTextHeight * 2.5f; 
@@ -61,7 +61,7 @@ namespace MegaEngineeringSuite
                 { 
                     Text = $"{i + 1}.", 
                     Position = new PointF(10, currentY), 
-                    EntityColor = Color.White, 
+                    EntityColor = Color.Blue, 
                     Alignment = StringAlignment.Near, 
                     LineAlignment = StringAlignment.Center, 
                     FontSize = stdTextHeight 
@@ -70,8 +70,8 @@ namespace MegaEngineeringSuite
                 entities.Add(new CadText 
                 { 
                     Text = StandardNotes[i], 
-                    Position = new PointF(20, currentY), 
-                    EntityColor = Color.White, 
+                    Position = new PointF(35, currentY), 
+                    EntityColor = Color.Blue, 
                     Alignment = StringAlignment.Near, 
                     LineAlignment = StringAlignment.Center, 
                     FontSize = stdTextHeight 

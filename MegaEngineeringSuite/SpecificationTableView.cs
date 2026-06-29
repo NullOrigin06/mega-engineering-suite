@@ -11,24 +11,23 @@ namespace MegaEngineeringSuite
         {
             List<ICadEntity> entities = new List<ICadEntity>();
 
-            float stdTextHeight = DraftingScaleManager.GetPaperSpaceTableCellHeight();
-            float headerTextHeight = DraftingScaleManager.GetPaperSpaceSpecHeaderHeight();
+            float stdTextHeight = 31f;
+            float headerTextHeight = 31f;
             
             // Increase row height by 25% (was 2.5f, now 3.1f)
             float rowHeight = stdTextHeight * 3.1f;
             
             var rows = new List<Tuple<string, string>>
             {
-                new Tuple<string, string>("H.E.A (m²)", data.HTA.ToString("F2")),
-                new Tuple<string, string>("Shell Diameter", (geometry.ShellRadius * 2).ToString("F1")),
-                new Tuple<string, string>("Tube O.D.", data.TubeOD.ToString("F2")),
-                new Tuple<string, string>("Tube Pitch", geometry.TubePitch.ToString("F1")),
-                new Tuple<string, string>("Tube Count", data.TubeQty.ToString()),
-                new Tuple<string, string>("No Of Passes", data.NoOfPass.ToString()),
-                new Tuple<string, string>("Tube Hole Qty", geometry.TubeCoordinates != null ? geometry.TubeCoordinates.Count.ToString() : data.TubeQty.ToString()),
-                new Tuple<string, string>("Baffle Qty", data.BaffleQty.ToString()),
-                new Tuple<string, string>("Baffle Thickness", data.BaffleTHK.ToString()),
-                new Tuple<string, string>("Material", data.Material)
+                new Tuple<string, string>("1) H.T.A.", data.HTA.ToString("F2")),
+                new Tuple<string, string>("2) SHELL DIAMETER", (geometry.ShellRadius * 2).ToString("F1")),
+                new Tuple<string, string>("3) NO. OF TUBES", data.TubeQty.ToString()),
+                new Tuple<string, string>("4) TUBE (ERW)", data.TubeOD.ToString("F2")),
+                new Tuple<string, string>("5) NO. OF PASSES", data.NoOfPass.ToString()),
+                new Tuple<string, string>("6) TUBE HOLE", geometry.TubeCoordinates != null ? geometry.TubeCoordinates.Count.ToString() : data.TubeQty.ToString()),
+                new Tuple<string, string>("7) TRIANGULAR PITCH", geometry.TubePitch.ToString("F1")),
+                new Tuple<string, string>("8) M.O.C.", data.Material),
+                new Tuple<string, string>("9) TUBESHEET QTY.", "2")
             };
 
             // Calculate required width
@@ -45,7 +44,7 @@ namespace MegaEngineeringSuite
             float col2Width = tableWidth / 2f;
 
             float currentY = 0;
-            float totalHeight = (rows.Count + 1) * rowHeight; // +1 for header
+            float totalHeight = (rows.Count + 2) * rowHeight; // +1 for header, +1 for blank row
             
             // Start drawing from top (totalHeight) downwards
             currentY = totalHeight;
@@ -54,13 +53,17 @@ namespace MegaEngineeringSuite
             entities.Add(new CadLine { Start = new PointF(0, currentY), End = new PointF(tableWidth, currentY), EntityColor = Color.White });
             entities.Add(new CadText 
             { 
-                Text = "SPECIFICATION", 
+                Text = "SPECIFICATION :-", 
                 Position = new PointF(tableWidth / 2f, currentY - rowHeight / 2f), 
-                EntityColor = Color.Cyan, 
+                EntityColor = Color.Blue, 
                 Alignment = StringAlignment.Center, 
                 LineAlignment = StringAlignment.Center, 
                 FontSize = headerTextHeight 
             });
+            currentY -= rowHeight;
+
+            // Blank row
+            entities.Add(new CadLine { Start = new PointF(0, currentY), End = new PointF(tableWidth, currentY), EntityColor = Color.White });
             currentY -= rowHeight;
 
             // Data rows
@@ -73,7 +76,7 @@ namespace MegaEngineeringSuite
                 { 
                     Text = row.Item1, 
                     Position = new PointF(10, currentY - rowHeight / 2f), 
-                    EntityColor = Color.Yellow, 
+                    EntityColor = Color.Blue, 
                     Alignment = StringAlignment.Near, 
                     LineAlignment = StringAlignment.Center, 
                     FontSize = stdTextHeight 
@@ -84,7 +87,7 @@ namespace MegaEngineeringSuite
                 { 
                     Text = row.Item2, 
                     Position = new PointF(col1Width + 10, currentY - rowHeight / 2f), 
-                    EntityColor = Color.White, 
+                    EntityColor = Color.Blue, 
                     Alignment = StringAlignment.Near, 
                     LineAlignment = StringAlignment.Center, 
                     FontSize = stdTextHeight 
@@ -98,7 +101,7 @@ namespace MegaEngineeringSuite
 
             // Vertical borders
             entities.Add(new CadLine { Start = new PointF(0, 0), End = new PointF(0, totalHeight), EntityColor = Color.White });
-            entities.Add(new CadLine { Start = new PointF(col1Width, 0), End = new PointF(col1Width, totalHeight - rowHeight), EntityColor = Color.White });
+            entities.Add(new CadLine { Start = new PointF(col1Width, 0), End = new PointF(col1Width, totalHeight - rowHeight * 2), EntityColor = Color.White }); // Adjust vertical divider to not go through header and blank row
             entities.Add(new CadLine { Start = new PointF(tableWidth, 0), End = new PointF(tableWidth, totalHeight), EntityColor = Color.White });
 
             // Apply translation
