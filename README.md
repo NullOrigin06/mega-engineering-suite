@@ -66,18 +66,12 @@ The platform is designed around a modular architecture, allowing multiple equipm
 
 The platform uses a layered architecture:
 
-Engineering Inputs
-↓
-Calculation Engine
-↓
-Geometry Generation
-↓
-AutoLISP Generation
-↓
-CAD Automation Layer
-↓
-Drawing Templates
-↓
+Engineering Inputs->
+Calculation Engine->
+Geometry Generation->
+AutoLISP Generation->
+CAD Automation Layer->
+Drawing Templates->
 Final Engineering Drawings
 
 ---
