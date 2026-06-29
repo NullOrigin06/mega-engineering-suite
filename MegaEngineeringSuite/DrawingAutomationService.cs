@@ -474,10 +474,10 @@ namespace MegaEngineeringSuite
                 
                 AppendRowCountReferenceLinesLisp(
                     lspContent,
-                    rowCountLayoutService.GenerateLayout(tubePoints, (float)tubeRadius, (float)data.TubeSheetFinishOD, alignLeft: true),
+                    rowCountLayoutService.GenerateLayout(tubePoints, (float)tubeRadius, (float)data.TubeSheetFinishOD, alignLeft: false),
                     textHeight,
-                    alignLeft: true,
-                    "7. ROW COUNT LABELS (LEFT SIDE)");
+                    alignLeft: false,
+                    "7. ROW COUNT LABELS (RIGHT SIDE)");
                 
                 lspContent.AppendLine("    ; Restore Layer 0");
                 lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");
@@ -1055,10 +1055,10 @@ namespace MegaEngineeringSuite
                 
                 AppendRowCountReferenceLinesLisp(
                     lspContent,
-                    rowCountLayoutService.GenerateLayout(templateTubePoints, (float)templateTubeRadius, (float)data.TubeSheetFinishOD, alignLeft: true),
+                    rowCountLayoutService.GenerateLayout(templateTubePoints, (float)templateTubeRadius, (float)data.TubeSheetFinishOD, alignLeft: false),
                     templateTextHeight,
-                    alignLeft: true,
-                    "8. ROW COUNT LABELS (LEFT SIDE)");
+                    alignLeft: false,
+                    "8. ROW COUNT LABELS (RIGHT SIDE)");
                 
                 lspContent.AppendLine("    ; Restore Layer 0");
                 lspContent.AppendLine("    (command \"-LAYER\" \"S\" \"0\" \"\")");

@@ -30,12 +30,15 @@ namespace MegaEngineeringSuite
             });
 
             // 3. Row Counts
-            entities.AddRange(rowCountRenderer.GenerateRowCounts(geometry, alignLeft: true));
+            entities.AddRange(rowCountRenderer.GenerateRowCounts(geometry, alignLeft: false));
 
             // 4. Annotations & Callouts
             var callouts = GenerateFrontCalloutModels(geometry, data);
             float exclusionRadius = geometry.OuterDiameter / 2f;
             entities.AddRange(annotationEngine.GenerateAnnotations(callouts, exclusionRadius));
+
+            // 4b. Offset Dimensions
+            entities.AddRange(OffsetDimensionHelper.GenerateOffsetDimensions(geometry.TubeCoordinates));
 
             // Apply translation
             TranslateEntities(entities, origin.X, origin.Y);
@@ -83,17 +86,7 @@ namespace MegaEngineeringSuite
                 TargetPaperSpaceHeight = dimTextHeight
             });
 
-            float otlRadius = (geometry.ShellRadius * 2 - (float)data.TubeOD * 2) / 2f;
-            entities.Add(new CadDimension
-            {
-                StartPoint = new PointF(-otlRadius + origin.X, origin.Y),
-                EndPoint = new PointF(otlRadius + origin.X, origin.Y),
-                DimensionLineLocation = new PointF(origin.X, otlRadius + 40 + origin.Y),
-                Type = DimensionType.Horizontal,
-                OverrideText = "OTL Ø<>",
-                EntityColor = Color.Magenta,
-                TargetPaperSpaceHeight = dimTextHeight
-            });
+
 
             return entities;
         }
@@ -107,7 +100,7 @@ namespace MegaEngineeringSuite
             // 1. Bolt Holes (Top Right, mirrored from Rear View)
             leaders.Add(new CalloutLeader
             {
-                Text = $"Ø{data.HoleDia}, {data.NoOfBolts} HOLES EQUI.",
+                Text = $"Ø{data.HoleDia}, {data.NoOfBolts} HOLES EQUI.\nON {data.BoltPCD} P.C.D.",
                 TargetPoint = new PointF((float)(pcdRad * Math.Cos(Math.PI/4)), (float)(-pcdRad * Math.Sin(Math.PI/4))),
                 AlignRight = true
             });
@@ -123,7 +116,7 @@ namespace MegaEngineeringSuite
             // 3. Tubes (Top Left, mirrored)
             leaders.Add(new CalloutLeader
             {
-                Text = $"{data.TubeQty} NOS TUBES\nHOLES FOR Ø{data.TubeOD:F2}\nON TRIANGULAR PITCH",
+                Text = $"{data.TubeQty} NOS. TUBE HOLES\nFOR Ø{data.TubeOD:F1} ON TRIANGULAR PITCH",
                 TargetPoint = new PointF((float)(-outerRad * 0.8 * Math.Cos(Math.PI/4)), (float)(-outerRad * 0.8 * Math.Sin(Math.PI/4))),
                 AlignRight = false
             });
