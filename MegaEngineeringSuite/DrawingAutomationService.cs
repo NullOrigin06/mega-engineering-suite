@@ -1553,8 +1553,6 @@ namespace MegaEngineeringSuite
             {
                 if (leader.Vertices.Count >= 2)
                 {
-                    // Set arrowhead style to closed filled triangle for all annotation leaders
-                    lspContent.AppendLine("    (setvar \"DIMLDRBLK\" \"CLOSED_FILLED\")");
                     lspContent.Append("    (command \"_.LEADER\"");
                     foreach (var v in leader.Vertices)
                     {

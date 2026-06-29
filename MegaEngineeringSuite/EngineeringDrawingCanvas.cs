@@ -744,13 +744,8 @@ namespace MegaEngineeringSuite
             PointF p1 = leader.Vertices[1];
             double angle = Math.Atan2(p0.Y - p1.Y, p0.X - p1.X);
 
-            // Arrowhead dimensions scaled to drawing units, not screen pixels.
-            // Length = 2.5× the standard note text height (31 drawing units).
-            // Width  = 1/3 of length — giving a sharp closed filled triangle per
-            // standard mechanical drafting practice.
-            const float noteTextHeight = 31f;
-            float arrowLength = noteTextHeight * 2.5f;
-            float arrowWidth  = arrowLength / 3f;
+            float arrowLength = 8f / Math.Max(zoomScale, MinZoom);
+            float arrowWidth = 3.5f / Math.Max(zoomScale, MinZoom);
 
             PointF pt1 = new PointF(
                 p0.X - arrowLength * (float)Math.Cos(angle) - arrowWidth * (float)Math.Sin(angle),
