@@ -93,9 +93,7 @@ namespace MegaEngineeringSuite
                     EntityColor = Color.Blue
                 });
 
-                // Explicit Chord primitive
-                // Removed the single continuous CadLine here.
-                // We will stitch the cut line dynamically around the tube holes later.
+                // The cut chord is stitched dynamically around tube holes.
                 float sweep = endAngle - startAngle;
                 if (sweep < 0) sweep += 360f;
                 boundaryPath.AddArc(-baffleRadius, -baffleRadius, baffleRadius * 2, baffleRadius * 2, startAngle, sweep);

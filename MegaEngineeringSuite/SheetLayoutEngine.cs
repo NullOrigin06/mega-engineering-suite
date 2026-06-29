@@ -365,7 +365,7 @@ namespace MegaEngineeringSuite
                     }
 
                     // Find associated leader
-                    CadLeader associatedLeader = null;
+                    CadLeader? associatedLeader = null;
                     foreach (var other in model.Entities)
                     {
                         if (other is CadLeader leader && leader.Vertices.Count >= 2)
@@ -408,7 +408,7 @@ namespace MegaEngineeringSuite
                                 float slideX = reqShiftX;
                                 float slideY = slideX * slope;
                                 
-                                // Check if this satisfies Y, if not, slide more
+                                // Apply combined Y-axis boundary correction if needed
                                 float newTextMaxY = textMaxY + slideY;
                                 float newTextMinY = textMinY + slideY;
                                 

@@ -11,8 +11,8 @@ namespace MegaEngineeringSuite
             float minX = float.MaxValue, maxX = float.MinValue;
             float minY = float.MaxValue, maxY = float.MinValue;
             
-            CadArc mainArc = null;
-            CadLine mainCutLine = null;
+            CadArc? mainArc = null;
+            CadLine? mainCutLine = null;
 
             foreach (var entity in geometry.Entities)
             {
@@ -104,7 +104,6 @@ namespace MegaEngineeringSuite
             entities.Add(new CadLine { Start = new PointF(0, -clLen), End = new PointF(0, clLen), EntityColor = Color.Red, DashStyle = System.Drawing.Drawing2D.DashStyle.DashDot });
 
             // Phase B4 & B5 Annotations
-            float dimTextHeight = 10f; // Standard dim text height
             float actualCutY = -(-geometry.ShellRadius - baffleGeometry.ActualCutDepth);
 
             // --- DRAFTING & ANNOTATIONS ---

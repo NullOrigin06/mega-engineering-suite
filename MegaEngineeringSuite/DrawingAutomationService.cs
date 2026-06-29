@@ -1434,7 +1434,6 @@ namespace MegaEngineeringSuite
                 log.AppendLine("-------------------------------------------------");
                 string logMessage = log.ToString();
 
-                System.Diagnostics.Debug.WriteLine(logMessage);
                 File.WriteAllText(Path.Combine(generatedDir, $"TubeSheet_LaunchLog_{data.ShellID}_{timestamp}.txt"), logMessage);
 
                 return new DrawingAutomationResult
