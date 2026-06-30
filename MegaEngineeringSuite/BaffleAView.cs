@@ -198,7 +198,7 @@ namespace MegaEngineeringSuite
                 float leaderApproxWidth = leaderText.Replace("\n", "").Length * 31f * 0.55f;
                 tubeLeaderTextRight = leaderTextX + leaderApproxWidth;
                 tubeLeaderMidY = lMidY;
-                
+
                 entities.Add(new CadLeader
                 {
                     Vertices = new List<PointF> { new PointF(lStartX, lStartY), new PointF(lMidX, lMidY), new PointF(lEndX, lMidY) },
