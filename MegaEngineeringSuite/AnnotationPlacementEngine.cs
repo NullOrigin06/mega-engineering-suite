@@ -11,25 +11,32 @@ namespace MegaEngineeringSuite
         public string Text { get; set; }
         public PointF TargetPoint { get; set; }
         public bool AlignRight { get; set; }
+        public float LeaderVerticalDirection { get; set; } = 0f;
+        public float? TextCenterY { get; set; }
+        public float? SideClearance { get; set; }
     }
 
     public class AnnotationPlacementEngine
     {
+        private const float StandardLandingLength = 70f;
+        private const float StandardTextGap = 15f;
+        private const float MinimumSideClearance = 90f;
+
         public IEnumerable<ICadEntity> GenerateAnnotations(List<CalloutLeader> callouts, float exclusionRadius)
         {
             List<ICadEntity> entities = new List<ICadEntity>();
 
-            float safeMarginOffset = Math.Max(40f, (exclusionRadius * 2f) * 0.08f);
-            float safeMargin = exclusionRadius + safeMarginOffset; 
+            float safeMarginOffset = Math.Max(MinimumSideClearance, (exclusionRadius * 2f) * 0.1f);
 
             // Distribute callouts around the circle based on AlignRight (true = right side, false = left side)
             // The user requested specific positions: Top-Right, Top-Left, Right, Left.
             // We can determine placement logic by their position in the list or TargetPoint.
             // Here we map dynamically based on AlignRight and TargetPoint Y.
             
-            float leftStackY = -150f;
-            float rightStackY = -150f;
-            float verticalSpacing = 40f;
+            float topBandY = -exclusionRadius + 55f;
+            float leftStackY = topBandY;
+            float rightStackY = topBandY;
+            float verticalSpacing = 60f;
 
             foreach (var callout in callouts.OrderBy(c => c.TargetPoint.Y))
             {
@@ -40,15 +47,19 @@ namespace MegaEngineeringSuite
 
                 float textX;
                 float textY;
-                float pointerStartX = callout.TargetPoint.X;
                 float pointerEndX;
+                float elbowX;
+                float textCenterY;
+                float sideClearance = callout.SideClearance ?? safeMarginOffset;
+                float safeMargin = exclusionRadius + sideClearance;
                 
                 if (callout.AlignRight)
                 {
                     // Placed securely on the right margin
                     textX = safeMargin;
                     textY = Math.Max(rightStackY, callout.TargetPoint.Y - textSize.Height / 2f);
-                    pointerEndX = textX - 5f;
+                    pointerEndX = textX - StandardTextGap;
+                    elbowX = pointerEndX - StandardLandingLength;
                     
                     rightStackY = textY + textSize.Height + verticalSpacing;
                 }
@@ -57,10 +68,21 @@ namespace MegaEngineeringSuite
                     // Placed securely on the left margin
                     textX = -safeMargin - textSize.Width;
                     textY = Math.Max(leftStackY, callout.TargetPoint.Y - textSize.Height / 2f);
-                    pointerEndX = textX + textSize.Width + 5f;
+                    pointerEndX = textX + textSize.Width + StandardTextGap;
+                    elbowX = pointerEndX + StandardLandingLength;
                     
                     leftStackY = textY + textSize.Height + verticalSpacing;
                 }
+
+                float verticalDirection = callout.LeaderVerticalDirection;
+                if (verticalDirection == 0f)
+                {
+                    verticalDirection = callout.TargetPoint.Y <= 0f ? -1f : 1f;
+                }
+
+                textCenterY = callout.TextCenterY ??
+                    callout.TargetPoint.Y + Math.Sign(verticalDirection) * Math.Abs(elbowX - callout.TargetPoint.X);
+                textY = textCenterY - textSize.Height / 2f;
 
                 // Draw Text
                 entities.Add(new CadMText 
@@ -75,10 +97,6 @@ namespace MegaEngineeringSuite
 
                 // Leader Line: Target -> Diagonal Elbow -> Horizontal -> Text
                 PointF pTarget = new PointF(callout.TargetPoint.X, callout.TargetPoint.Y);
-                // Calculate an elbow point to make it look like a CAD leader
-                float landingLength = 15f;
-                float elbowX = callout.AlignRight ? pointerEndX - landingLength : pointerEndX + landingLength;
-                float textCenterY = textY + textSize.Height / 2f;
                 PointF pElbow = new PointF(elbowX, textCenterY);
                 PointF pTextEdge = new PointF(pointerEndX, textCenterY);
 

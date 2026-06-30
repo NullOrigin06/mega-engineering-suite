@@ -165,6 +165,8 @@ namespace MegaEngineeringSuite
 
             // 3. Tube Hole Leader Note
             PointF? targetHole = null;
+            float? tubeLeaderTextRight = null;
+            float? tubeLeaderMidY = null;
             if (baffleGeometry.ActiveTubeCenters.Count > 0)
             {
                 float maxDist = 0;
@@ -189,20 +191,24 @@ namespace MegaEngineeringSuite
                 
                 float lStartX = targetHole.Value.X;
                 float lStartY = targetHole.Value.Y;
-                float lMidX = lStartX + 40f;
-                float lMidY = lStartY - 40f;
-                float lEndX = lMidX + 20f;
+                float lMidX = lStartX + 90f;
+                float lMidY = lStartY - 150f;
+                float lEndX = lMidX + 45f;
+                float leaderTextX = lEndX + 5f;
+                float leaderApproxWidth = leaderText.Replace("\n", "").Length * 31f * 0.55f;
+                tubeLeaderTextRight = leaderTextX + leaderApproxWidth;
+                tubeLeaderMidY = lMidY;
                 
                 entities.Add(new CadLeader
                 {
                     Vertices = new List<PointF> { new PointF(lStartX, lStartY), new PointF(lMidX, lMidY), new PointF(lEndX, lMidY) },
                     HasArrowHead = true,
-                    EntityColor = Color.White
+                    EntityColor = Color.Magenta
                 });
                 
                 entities.Add(new CadMText
                 {
-                    Position = new PointF(lEndX + 5f, lMidY),
+                    Position = new PointF(leaderTextX, lMidY),
                     Text = leaderText,
                     Alignment = StringAlignment.Near,
                     LineAlignment = StringAlignment.Center,
@@ -211,16 +217,28 @@ namespace MegaEngineeringSuite
                 });
             }
 
+            // 4. Baffle Identification Text — right of outer boundary, aligned to horizontal centerline
+            float horizontalOffset = Math.Max(40f, Math.Min(60f, baffleGeometry.BaffleOD * 0.075f));
+            float baffleLabelX = rightBoundary.X + horizontalOffset;
+            float baffleLabelY = centerY;
+            const float baffleLabelHeight = 31f;
+            if (tubeLeaderTextRight.HasValue && tubeLeaderMidY.HasValue)
+            {
+                float leaderBandHalfHeight = baffleLabelHeight * 1.5f;
+                if (Math.Abs(baffleLabelY - tubeLeaderMidY.Value) <= leaderBandHalfHeight + baffleLabelHeight / 2f)
+                {
+                    baffleLabelX = Math.Max(baffleLabelX, tubeLeaderTextRight.Value + horizontalOffset * 0.5f);
+                }
+            }
 
-
-            // 4. Baffle Identification Text
             entities.Add(new CadMText
             {
                 Text = "BAFFLE #2,#4",
-                Position = new PointF(0, -baffleRad - 70f),
+                Position = new PointF(baffleLabelX, baffleLabelY),
                 EntityColor = Color.Blue,
-                Alignment = StringAlignment.Center,
-                TargetPaperSpaceHeight = 31f
+                Alignment = StringAlignment.Near,
+                LineAlignment = StringAlignment.Center,
+                TargetPaperSpaceHeight = baffleLabelHeight
             });
 
             // Shift geometry for visual balance and spacing

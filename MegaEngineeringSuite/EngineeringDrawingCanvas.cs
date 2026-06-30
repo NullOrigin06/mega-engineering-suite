@@ -744,8 +744,8 @@ namespace MegaEngineeringSuite
             PointF p1 = leader.Vertices[1];
             double angle = Math.Atan2(p0.Y - p1.Y, p0.X - p1.X);
 
-            float arrowLength = 8f / Math.Max(zoomScale, MinZoom);
-            float arrowWidth = 3.5f / Math.Max(zoomScale, MinZoom);
+            const float arrowLength = 18f;
+            const float arrowWidth = 7.5f;
 
             PointF pt1 = new PointF(
                 p0.X - arrowLength * (float)Math.Cos(angle) - arrowWidth * (float)Math.Sin(angle),

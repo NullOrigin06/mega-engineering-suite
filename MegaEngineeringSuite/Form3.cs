@@ -597,18 +597,18 @@ namespace MegaEngineeringSuite
                 lastGeneratedLispPath = result.BackupPath;
                 lastGeneratedScrPath = result.BackupScrPath;
 
-                string escapedPath = result.ScriptPath.Replace("\\", "\\\\");
-                string msg = $"AutoLISP and SCR scripts generated!\n\n" +
-                             $"Generated LSP:\n{escapedPath}\n\n" +
-                             $"Generated SCR:\n{result.ScrPath}\n\n" +
-                             $"SCR Content:\n{result.ScrContent}\n" +
-                             $"Process Arguments:\n\"{result.CadExecutable}\" {result.Arguments}";
-
-                MessageBox.Show(msg, "CAD Launch Debug", MessageBoxButtons.OK, MessageBoxIcon.Information);
+#if DEBUG
+                Debug.WriteLine("AutoLISP and SCR scripts generated.");
+                Debug.WriteLine($"Generated LSP: {result.ScriptPath}");
+                Debug.WriteLine($"Generated SCR: {result.ScrPath}");
+                Debug.WriteLine($"Process Arguments: \"{result.CadExecutable}\" {result.Arguments}");
+                Debug.WriteLine(result.ScrContent);
+#endif
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "CAD Launch Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Debug.WriteLine(ex);
+                MessageBox.Show("CAD launch failed. Please verify that GstarCAD is installed and try again.", "CAD Launch Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

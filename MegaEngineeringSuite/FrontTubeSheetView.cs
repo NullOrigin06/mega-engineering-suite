@@ -30,7 +30,7 @@ namespace MegaEngineeringSuite
             });
 
             // 3. Row Counts
-            entities.AddRange(rowCountRenderer.GenerateRowCounts(geometry, alignLeft: false));
+            entities.AddRange(rowCountRenderer.GenerateRowCounts(geometry, alignLeft: true));
 
             // 4. Annotations & Callouts
             var callouts = GenerateFrontCalloutModels(geometry, data);
@@ -96,40 +96,104 @@ namespace MegaEngineeringSuite
             List<CalloutLeader> leaders = new List<CalloutLeader>();
             float outerRad = geometry.OuterDiameter / 2f;
             float pcdRad = geometry.BoltPcdRadius;
+            
+            // Dynamically set clearances and shared baseline to prevent overlapping boundaries and each other
+            float annotationSideClearance = Math.Max(120f, outerRad * 0.25f);
+            float sharedTopY = outerRad + 240f;
+            float gasketNoteCenterY = -outerRad - 125f;
+            float partitionNoteCenterY = -outerRad - 200f;
 
             // 1. Bolt Holes (Top Right, mirrored from Rear View)
             leaders.Add(new CalloutLeader
             {
                 Text = $"Ø{data.HoleDia}, {data.NoOfBolts} HOLES EQUI.\nON {data.BoltPCD} P.C.D.",
-                TargetPoint = new PointF((float)(pcdRad * Math.Cos(Math.PI/4)), (float)(-pcdRad * Math.Sin(Math.PI/4))),
-                AlignRight = true
+                TargetPoint = FindBoltHoleNear(geometry, new PointF((float)(pcdRad * Math.Cos(Math.PI / 4)), (float)(pcdRad * Math.Sin(Math.PI / 4)))),
+                AlignRight = true,
+                LeaderVerticalDirection = 1f,
+                TextCenterY = sharedTopY,
+                SideClearance = annotationSideClearance
             });
 
-            // 2. Gasket Seating (Middle Right)
+            // 2. Gasket Seating (Bottom Right, mirrored)
             leaders.Add(new CalloutLeader
             {
                 Text = "GASKET SEATING SURFACE\nFOR PASS PARTITION PLATE",
                 TargetPoint = new PointF(outerRad - 20, 0),
-                AlignRight = true
+                AlignRight = true,
+                LeaderVerticalDirection = -1f,
+                TextCenterY = gasketNoteCenterY,
+                SideClearance = annotationSideClearance
             });
 
             // 3. Tubes (Top Left, mirrored)
             leaders.Add(new CalloutLeader
             {
-                Text = $"{data.TubeQty} NOS. TUBE HOLES\nFOR Ø{data.TubeOD:F1} ON TRIANGULAR PITCH",
-                TargetPoint = new PointF((float)(-outerRad * 0.8 * Math.Cos(Math.PI/4)), (float)(-outerRad * 0.8 * Math.Sin(Math.PI/4))),
-                AlignRight = false
+                Text = $"{data.TubeQty} NOS. TUBE HOLES\nFOR Ø{data.TubeOD:F1}",
+                TargetPoint = FindOuterTubeHole(geometry, rightSide: false),
+                AlignRight = false,
+                LeaderVerticalDirection = 1f,
+                TextCenterY = sharedTopY,
+                SideClearance = annotationSideClearance
             });
 
             // 4. Partition Thickness (Bottom Center)
             leaders.Add(new CalloutLeader
             {
                 Text = $"{data.TubeSheetFinishTHK} THK",
-                TargetPoint = new PointF(0, outerRad - 20),
-                AlignRight = false
+                TargetPoint = new PointF(0, -outerRad + 20),
+                AlignRight = false,
+                LeaderVerticalDirection = -1f,
+                TextCenterY = partitionNoteCenterY,
+                SideClearance = annotationSideClearance * 0.25f
             });
 
             return leaders;
+        }
+
+        private PointF FindBoltHoleNear(GeometryModel geometry, PointF fallback)
+        {
+            PointF best = fallback;
+            float bestDistance = float.MaxValue;
+
+            foreach (var hole in geometry.BoltHoleCoordinates)
+            {
+                float dx = hole.X - fallback.X;
+                float dy = hole.Y - fallback.Y;
+                float distance = dx * dx + dy * dy;
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    best = hole;
+                }
+            }
+
+            return best;
+        }
+
+        private PointF FindOuterTubeHole(GeometryModel geometry, bool rightSide)
+        {
+            PointF fallback = new PointF(
+                (rightSide ? 1f : -1f) * (float)(geometry.OuterDiameter * 0.4f * Math.Cos(Math.PI / 4)),
+                (float)(geometry.OuterDiameter * 0.4f * Math.Sin(Math.PI / 4)));
+            PointF best = fallback;
+            float bestDistance = float.MinValue;
+
+            foreach (var tube in geometry.TubeCoordinates)
+            {
+                if ((rightSide && tube.X <= 0f) || (!rightSide && tube.X >= 0f) || tube.Y <= 0f)
+                {
+                    continue;
+                }
+
+                float distance = tube.X * tube.X + tube.Y * tube.Y;
+                if (distance > bestDistance)
+                {
+                    bestDistance = distance;
+                    best = tube;
+                }
+            }
+
+            return best;
         }
     }
 }
