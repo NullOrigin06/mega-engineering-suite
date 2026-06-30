@@ -2,251 +2,206 @@
 
 # MEGA Engineering Suite
 
-**Transforming engineering parameters into production-ready CAD drawings through intelligent automation.**
+**Professional CAD Automation Platform**
 
-[![C#](https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=c-sharp&logoColor=white)](#)
-[![.NET](https://img.shields.io/badge/.NET-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)](#)
-[![WinForms](https://img.shields.io/badge/WinForms-5C2D91?style=for-the-badge&logo=windows&logoColor=white)](#)
-[![GstarCAD](https://img.shields.io/badge/GstarCAD-004481?style=for-the-badge&logo=autocad&logoColor=white)](#)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](#)
-[![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg?style=for-the-badge)](#)
-[![Last Commit](https://img.shields.io/badge/Last%20Commit-Today-success.svg?style=for-the-badge)](#)
+Generate production-ready engineering drawings directly from engineering parameters using C#, AutoLISP, and GstarCAD automation.
 
-<br/>
+<br>
 
-+----------------------------------------------------+
-|                                                    |
-|          MEGA Engineering Suite Screenshot         |
-|                                                    |
-|      (Future GIF / CAD animation placeholder)      |
-|                                                    |
-+----------------------------------------------------+
-<br/>
-*(Users can later replace this with a CAD Generation GIF, TubeSheet Automation GIF, or Drawing Generation Demo)*
+[![C#](https://img.shields.io/badge/C%23-239120?style=flat-square&logo=c-sharp&logoColor=white)](#)
+[![.NET](https://img.shields.io/badge/.NET-512BD4?style=flat-square&logo=dotnet&logoColor=white)](#)
+[![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)](#)
+[![GstarCAD](https://img.shields.io/badge/GstarCAD-004481?style=flat-square&logo=autocad&logoColor=white)](#)
+[![AutoLISP](https://img.shields.io/badge/AutoLISP-333333?style=flat-square&logo=gnu-bash&logoColor=white)](#)
+[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg?style=flat-square)](#)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](#)
+
+<br>
+
+<div style="border: 1px solid #e1e4e8; padding: 40px; margin: 20px 0; background-color: #f6f8fa; border-radius: 6px;">
+  <h3>[ CAD Automation GIF Placeholder ]</h3>
+  <br/>
+  <p><i>Tube Sheet Generation | Baffle Generation | AutoLISP Automation | Template-Based Drafting</i></p>
+  <p><small>(Replace this section with a CAD generation GIF, application screenshot, or workflow animation)</small></p>
+</div>
 
 </div>
 
-<br/>
+## Overview
 
-## 🏗 About MEGA Engineering Suite
+Industrial equipment design traditionally relies on manual CAD drafting, a process that is time-consuming, prone to human error, and difficult to standardize across engineering teams. Generating accurate layouts for tube sheets and baffles requires precise geometric calculations and iterative positioning.
 
-The **MEGA Engineering Suite** is a professional CAD automation platform built specifically for industrial equipment design. By integrating advanced mathematical geometry, layout generation, and dynamic scripting, MEGA Engineering Suite translates raw engineering requirements into detailed, production-ready drafting.
-
-Our mission is to eliminate manual drafting errors, standardize industrial drawing outputs, and dramatically accelerate the time from engineering design to manufacturing. 
-
-<div align="center">
-  
-**🏗 Professional CAD Automation** &nbsp;|&nbsp;
-**⚙ Engineering Calculations** &nbsp;|&nbsp;
-**📐 Automatic Drawing Generation** &nbsp;|&nbsp;
-**🤖 AutoLISP Automation** &nbsp;|&nbsp;
-**🎯 GstarCAD Integration**
-
-</div>
+MEGA Engineering Suite addresses this engineering problem by replacing manual drafting with programmatic generation. By entering strict engineering parameters into the suite, the application computes the required geometry, resolves spatial constraints, and generates deterministic AutoLISP scripts. These scripts directly interface with GstarCAD (or AutoCAD) to output standardized, production-ready engineering drawings in seconds. The modular architecture ensures that new equipment types and layout variations can be seamlessly integrated into the existing workflow.
 
 ---
 
-## ✨ Features
+## Features
 
-| 🚀 Feature | Description |
-| :--- | :--- |
-| **Parametric CAD** | Generate comprehensive drawings directly from strict engineering parameters. |
-| **AutoLISP Engine** | Fully automated drafting routines bypassing manual CAD interventions. |
-| **Template System** | Intelligent, anchor-based template positioning and alignment. |
-| **Engineering Calculations** | Dynamic geometry generation for tube sheets, baffles, and layouts. |
-| **CAD Integration** | Seamless and direct automation for GstarCAD and AutoCAD environments. |
-| **Modular Design** | Extensible architecture allowing the easy addition of new equipment modules. |
-
----
-
-## 🛠️ Modules
-
-<details open>
-<summary><b>📐 TubeSheet Module</b></summary>
-<br/>
-
-- ✔️ **Front Tube Sheet:** Intelligent rendering with dynamic boundaries.
-- ✔️ **Rear Tube Sheet:** Symmetrical generation and validation.
-- ✔️ **Tube Layout:** Automated, collision-free triangular and square pitch matrix generation.
-- ✔️ **Bolt Holes:** Parametric PCD (Pitch Circle Diameter) calculation and hole distribution.
-- ✔️ **Partition Plates:** Precise gasket seating and partition drafting.
-- ✔️ **Side Views:** Sectional geometry generation with exact depth mappings.
-- ✔️ **Dimensioning:** Auto-scaling offset dimension logic.
-- ✔️ **Annotation Placement:** Collision-aware text and leader positioning.
-- ✔️ **CAD Generation:** Fully-automated `.scr` and `.lsp` export.
-</details>
-
-<details open>
-<summary><b>⚙️ Baffle Module</b></summary>
-<br/>
-
-- ✔️ **Top Cut Baffle:** Calculates structural support cuts seamlessly.
-- ✔️ **Bottom Cut Baffle:** Fluid pathway bypass management.
-- ✔️ **Dynamic Cut Geometry:** Mathematically precise chord length definitions.
-- ✔️ **Tube Clearance:** Active collision-avoidance logic for tie-rods and baffles.
-- ✔️ **Automatic Dimensions:** Dynamic geometric dimension offsets.
-- ✔️ **Layer Management:** Industry-standard layer assignments.
-- ✔️ **Leader Generation:** Responsive and mirroring text leaders.
-- ✔️ **Annotation Engine:** Aesthetic textual callout system.
-</details>
+| Feature | Description |
+| --- | --- |
+| Parametric CAD Generation | Automatically generates drawings from engineering parameters |
+| AutoLISP Automation | Produces complete drafting scripts |
+| Template Anchors | Places drawings accurately inside CAD templates |
+| Modular Architecture | Supports independent engineering modules |
+| Drawing Standardization | Ensures consistent drafting output |
 
 ---
 
-## 🔄 Workflow
+## Modules
+
+### TubeSheet Module
+
+| Capability | Status |
+| --- | --- |
+| Front Tube Sheet | Complete |
+| Rear Tube Sheet | Complete |
+| Tube Layout | Complete |
+| Bolt Hole Generation | Complete |
+| Partition Plates | Complete |
+| Side Views | Complete |
+| Dimensioning | Complete |
+| Annotation Placement | Complete |
+
+### Baffle Module
+
+| Capability | Status |
+| --- | --- |
+| Top Cut Baffle | Complete |
+| Bottom Cut Baffle | Complete |
+| Dynamic Cut Geometry | Complete |
+| Tube Clearance | Complete |
+| Automatic Dimensions | Complete |
+| Layer Management | Complete |
+| Leader Generation | Complete |
+| Annotation Engine | Complete |
+
+---
+
+## Architecture
 
 ```mermaid
 graph TD;
-    A[Engineering Inputs]:::blue --> B[Calculation Engine];
-    B --> C[Geometry Engine];
-    C --> D[Drawing Engine];
+    A[Engineering Inputs] --> B[Calculation Engine];
+    B --> C[Geometry Generation];
+    C --> D[Drawing Generation];
     D --> E[AutoLISP Generator];
     E --> F[GstarCAD Automation];
-    F --> G[Production Drawing]:::green;
-
-    classDef blue fill:#2563EB,stroke:#333,stroke-width:2px,color:#fff;
-    classDef green fill:#10B981,stroke:#333,stroke-width:2px,color:#fff;
+    F --> G[Production CAD Drawing];
 ```
 
 ---
 
-## 🏛 Architecture
+## Technology Stack
 
-```text
-┌────────────────────────────┐
-│ Engineering Inputs         │
-└────────────┬───────────────┘
-             │
-┌────────────▼───────────────┐
-│ Calculation Engine         │
-└────────────┬───────────────┘
-             │
-┌────────────▼───────────────┐
-│ Geometry Engine            │
-└────────────┬───────────────┘
-             │
-┌────────────▼───────────────┐
-│ Drawing Engine             │
-└────────────┬───────────────┘
-             │
-┌────────────▼───────────────┐
-│ AutoLISP Generator         │
-└────────────┬───────────────┘
-             │
-┌────────────▼───────────────┐
-│ GstarCAD Automation        │
-└────────────┬───────────────┘
-             │
-┌────────────▼───────────────┐
-│ Production Drawing         │
-└────────────────────────────┘
+| Technology | Purpose |
+| --- | --- |
+| C# | Desktop application |
+| .NET | Framework |
+| Windows Forms | User Interface |
+| AutoLISP | CAD automation |
+| GstarCAD | CAD platform |
+| Python | Utility scripts |
+
+---
+
+## Screenshots
+
+<br>
+
+**Application Dashboard**
+> `[ Screenshot Placeholder ]`
+
+<br>
+
+**Tube Sheet Module**
+> `[ Screenshot Placeholder ]`
+
+<br>
+
+**Baffle Module**
+> `[ Screenshot Placeholder ]`
+
+<br>
+
+**Generated Engineering Drawing**
+> `[ Screenshot Placeholder ]`
+
+---
+
+## Workflow
+
+```mermaid
+graph TD;
+    A[Engineering Data] --> B[Calculations];
+    B --> C[Geometry];
+    C --> D[CAD Entities];
+    D --> E[AutoLISP];
+    E --> F[GstarCAD];
+    F --> G[Engineering Drawing];
 ```
 
 ---
 
-## 💻 Technology Stack
-
-| Technology | Icon | Purpose |
-| :--- | :---: | :--- |
-| **C#** | <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/csharp/csharp-original.svg" alt="C#" width="24" height="24"> | Core Application Logic |
-| **.NET** | <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/dot-net/dot-net-original.svg" alt=".NET" width="24" height="24"> | Application Framework |
-| **WinForms** | <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/windows8/windows8-original.svg" alt="WinForms" width="24" height="24"> | Desktop User Interface |
-| **AutoLISP** | <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/bash/bash-original.svg" alt="LISP" width="24" height="24"> | CAD Automation Scripts |
-| **Python** | <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg" alt="Python" width="24" height="24"> | Utility Scripts & Patching |
-| **GstarCAD** | <img src="https://upload.wikimedia.org/wikipedia/commons/2/23/AutoCAD_logo_2018.png" alt="CAD" width="24" height="24"> | Target CAD Platform |
-
----
-
-## 📸 Screenshots
-
-<details>
-<summary><b>TubeSheet Module</b></summary>
-<br/>
-
-> *[Large screenshot placeholder]*
-> *(Add image of TubeSheet generation here)*
-</details>
-
-<details>
-<summary><b>Baffle Module</b></summary>
-<br/>
-
-> *[Large screenshot placeholder]*
-> *(Add image of Baffle generation here)*
-</details>
-
-<details>
-<summary><b>Side Views</b></summary>
-<br/>
-
-> *[Large screenshot placeholder]*
-> *(Add image of Sectional side views here)*
-</details>
-
-<details>
-<summary><b>Final Engineering Drawing</b></summary>
-<br/>
-
-> *[Large screenshot placeholder]*
-> *(Add image of the final production drawing here)*
-</details>
-
----
-
-## 🗺️ Future Roadmap
-
-- ✅ **TubeSheet Module** (Completed)
-- ✅ **Baffle Module** (Completed)
-- 🔄 **Flange Module**
-- 🔄 **Nozzle Module**
-- 🔄 **Pipe Support Module**
-- 🔄 **Tank Module**
-- 🔄 **BOM Generator**
-- 🔄 **Report Generator**
-- 🔄 **Multi-CAD Support**
-- 🔄 **REST API**
-- 🔄 **Cloud Drawing Management**
-
----
-
-## 📊 Project Statistics
-
-### Modules Completed
-**40%** `████████░░░░░░░░░░`
-
-**TubeSheet**&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`██████████` (100%)<br/>
-**Baffle**&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`██████████` (100%)<br/>
-**Flange**&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`░░░░░░░░░░` (0%)<br/>
-**Tank**&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`░░░░░░░░░░` (0%)<br/>
-
----
-
-## 📂 Folder Structure
+## Repository Structure
 
 ```text
 MEGA Engineering Suite
-├── Calculation Engine
-├── Geometry
-├── Drawing Engine
-├── AutoLISP
-├── Templates
+│
 ├── Modules
 │   ├── TubeSheet
 │   ├── Baffle
 │   ├── Flange
 │   └── Tank
+│
+├── Geometry
+│
+├── CalculationEngine
+│
+├── DrawingAutomation
+│
+├── Templates
+│
 └── Resources
 ```
 
 ---
 
-<br/>
+## Future Roadmap
+
+| Module | Status |
+| --- | --- |
+| TubeSheet | Complete |
+| Baffle | Complete |
+| Flange | Planned |
+| Nozzle | Planned |
+| Pipe Support | Planned |
+| Tank | Planned |
+| BOM Generation | Planned |
+| Report Generation | Planned |
+| Multi-CAD Support | Planned |
+| REST API | Planned |
+
+---
+
+## Documentation
+
+| Document | Description |
+| --- | --- |
+| Installation | Setup instructions |
+| Architecture | Internal design |
+| Modules | Available automation modules |
+| Development | Contributor guide |
+| License | Project license |
+
+---
 
 <div align="center">
+  
+**MEGA Engineering Suite**
 
-Made with ❤️ by
+Developed by **MEGA Engineering Projects Pvt. Ltd.**
 
-**MEGA Engineering Projects Pvt. Ltd.**
-
-*Engineering Automation • CAD Intelligence • Industrial Software*
+Professional CAD Automation for Process Equipment Design
 
 </div>
