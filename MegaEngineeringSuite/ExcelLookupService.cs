@@ -43,7 +43,7 @@ namespace MegaEngineeringSuite
                     if (cellShellId.IsNumber && (int)cellShellId.GetNumber() == shellId)
                     {
                         // Found a match, extract all columns based on the mapped indices
-                        return new EngineeringDataModel
+                        var data = new EngineeringDataModel
                         {
                             ShellID = shellId,
                             TubeSheetFinishTHK = GetDoubleValue(row, 7),
@@ -60,10 +60,19 @@ namespace MegaEngineeringSuite
                             BoltPCD = GetDoubleValue(row, 18),
                             TubeSheetFinishOD = GetDoubleValue(row, 19),
                             TubeSheetRawOD = GetDoubleValue(row, 20),
+                            LinerGasketOD = GetDoubleValue(row, 21),
                             TieRodDia = GetDoubleValue(row, 22),
                             TieRodQty = (int)GetDoubleValue(row, 23),
                             SpacerTube = GetDoubleValue(row, 24)
                         };
+
+                        MegaEngineeringSuite.Infrastructure.Logging.SimpleLogger.Log("ExcelLookup", 
+                            $"Loaded Row for ShellID={shellId}:\n" +
+                            $"FlangeID={data.FlangeID}, BoltPCD={data.BoltPCD}, " +
+                            $"TubeSheetFinishOD={data.TubeSheetFinishOD}, TubeSheetRawOD={data.TubeSheetRawOD}, " +
+                            $"LinerGasketOD={data.LinerGasketOD}");
+
+                        return data;
                     }
                 }
 

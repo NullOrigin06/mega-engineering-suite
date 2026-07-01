@@ -273,16 +273,11 @@ namespace MegaEngineeringSuite
             Button btnCalculate = new Button { Name = "btnCalculate", Text = "Calculate", Tag = ThemeManager.PositiveActionButtonTag, Font = sectionFont, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly, MinimumSize = new Size(210, 50), Padding = new Padding(16, 0, 16, 0), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Margin = new Padding(0, 0, 12, 0) };
             btnCalculate.Click += BtnCalculate_Click;
             
-            Button btnGenerate = new Button { Name = "btnGenerate", Text = "Generate Drawing", Font = sectionFont, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly, MinimumSize = new Size(250, 50), Padding = new Padding(16, 0, 16, 0), Margin = new Padding(0, 0, 12, 0) };
-            btnGenerate.Click += BtnGenerate_Click;
+            Button btnGenerateTubeSheet = new Button { Name = "btnGenerateTubeSheet", Text = "Generate Tube Sheet", Font = sectionFont, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly, MinimumSize = new Size(250, 50), Padding = new Padding(16, 0, 16, 0), Margin = new Padding(0, 0, 12, 0) };
+            btnGenerateTubeSheet.Click += BtnGenerateTubeSheet_Click;
             
-            Button btnOpenLisp = new Button { Name = "btnOpenLisp", Text = "Open Generated LISP", Font = sectionFont, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly, MinimumSize = new Size(280, 50), Padding = new Padding(16, 0, 16, 0), Margin = new Padding(0, 0, 12, 0) };
-            btnOpenLisp.Click += BtnOpenLisp_Click;
-
-
-            
-            Button btnOpenScr = new Button { Name = "btnOpenScr", Text = "Open Generated SCR", Font = sectionFont, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly, MinimumSize = new Size(280, 50), Padding = new Padding(16, 0, 16, 0), Margin = new Padding(0, 0, 12, 0) };
-            btnOpenScr.Click += BtnOpenScr_Click;
+            Button btnGenerateBodyFlange = new Button { Name = "btnGenerateBodyFlange", Text = "Generate Body Flange", Font = sectionFont, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly, MinimumSize = new Size(250, 50), Padding = new Padding(16, 0, 16, 0), Margin = new Padding(0, 0, 12, 0) };
+            btnGenerateBodyFlange.Click += BtnGenerateBodyFlange_Click;
             
             Button btnExport = new Button { Name = "btnExport", Text = "Export Data", Font = sectionFont, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly, MinimumSize = new Size(200, 50), Padding = new Padding(16, 0, 16, 0), Margin = new Padding(0, 0, 12, 0) };
             btnExport.Click += BtnExport_Click;
@@ -291,9 +286,8 @@ namespace MegaEngineeringSuite
             btnBack.Click += BtnBack_Click;
 
             pnlButtons.Controls.Add(btnCalculate);
-            pnlButtons.Controls.Add(btnGenerate);
-            pnlButtons.Controls.Add(btnOpenLisp);
-            pnlButtons.Controls.Add(btnOpenScr);
+            pnlButtons.Controls.Add(btnGenerateTubeSheet);
+            pnlButtons.Controls.Add(btnGenerateBodyFlange);
             pnlButtons.Controls.Add(btnExport);
             pnlButtons.Controls.Add(btnBack);
 
@@ -550,7 +544,7 @@ namespace MegaEngineeringSuite
             }
         }
 
-        private void BtnGenerate_Click(object? sender, EventArgs e)
+        private void BtnGenerateTubeSheet_Click(object? sender, EventArgs e)
         {
             if (currentData == null || currentGeometry == null)
             {
@@ -560,6 +554,7 @@ namespace MegaEngineeringSuite
 
             try
             {
+                MegaEngineeringSuite.Infrastructure.Logging.SimpleLogger.Log("Workflow", "Tube Sheet Generation Started");
                 var tempService = new TemplateDrawingService();
                 var groupedViews = tempService.GenerateTemplateViews(currentGeometry, currentData);
 
@@ -612,37 +607,49 @@ namespace MegaEngineeringSuite
             }
         }
 
-        private void BtnOpenLisp_Click(object? sender, EventArgs e)
+        private async void BtnGenerateBodyFlange_Click(object? sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(lastGeneratedLispPath) || !File.Exists(lastGeneratedLispPath))
+            if (currentData == null)
             {
-                MessageBox.Show("No generated LISP file found. Please generate the drawing first.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Please calculate engineering data first.", "Missing Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            try
-            {
-                Process.Start(new ProcessStartInfo("notepad.exe", $"\"{lastGeneratedLispPath}\"") { UseShellExecute = true });
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to open LISP file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
 
-        private void BtnOpenScr_Click(object? sender, EventArgs e)
-        {
-            if (string.IsNullOrEmpty(lastGeneratedScrPath) || !File.Exists(lastGeneratedScrPath))
-            {
-                MessageBox.Show("No generated SCR file found. Please generate the drawing first.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
             try
             {
-                Process.Start(new ProcessStartInfo("notepad.exe", $"\"{lastGeneratedScrPath}\"") { UseShellExecute = true });
+                MegaEngineeringSuite.Infrastructure.Logging.SimpleLogger.Log("Workflow", "Body Flange Generation Started");
+                
+                // Map the data (includes validation)
+                MegaEngineeringSuite.BonnetFlange.BonnetFlangeData mappedData = MegaEngineeringSuite.BonnetFlange.BonnetFlangeDataMapper.Map(currentData);
+                
+                // Run generation asynchronously to prevent UI freeze
+                string outputPath = await System.Threading.Tasks.Task.Run(() =>
+                {
+                    var generator = new MegaEngineeringSuite.BonnetFlange.BonnetFlangeGenerator();
+                    return generator.Generate(mappedData);
+                });
+
+                MegaEngineeringSuite.Infrastructure.Logging.SimpleLogger.Log("Workflow", "Body Flange Generation Completed");
+
+                if (!string.IsNullOrEmpty(outputPath) && System.IO.File.Exists(outputPath))
+                {
+                    MegaEngineeringSuite.Infrastructure.Logging.SimpleLogger.Log("Workflow", "Opening Drawing");
+                    string cadExe = AppConfigManager.Current.CadPath;
+                    
+                    if (!string.IsNullOrEmpty(cadExe) && System.IO.File.Exists(cadExe))
+                    {
+                        Process.Start(new ProcessStartInfo { FileName = cadExe, Arguments = $"\"{outputPath}\"" });
+                    }
+                    else
+                    {
+                        Process.Start(new ProcessStartInfo { FileName = outputPath, UseShellExecute = true });
+                    }
+                    MegaEngineeringSuite.Infrastructure.Logging.SimpleLogger.Log("Workflow", "Drawing Opened");
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to open SCR file: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Failed to generate Body Flange:\n{ex.Message}", "Generation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

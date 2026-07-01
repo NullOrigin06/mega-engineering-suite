@@ -17,7 +17,7 @@ namespace MegaEngineeringSuite.BonnetFlange
         public CadOperationTimes ProcessAnnotations(Dictionary<string, string> replacements)
         {
             // Execute the single-pass optimized replacement
-            return _cadAdapter.ReplaceDimensionPlaceholders(replacements);
+            return _cadAdapter.ReplaceAnnotationPlaceholders(replacements);
         }
     }
 }

@@ -25,7 +25,7 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
             _cadDoc = _cadApp.Documents.Open(filePath);
         }
 
-        public CadOperationTimes ReplaceDimensionPlaceholders(Dictionary<string, string> replacements)
+        public CadOperationTimes ReplaceAnnotationPlaceholders(Dictionary<string, string> replacements)
         {
             if (_cadDoc == null) throw new InvalidOperationException("No drawing is currently open.");
 
@@ -37,7 +37,7 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
             dynamic layouts = _cadDoc.Layouts;
             int layoutCount = layouts.Count;
             
-            int totalDimensionsScanned = 0;
+            int totalAnnotationsScanned = 0;
             int totalReplaced = 0;
 
             for (int l = 0; l < layoutCount; l++)
@@ -54,32 +54,61 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
                     dynamic entity = block.Item(i);
                     string entityName = entity.EntityName;
 
-                    if (entityName.Contains("Dimension"))
+                    string? currentText = null;
+                    string? propertyName = null;
+                    
+                    try
                     {
-                        totalDimensionsScanned++;
-                        try
+                        if (entityName.Contains("Dimension"))
                         {
-                            string textOverride = entity.TextOverride;
-                            if (replacements.TryGetValue(textOverride, out string? newText) && newText != null)
-                            {
-                                // Pause scan timer, start replace timer
-                                scanStopwatch.Stop();
-                                replaceStopwatch.Start();
+                            currentText = entity.TextOverride;
+                            propertyName = "TextOverride";
+                        }
+                        else if (entityName.Contains("MText") || entityName.Contains("Text") || entityName.Contains("MLeader"))
+                        {
+                            currentText = entity.TextString;
+                            propertyName = "TextString";
+                        }
+                    }
+                    catch
+                    {
+                        // Swallow unsupported property exceptions
+                    }
 
-                                entity.TextOverride = newText;
-                                
-                                // Pause replace timer, resume scan timer
-                                replaceStopwatch.Stop();
-                                scanStopwatch.Start();
-                                
-                                totalReplaced++;
-                                
-                                SimpleLogger.Log("BonnetFlange", $"Replaced '{textOverride}' -> '{newText}' on Layout: {layoutName}");
+                    if (!string.IsNullOrEmpty(currentText))
+                    {
+                        totalAnnotationsScanned++;
+                        
+                        string newText = currentText;
+                        bool modified = false;
+                        string matchedKey = "";
+
+                        foreach (var kvp in replacements)
+                        {
+                            if (newText.Contains(kvp.Key))
+                            {
+                                newText = newText.Replace(kvp.Key, kvp.Value);
+                                modified = true;
+                                matchedKey = kvp.Key;
                             }
                         }
-                        catch
+
+                        if (modified)
                         {
-                            // Swallow unsupported TextOverride exceptions
+                            // Pause scan timer, start replace timer
+                            scanStopwatch.Stop();
+                            replaceStopwatch.Start();
+
+                            if (propertyName == "TextOverride") entity.TextOverride = newText;
+                            else if (propertyName == "TextString") entity.TextString = newText;
+                            
+                            // Pause replace timer, resume scan timer
+                            replaceStopwatch.Stop();
+                            scanStopwatch.Start();
+                            
+                            totalReplaced++;
+                            
+                            SimpleLogger.Log("BonnetFlange", $"Found placeholder {matchedKey} in {entityName}\nReplaced successfully");
                         }
                     }
                 }
@@ -87,7 +116,7 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
             
             scanStopwatch.Stop();
             
-            SimpleLogger.Log("BonnetFlange", $"Completed Scan & Replace. Scanned {totalDimensionsScanned} dimensions, replaced {totalReplaced}.");
+            SimpleLogger.Log("BonnetFlange", $"Completed Scan & Replace. Scanned {totalAnnotationsScanned} annotations, replaced {totalReplaced}.");
 
             return new CadOperationTimes
             {

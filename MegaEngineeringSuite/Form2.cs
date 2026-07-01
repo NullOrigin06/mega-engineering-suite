@@ -108,14 +108,6 @@ namespace MegaEngineeringSuite
 
             // Debug Test Button (Removed)
 
-            // Bonnet Flange Button
-            Button btnBonnetFlange = new Button();
-            btnBonnetFlange.Text = "Bonnet Flange";
-            btnBonnetFlange.Font = buttonFont;
-            btnBonnetFlange.Size = new Size(350, 100);
-            btnBonnetFlange.Location = new Point(550, 580);
-            btnBonnetFlange.Anchor = AnchorStyles.Top;
-            btnBonnetFlange.Click += BtnBonnetFlange_Click;
 
             // Logout Button
             btnLogout = new Button();
@@ -123,7 +115,7 @@ namespace MegaEngineeringSuite
             btnLogout.Tag = ThemeManager.DangerActionButtonTag;
             btnLogout.Font = buttonFont;
             btnLogout.Size = new Size(180, 60);
-            btnLogout.Location = new Point(630, 700); // Moved down slightly
+            btnLogout.Location = new Point(630, 580);
             btnLogout.Anchor = AnchorStyles.Top;
             btnLogout.Click += BtnLogout_Click;
 
@@ -132,18 +124,11 @@ namespace MegaEngineeringSuite
             Controls.Add(btnTubeSheet);
             Controls.Add(btnHeatChamber);
             Controls.Add(btnCylinder);
-            Controls.Add(btnBonnetFlange);
+
             Controls.Add(btnLogout);
             
             // Apply Mega Engineering Branding
             CompanyBrandingService.ApplyBranding(this);
-        }
-
-        private void BtnBonnetFlange_Click(object? sender, EventArgs e)
-        {
-            this.Hide();
-            var bfForm = new MegaEngineeringSuite.BonnetFlange.BonnetFlangeForm(this);
-            bfForm.Show();
         }
 
         private void BtnTubeSheet_Click(

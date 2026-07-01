@@ -12,7 +12,7 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
     public interface ICadAdapter : IDisposable
     {
         void OpenDrawing(string filePath);
-        CadOperationTimes ReplaceDimensionPlaceholders(Dictionary<string, string> replacements);
+        CadOperationTimes ReplaceAnnotationPlaceholders(Dictionary<string, string> replacements);
         void SaveAs(string newFilePath);
         void CloseDrawing();
     }
