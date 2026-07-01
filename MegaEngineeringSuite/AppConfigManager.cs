@@ -9,6 +9,8 @@ namespace MegaEngineeringSuite
         public string CadPath { get; set; } = @"C:\Program Files\Gstarsoft\GstarCAD2026\gcad.exe";
         public string ExcelTemplatePath { get; set; } = @"C:\Users\PARTH\OneDrive\Desktop\MEGA_TEMPLATES\Heat Exchanger BOM Details.xlsx";
         public string DwgTemplatePath { get; set; } = @"C:\Users\PARTH\OneDrive\Desktop\MEGA_TEMPLATES\FINAL TUBESHEET.dwg";
+        public string BonnetTemplatePath { get; set; } = @"C:\Users\PARTH\OneDrive\Desktop\MEGA_TEMPLATES\BAFFLE_Flange_template.dwg";
+        public string BonnetOutputFolder { get; set; } = @"C:\Users\PARTH\OneDrive\Desktop\MEGA_TEMPLATES\GeneratedDrawings";
     }
 
     public static class AppConfigManager

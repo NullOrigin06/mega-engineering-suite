@@ -98,64 +98,52 @@ namespace MegaEngineeringSuite
                 BtnHeatChamber_Click;
 
             // Cylinder Button
-
             btnCylinder = new Button();
+            btnCylinder.Text = "Cylinder";
+            btnCylinder.Font = buttonFont;
+            btnCylinder.Size = new Size(350, 100);
+            btnCylinder.Location = new Point(550, 460);
+            btnCylinder.Anchor = AnchorStyles.Top;
+            btnCylinder.Click += BtnCylinder_Click;
 
-            btnCylinder.Text =
-                "Cylinder";
+            // Debug Test Button (Removed)
 
-            btnCylinder.Font =
-                buttonFont;
-
-            btnCylinder.Size =
-                new Size(350, 100);
-
-            btnCylinder.Location =
-                new Point(550, 460);
-
-            btnCylinder.Anchor =
-                AnchorStyles.Top;
-
-            btnCylinder.Click +=
-                BtnCylinder_Click;
+            // Bonnet Flange Button
+            Button btnBonnetFlange = new Button();
+            btnBonnetFlange.Text = "Bonnet Flange";
+            btnBonnetFlange.Font = buttonFont;
+            btnBonnetFlange.Size = new Size(350, 100);
+            btnBonnetFlange.Location = new Point(550, 580);
+            btnBonnetFlange.Anchor = AnchorStyles.Top;
+            btnBonnetFlange.Click += BtnBonnetFlange_Click;
 
             // Logout Button
-
             btnLogout = new Button();
-
-            btnLogout.Text =
-                "Logout";
-
-            btnLogout.Tag =
-                ThemeManager.DangerActionButtonTag;
-
-            btnLogout.Font =
-                buttonFont;
-
-            btnLogout.Size =
-                new Size(180, 60);
-
-            btnLogout.Location =
-                new Point(630, 620);
-
-            btnLogout.Anchor =
-                AnchorStyles.Top;
-
-            btnLogout.Click +=
-                BtnLogout_Click;
+            btnLogout.Text = "Logout";
+            btnLogout.Tag = ThemeManager.DangerActionButtonTag;
+            btnLogout.Font = buttonFont;
+            btnLogout.Size = new Size(180, 60);
+            btnLogout.Location = new Point(630, 700); // Moved down slightly
+            btnLogout.Anchor = AnchorStyles.Top;
+            btnLogout.Click += BtnLogout_Click;
 
             // Add Controls
-
             Controls.Add(lblTitle);
-
             Controls.Add(btnTubeSheet);
             Controls.Add(btnHeatChamber);
             Controls.Add(btnCylinder);
-
+            Controls.Add(btnBonnetFlange);
             Controls.Add(btnLogout);
             
             // Apply Mega Engineering Branding
             CompanyBrandingService.ApplyBranding(this);
+        }
+
+        private void BtnBonnetFlange_Click(object? sender, EventArgs e)
+        {
+            this.Hide();
+            var bfForm = new MegaEngineeringSuite.BonnetFlange.BonnetFlangeForm(this);
+            bfForm.Show();
         }
 
         private void BtnTubeSheet_Click(
