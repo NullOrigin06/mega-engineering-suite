@@ -328,7 +328,7 @@ namespace MegaEngineeringSuite.BonnetFlange
                 string outputPath = await Task.Run(() =>
                 {
                     var generator = new BonnetFlangeGenerator();
-                    return generator.Generate(data);
+                    return generator.Generate(data, new DrawingInformation());
                 });
 
                 _currentOutputPath = outputPath;

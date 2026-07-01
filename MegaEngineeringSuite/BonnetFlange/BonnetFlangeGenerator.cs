@@ -8,7 +8,7 @@ namespace MegaEngineeringSuite.BonnetFlange
 {
     public class BonnetFlangeGenerator
     {
-        public string Generate(BonnetFlangeData data)
+        public string Generate(BonnetFlangeData data, DrawingInformation drawInfo)
         {
             SimpleLogger.Log("BonnetFlange", "Starting Drawing Generation...");
             
@@ -55,6 +55,9 @@ namespace MegaEngineeringSuite.BonnetFlange
 
                 var engine = new AnnotationEngine(cadAdapter);
                 innerTimes = engine.ProcessAnnotations(replacements);
+                
+                // Update Title Block
+                cadAdapter.UpdateTitleBlockAttributes(drawInfo);
 
                 swSave.Start();
                 cadAdapter.SaveAs(outputPath);

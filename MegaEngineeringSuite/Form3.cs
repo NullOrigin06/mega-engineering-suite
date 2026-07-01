@@ -24,8 +24,18 @@ namespace MegaEngineeringSuite
         // Calculated Values
         private TextBox txtTubeQty;
         private TextBox txtShellID;
+        // Drawing Information
+        private TextBox txtCustomerName;
+        private TextBox txtTitle;
+        private TextBox txtProjectNo;
+        private TextBox txtDrawingNo;
+        private TextBox txtRevision;
+        private TextBox txtDate;
+        private TextBox txtPreparedBy;
+        private TextBox txtCheckedBy;
+        private TextBox txtApprovedBy;
+
         private DataGridView dgvProperties;
-        private EngineeringDrawingCanvas drawingCanvas;
         private Label lblValidationStatus;
         private readonly HashSet<Control> invalidControls = new HashSet<Control>();
         private static readonly string[] EngineeringPropertyNames =
@@ -192,24 +202,50 @@ namespace MegaEngineeringSuite
             txtShellID = new TextBox { Font = new Font("Segoe UI", 16, FontStyle.Bold), ReadOnly = true, BackColor = Color.White, Anchor = AnchorStyles.Left | AnchorStyles.Right };
             pnlCalculated.Controls.Add(lblShellID, 0, 3);
             pnlCalculated.Controls.Add(txtShellID, 0, 4);
-
-            Panel canvasScrollPanel = new Panel 
-            { 
-                Dock = DockStyle.Fill, 
-                AutoScroll = false, 
-                Margin = new Padding(0, 20, 0, 0), 
-                BorderStyle = BorderStyle.None,
-                BackColor = Color.FromArgb(14, 16, 24)
+            // Drawing Information Panel
+            TableLayoutPanel pnlDrawInfo = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                Padding = new Padding(0, 20, 0, 0),
+                Margin = new Padding(0),
+                AutoSize = true
             };
+            pnlDrawInfo.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             
-            drawingCanvas = new EngineeringDrawingCanvas { Dock = DockStyle.Fill, Margin = new Padding(0) };
-            canvasScrollPanel.Controls.Add(drawingCanvas);
-            pnlCalculated.Controls.Add(canvasScrollPanel, 0, 5);
+            Font drawInfoHeaderFont = new Font("Segoe UI Semibold", 13, FontStyle.Regular);
+            Font drawInfoLabelFont = new Font("Segoe UI", 10, FontStyle.Regular);
+            Font drawInfoTextFont = new Font("Segoe UI", 10, FontStyle.Regular);
 
+            Label lblDrawInfoHeader = new Label { Text = "DRAWING INFORMATION", Font = drawInfoHeaderFont, AutoSize = true, Margin = new Padding(0, 0, 0, 12) };
+            pnlDrawInfo.Controls.Add(lblDrawInfoHeader, 0, 0);
+
+            txtCustomerName = AddVerticalInputBlock(pnlDrawInfo, "Customer Name", drawInfoLabelFont, drawInfoTextFont, 1, false);
+            txtTitle = AddVerticalInputBlock(pnlDrawInfo, "Drawing Title", drawInfoLabelFont, drawInfoTextFont, 3, true);
+            txtProjectNo = AddVerticalInputBlock(pnlDrawInfo, "Project No", drawInfoLabelFont, drawInfoTextFont, 5, false);
+            txtDrawingNo = AddVerticalInputBlock(pnlDrawInfo, "Drawing No", drawInfoLabelFont, drawInfoTextFont, 7, false);
+            txtRevision = AddVerticalInputBlock(pnlDrawInfo, "Revision", drawInfoLabelFont, drawInfoTextFont, 9, false);
+            txtDate = AddVerticalInputBlock(pnlDrawInfo, "Date", drawInfoLabelFont, drawInfoTextFont, 11, false);
+            txtPreparedBy = AddVerticalInputBlock(pnlDrawInfo, "Prepared By", drawInfoLabelFont, drawInfoTextFont, 13, false);
+            txtCheckedBy = AddVerticalInputBlock(pnlDrawInfo, "Checked By", drawInfoLabelFont, drawInfoTextFont, 15, false);
+            txtApprovedBy = AddVerticalInputBlock(pnlDrawInfo, "Approved By", drawInfoLabelFont, drawInfoTextFont, 17, false);
+
+            // Pre-fill sensible defaults
+            txtTitle.Text = "product for";
+            txtCustomerName.Text = "parth";
+            txtProjectNo.Text = "25-005";
+            txtDrawingNo.Text = "25-005-FLG-EX-1405";
+            txtPreparedBy.Text = "NSS";
+            txtCheckedBy.Text = "ASK";
+            txtApprovedBy.Text = "ASK";
+            txtRevision.Text = "0";
+            txtDate.Text = DateTime.Today.ToString("dd-MM-yyyy");
+
+            pnlCalculated.Controls.Add(pnlDrawInfo, 0, 5);
             mainTable.Controls.Add(pnlCalculated, 1, 0);
 
             // 4. RIGHT PANEL: PROPERTY GRID
-            TableLayoutPanel pnlGrid = new TableLayoutPanel 
+            TableLayoutPanel pnlGrid = new TableLayoutPanel
             { 
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
@@ -310,6 +346,62 @@ namespace MegaEngineeringSuite
             panel.Controls.Add(txt, 1, row);
             
             return txt;
+        }
+
+        private TextBox AddVerticalInputBlock(TableLayoutPanel panel, string labelText, Font lblFont, Font txtFont, int startRow, bool isMultiline)
+        {
+            Label lbl = new Label 
+            { 
+                Text = labelText, 
+                Font = lblFont, 
+                AutoSize = true, 
+                Margin = new Padding(0, 10, 0, 2),
+                ForeColor = Color.FromArgb(70, 76, 90)
+            };
+            
+            TextBox txt = new TextBox 
+            { 
+                Font = txtFont, 
+                Anchor = AnchorStyles.Left | AnchorStyles.Right, 
+                Margin = new Padding(0, 0, 0, 5),
+                BorderStyle = BorderStyle.FixedSingle
+            };
+
+            if (isMultiline)
+            {
+                txt.Multiline = true;
+                txt.Height = 45;
+                txt.ScrollBars = ScrollBars.Vertical;
+            }
+
+            panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            panel.Controls.Add(lbl, 0, startRow);
+            panel.Controls.Add(txt, 0, startRow + 1);
+            
+            return txt;
+        }
+
+        private DrawingInformation GetDrawingInformation()
+        {
+            DateTime parsedDate = DateTime.Today;
+            if (!string.IsNullOrWhiteSpace(txtDate.Text) && DateTime.TryParseExact(txtDate.Text, "dd-MM-yyyy", null, System.Globalization.DateTimeStyles.None, out DateTime tempDate))
+            {
+                parsedDate = tempDate;
+            }
+
+            return new DrawingInformation
+            {
+                CustomerName = txtCustomerName.Text,
+                Title = txtTitle.Text,
+                ProjectNo = txtProjectNo.Text,
+                DrawingNo = txtDrawingNo.Text,
+                Revision = txtRevision.Text,
+                PreparedBy = txtPreparedBy.Text,
+                CheckedBy = txtCheckedBy.Text,
+                ApprovedBy = txtApprovedBy.Text,
+                Date = parsedDate
+            };
         }
 
         private static Label CreateInputLabel(string text, Font font)
@@ -452,7 +544,6 @@ namespace MegaEngineeringSuite
 
                 // Phase 2: Geometry Engine & Validation
                 currentGeometry = geometryService.CalculateGeometry(currentData);
-                drawingCanvas.LoadDrawing(currentGeometry, currentData); // Load data and trigger redraw
             }
 
             catch (ArgumentException aex)
@@ -622,11 +713,14 @@ namespace MegaEngineeringSuite
                 // Map the data (includes validation)
                 MegaEngineeringSuite.BonnetFlange.BonnetFlangeData mappedData = MegaEngineeringSuite.BonnetFlange.BonnetFlangeDataMapper.Map(currentData);
                 
+                // Extract drawing information
+                DrawingInformation drawInfo = GetDrawingInformation();
+
                 // Run generation asynchronously to prevent UI freeze
                 string outputPath = await System.Threading.Tasks.Task.Run(() =>
                 {
                     var generator = new MegaEngineeringSuite.BonnetFlange.BonnetFlangeGenerator();
-                    return generator.Generate(mappedData);
+                    return generator.Generate(mappedData, drawInfo);
                 });
 
                 MegaEngineeringSuite.Infrastructure.Logging.SimpleLogger.Log("Workflow", "Body Flange Generation Completed");

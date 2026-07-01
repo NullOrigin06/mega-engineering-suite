@@ -13,6 +13,7 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
     {
         void OpenDrawing(string filePath);
         CadOperationTimes ReplaceAnnotationPlaceholders(Dictionary<string, string> replacements);
+        void UpdateTitleBlockAttributes(DrawingInformation info);
         void SaveAs(string newFilePath);
         void CloseDrawing();
     }

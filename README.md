@@ -62,6 +62,8 @@ MEGA Engineering Suite addresses this engineering problem by replacing manual dr
 | Side Views | Complete |
 | Dimensioning | Complete |
 | Annotation Placement | Complete |
+| Bonnet Flange Integration | Complete |
+| Title Block Attribute Mapping | Complete |
 
 ### Baffle Module
 
@@ -75,6 +77,15 @@ MEGA Engineering Suite addresses this engineering problem by replacing manual dr
 | Layer Management | Complete |
 | Leader Generation | Complete |
 | Annotation Engine | Complete |
+
+### Flange Module
+
+| Capability | Status |
+| --- | --- |
+| Body Flange (Bonnet) | Complete |
+| Dimensional Lookups | Complete |
+| GstarCAD COM Automation | Complete |
+| Title Block Extraction | Complete |
 
 ---
 
@@ -173,7 +184,7 @@ MEGA Engineering Suite
 | --- | --- |
 | TubeSheet | Complete |
 | Baffle | Complete |
-| Flange | Planned |
+| Flange | Complete |
 | Nozzle | Planned |
 | Pipe Support | Planned |
 | Tank | Planned |

@@ -17,7 +17,7 @@ namespace MegaEngineeringSuite.DebugTools
             };
             
             var generator = new BonnetFlangeGenerator();
-            generator.Generate(data);
+            generator.Generate(data, new DrawingInformation());
         }
     }
 }
