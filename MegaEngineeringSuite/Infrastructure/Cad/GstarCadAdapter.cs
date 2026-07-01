@@ -163,15 +163,18 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
                             string tag = attr.TagString;
                             string tagUpper = tag.ToUpper();
 
-                            // Clean up Title for single-line if needed
-                            string safeTitle = info.Title?.Replace("\r\n", " ").Replace("\n", " ").Trim() ?? "";
+                            // Clean up Title for single-line if needed, but append customer name below it
+                            string safeTitle = info.Title?.Trim() ?? "";
+                            string safeCustomer = info.CustomerName?.Trim() ?? "";
+                            string fullTitle = string.IsNullOrEmpty(safeCustomer) ? safeTitle : safeTitle + Environment.NewLine + safeCustomer;
+                            
                             string dateStr = info.Date.ToString("dd-MM-yyyy");
 
                             if (tagUpper == "TITLE" || tagUpper == "TITLE1" || tagUpper == "TITLE2" || tagUpper == "DWG_TITLE" || tagUpper == "DRAWING_TITLE") 
                             { 
-                                attr.TextString = safeTitle; 
+                                attr.TextString = fullTitle; 
                                 titleUpdated = true; 
-                                SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tag}] to: {safeTitle}");
+                                SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tag}] to: {fullTitle.Replace(Environment.NewLine, "\\n")}");
                             }
                             else if (tagUpper == "CUSTOMER" || tagUpper == "CLIENT" || tagUpper == "CUST") 
                             { 

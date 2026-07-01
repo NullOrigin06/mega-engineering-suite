@@ -14,29 +14,36 @@ namespace MegaEngineeringSuite
         private ErrorProvider errorProvider;
 
         // User Inputs
-        private TextBox txtHTA;
-        private TextBox txtTubeOD;
-        private TextBox txtTubeLength;
-        private TextBox txtTubeTHK;
+        private ComboBox cmbHTA;
+        private ComboBox cmbTubeOD;
+        private ComboBox cmbTubeLength;
+        private ComboBox cmbTubeTHK;
         private ComboBox cmbNoOfPass;
-        private TextBox txtBaffleQty;
+        private ComboBox cmbBaffleQty;
 
         // Calculated Values
         private TextBox txtTubeQty;
         private TextBox txtShellID;
         // Drawing Information
-        private TextBox txtCustomerName;
-        private TextBox txtTitle;
-        private TextBox txtProjectNo;
-        private TextBox txtDrawingNo;
-        private TextBox txtRevision;
-        private TextBox txtDate;
-        private TextBox txtPreparedBy;
-        private TextBox txtCheckedBy;
-        private TextBox txtApprovedBy;
+        private ComboBox cmbCustomerName;
+        private ComboBox cmbTitle;
+        private ComboBox cmbProjectNo;
+        private ComboBox cmbDrawingNo;
+        private ComboBox cmbRevision;
+        private ComboBox cmbDate;
+        private ComboBox cmbPreparedBy;
+        private ComboBox cmbCheckedBy;
+        private ComboBox cmbApprovedBy;
 
         private DataGridView dgvProperties;
         private Label lblValidationStatus;
+        private StatusStrip statusStrip;
+        private ToolStripStatusLabel lblStatusReady;
+        private ToolStripStatusLabel lblStatusExcel;
+        private ToolStripStatusLabel lblStatusCAD;
+        private ToolStripStatusLabel lblStatusTime;
+        private ToolStripStatusLabel lblStatusGenerated;
+
         private readonly HashSet<Control> invalidControls = new HashSet<Control>();
         private static readonly string[] EngineeringPropertyNames =
         {
@@ -90,12 +97,12 @@ namespace MegaEngineeringSuite
             this.Text = "TubeSheet Design Module";
             this.WindowState = FormWindowState.Maximized;
             this.MinimumSize = new Size(1400, 800);
-            this.BackColor = Color.FromArgb(240, 244, 248); // Subtle professional background
+            this.BackColor = Color.FromArgb(240, 244, 248);
 
             Font titleFont = new Font("Segoe UI", 20, FontStyle.Bold);
-            Font sectionFont = new Font("Segoe UI", 14, FontStyle.Bold);
-            Font labelFont = new Font("Segoe UI", 11);
-            Font inputFont = new Font("Segoe UI", 11);
+            Font sectionFont = new Font("Segoe UI Semibold", 11);
+            Font labelFont = new Font("Segoe UI", 10);
+            Font inputFont = new Font("Segoe UI", 10);
             Font smallStatusFont = new Font("Segoe UI", 9, FontStyle.Bold);
 
             // 1. MAIN LAYOUT
@@ -103,36 +110,32 @@ namespace MegaEngineeringSuite
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 3,
-                RowCount = 2,
+                RowCount = 3,
                 Padding = new Padding(20, 0, 20, 16)
             };
             
-            mainTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33F));
-            mainTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32F));
+            // 25 / 35 / 40 Split
+            mainTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25F));
             mainTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35F));
+            mainTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
 
-            mainTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            mainTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 80F));
+            mainTable.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Header
+            mainTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100F)); // Content
+            mainTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 70F)); // Buttons
 
-            // 2. LEFT PANEL: INPUTS
-            TableLayoutPanel pnlInputs = new TableLayoutPanel
+            Label lblTitle = new Label { Text = "TUBE SHEET DESIGN MODULE", Font = titleFont, AutoSize = true, ForeColor = Color.FromArgb(20, 40, 80), Margin = new Padding(0, 10, 0, 15) };
+            mainTable.Controls.Add(lblTitle, 0, 0);
+            mainTable.SetColumnSpan(lblTitle, 3);
+
+            // 2. LEFT PANEL: USER INPUTS
+            GroupBox grpInputs = new GroupBox
             {
+                Text = "USER INPUTS",
+                Font = sectionFont,
                 Dock = DockStyle.Fill,
-                ColumnCount = 1,
-                RowCount = 4,
-                Padding = new Padding(10),
-                Margin = new Padding(0)
+                Margin = new Padding(0, 0, 10, 0),
+                Padding = new Padding(15)
             };
-            pnlInputs.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            pnlInputs.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            pnlInputs.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            pnlInputs.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            
-            Label lblTitle = new Label { Text = "3 PHASE TUBESHEET(1/2/4 PASS)", Font = titleFont, AutoSize = true, ForeColor = Color.FromArgb(20, 40, 80), Margin = new Padding(0, 0, 0, 18) };
-            pnlInputs.Controls.Add(lblTitle, 0, 0);
-
-            Label lblInputsHeader = new Label { Text = "User Inputs", Font = sectionFont, AutoSize = true, Margin = new Padding(0, 0, 0, 12) };
-            pnlInputs.Controls.Add(lblInputsHeader, 0, 1);
 
             TableLayoutPanel inputGrid = new TableLayoutPanel
             {
@@ -144,22 +147,12 @@ namespace MegaEngineeringSuite
             inputGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45F));
             inputGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55F));
 
-            txtHTA = AddInputRow(inputGrid, "HTA", labelFont, inputFont, 0);
-            txtTubeOD = AddInputRow(inputGrid, "Tube OD (mm)", labelFont, inputFont, 1);
-            txtTubeLength = AddInputRow(inputGrid, "Tube Length (mm)", labelFont, inputFont, 2);
-            txtTubeTHK = AddInputRow(inputGrid, "Tube THK (mm)", labelFont, inputFont, 3);
-            
-            Label lblPass = CreateInputLabel("No Of Pass", labelFont);
-            cmbNoOfPass = new ComboBox { Font = inputFont, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Left | AnchorStyles.Right, Margin = new Padding(3, 8, 3, 8) };
-            cmbNoOfPass.Items.AddRange(new object[] { "1", "2", "4" });
-            cmbNoOfPass.SelectedIndex = 2; 
-            inputGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            inputGrid.Controls.Add(lblPass, 0, 4);
-            inputGrid.Controls.Add(cmbNoOfPass, 1, 4);
-
-            txtBaffleQty = AddInputRow(inputGrid, "Baffle Qty", labelFont, inputFont, 5);
-
-            pnlInputs.Controls.Add(inputGrid, 0, 2);
+            cmbHTA = AddComboRow(inputGrid, "HTA", labelFont, inputFont, 0, false);
+            cmbTubeOD = AddComboRow(inputGrid, "Tube OD (mm)", labelFont, inputFont, 1, false);
+            cmbTubeLength = AddComboRow(inputGrid, "Tube Length (mm)", labelFont, inputFont, 2, false);
+            cmbTubeTHK = AddComboRow(inputGrid, "Tube THK (mm)", labelFont, inputFont, 3, false);
+            cmbNoOfPass = AddComboRow(inputGrid, "No Of Pass", labelFont, inputFont, 4, false);
+            cmbBaffleQty = AddComboRow(inputGrid, "Baffle Qty", labelFont, inputFont, 5, false);
 
             lblValidationStatus = new Label
             {
@@ -167,98 +160,160 @@ namespace MegaEngineeringSuite
                 Font = smallStatusFont,
                 AutoSize = true,
                 ForeColor = Color.FromArgb(248, 113, 113),
-                Margin = new Padding(0, 10, 0, 0)
+                Margin = new Padding(0, 15, 0, 0)
             };
-            pnlInputs.Controls.Add(lblValidationStatus, 0, 3);
+            inputGrid.Controls.Add(lblValidationStatus, 0, 6);
+            inputGrid.SetColumnSpan(lblValidationStatus, 2);
 
-            mainTable.Controls.Add(pnlInputs, 0, 0);
+            grpInputs.Controls.Add(inputGrid);
+            mainTable.Controls.Add(grpInputs, 0, 1);
 
-            // 3. CENTER PANEL: CALCULATED VALUES
-            TableLayoutPanel pnlCalculated = new TableLayoutPanel 
-            { 
-                Dock = DockStyle.Fill, 
-                ColumnCount = 1,
-                RowCount = 6,
-                Padding = new Padding(20), 
-                Margin = new Padding(0),
-                BackColor = Color.FromArgb(220, 230, 240) 
-            }; 
-            pnlCalculated.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            pnlCalculated.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            pnlCalculated.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            pnlCalculated.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            pnlCalculated.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            pnlCalculated.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            
-            Label lblCalcHeader = new Label { Text = "Calculated Values", Font = sectionFont, AutoSize = true, Margin = new Padding(0, 0, 0, 20) };
-            pnlCalculated.Controls.Add(lblCalcHeader, 0, 0);
-
-            Label lblTubeQty = new Label { Text = "Tube Qty", Font = labelFont, AutoSize = true, Margin = new Padding(0, 10, 0, 5) };
-            txtTubeQty = new TextBox { Font = new Font("Segoe UI", 16, FontStyle.Bold), ReadOnly = true, BackColor = Color.White, Anchor = AnchorStyles.Left | AnchorStyles.Right };
-            pnlCalculated.Controls.Add(lblTubeQty, 0, 1);
-            pnlCalculated.Controls.Add(txtTubeQty, 0, 2);
-
-            Label lblShellID = new Label { Text = "Shell ID", Font = labelFont, AutoSize = true, Margin = new Padding(0, 20, 0, 5) };
-            txtShellID = new TextBox { Font = new Font("Segoe UI", 16, FontStyle.Bold), ReadOnly = true, BackColor = Color.White, Anchor = AnchorStyles.Left | AnchorStyles.Right };
-            pnlCalculated.Controls.Add(lblShellID, 0, 3);
-            pnlCalculated.Controls.Add(txtShellID, 0, 4);
-            // Drawing Information Panel
-            TableLayoutPanel pnlDrawInfo = new TableLayoutPanel
+            // 3. CENTER PANEL: DRAWING INFO + SUMMARY
+            TableLayoutPanel centerLayout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                Padding = new Padding(0, 20, 0, 0),
-                Margin = new Padding(0),
+                RowCount = 2,
+                Margin = new Padding(5, 0, 5, 0)
+            };
+            centerLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 65F));
+            centerLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 35F));
+
+            GroupBox grpDrawingInfo = new GroupBox
+            {
+                Text = "PROJECT INFORMATION",
+                Font = sectionFont,
+                Dock = DockStyle.Fill,
+                Padding = new Padding(15)
+            };
+
+            TableLayoutPanel pnlDrawInfo = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                ColumnCount = 2,
+                AutoSize = true,
+                Padding = new Padding(0)
+            };
+            pnlDrawInfo.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35F));
+            pnlDrawInfo.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65F));
+
+            cmbCustomerName = AddComboRow(pnlDrawInfo, "Customer Name", labelFont, inputFont, 0, false);
+            cmbTitle = AddComboRow(pnlDrawInfo, "Drawing Title", labelFont, inputFont, 1, false);
+            cmbProjectNo = AddComboRow(pnlDrawInfo, "Project No", labelFont, inputFont, 2, false);
+            cmbDrawingNo = AddComboRow(pnlDrawInfo, "Drawing No", labelFont, inputFont, 3, false);
+            cmbRevision = AddComboRow(pnlDrawInfo, "Revision", labelFont, inputFont, 4, false);
+            cmbDate = AddComboRow(pnlDrawInfo, "Date", labelFont, inputFont, 5, false);
+            cmbPreparedBy = AddComboRow(pnlDrawInfo, "Prepared By", labelFont, inputFont, 6, false);
+            cmbCheckedBy = AddComboRow(pnlDrawInfo, "Checked By", labelFont, inputFont, 7, false);
+            cmbApprovedBy = AddComboRow(pnlDrawInfo, "Approved By", labelFont, inputFont, 8, false);
+
+            // Default values
+            cmbCustomerName.Items.AddRange(AppConfigManager.Current.CustomerHistory.ToArray());
+            cmbDrawingNo.Items.AddRange(AppConfigManager.Current.DrawingNoHistory.ToArray());
+            cmbTitle.Items.AddRange(AppConfigManager.Current.DrawingTitleHistory.ToArray());
+            cmbProjectNo.Items.AddRange(AppConfigManager.Current.ProjectNoHistory.ToArray());
+            cmbRevision.Items.AddRange(AppConfigManager.Current.RevisionHistory.ToArray());
+            cmbDate.Items.AddRange(AppConfigManager.Current.DateHistory.ToArray());
+            cmbPreparedBy.Items.AddRange(AppConfigManager.Current.PreparedByHistory.ToArray());
+            cmbCheckedBy.Items.AddRange(AppConfigManager.Current.CheckedByHistory.ToArray());
+            cmbApprovedBy.Items.AddRange(AppConfigManager.Current.ApprovedByHistory.ToArray());
+
+            cmbHTA.Items.AddRange(AppConfigManager.Current.HTAHistory.ToArray());
+            cmbTubeOD.Items.AddRange(AppConfigManager.Current.TubeODHistory.ToArray());
+            cmbTubeLength.Items.AddRange(AppConfigManager.Current.TubeLengthHistory.ToArray());
+            cmbTubeTHK.Items.AddRange(AppConfigManager.Current.TubeTHKHistory.ToArray());
+            cmbNoOfPass.Items.AddRange(AppConfigManager.Current.NoOfPassHistory.ToArray());
+            cmbBaffleQty.Items.AddRange(AppConfigManager.Current.BaffleQtyHistory.ToArray());
+            
+            cmbTitle.Text = "product for";
+            cmbCustomerName.Text = "parth";
+            cmbProjectNo.Text = "25-005";
+            cmbDrawingNo.Text = "25-005-FLG-EX-1405";
+            cmbPreparedBy.Text = "NSS";
+            cmbCheckedBy.Text = "ASK";
+            cmbApprovedBy.Text = "ASK";
+            cmbRevision.Text = "0";
+            cmbDate.Text = DateTime.Today.ToString("dd-MM-yyyy");
+            cmbNoOfPass.Text = "4";
+
+            Action<ComboBox, Action<string>> setupComboLearning = (cmb, addHistoryCallback) =>
+            {
+                cmb.Leave += (s, e) => AddComboValueIfNew(cmb, addHistoryCallback);
+                cmb.KeyDown += (s, e) => 
+                {
+                    if (e.KeyCode == Keys.Enter)
+                    {
+                        AddComboValueIfNew(cmb, addHistoryCallback);
+                        e.Handled = true;
+                        e.SuppressKeyPress = true;
+                    }
+                };
+            };
+
+            setupComboLearning(cmbCustomerName, val => { if (!AppConfigManager.Current.CustomerHistory.Contains(val)) { AppConfigManager.Current.CustomerHistory.Add(val); AppConfigManager.Save(); } });
+            setupComboLearning(cmbDrawingNo, val => { if (!AppConfigManager.Current.DrawingNoHistory.Contains(val)) { AppConfigManager.Current.DrawingNoHistory.Add(val); AppConfigManager.Save(); } });
+            setupComboLearning(cmbTitle, val => { if (!AppConfigManager.Current.DrawingTitleHistory.Contains(val)) { AppConfigManager.Current.DrawingTitleHistory.Add(val); AppConfigManager.Save(); } });
+            
+            setupComboLearning(cmbProjectNo, val => { if (!AppConfigManager.Current.ProjectNoHistory.Contains(val)) { AppConfigManager.Current.ProjectNoHistory.Add(val); AppConfigManager.Save(); } });
+            setupComboLearning(cmbRevision, val => { if (!AppConfigManager.Current.RevisionHistory.Contains(val)) { AppConfigManager.Current.RevisionHistory.Add(val); AppConfigManager.Save(); } });
+            setupComboLearning(cmbDate, val => { if (!AppConfigManager.Current.DateHistory.Contains(val)) { AppConfigManager.Current.DateHistory.Add(val); AppConfigManager.Save(); } });
+            setupComboLearning(cmbPreparedBy, val => { if (!AppConfigManager.Current.PreparedByHistory.Contains(val)) { AppConfigManager.Current.PreparedByHistory.Add(val); AppConfigManager.Save(); } });
+            setupComboLearning(cmbCheckedBy, val => { if (!AppConfigManager.Current.CheckedByHistory.Contains(val)) { AppConfigManager.Current.CheckedByHistory.Add(val); AppConfigManager.Save(); } });
+            setupComboLearning(cmbApprovedBy, val => { if (!AppConfigManager.Current.ApprovedByHistory.Contains(val)) { AppConfigManager.Current.ApprovedByHistory.Add(val); AppConfigManager.Save(); } });
+
+            setupComboLearning(cmbHTA, val => { if (!AppConfigManager.Current.HTAHistory.Contains(val)) { AppConfigManager.Current.HTAHistory.Add(val); AppConfigManager.Save(); } });
+            setupComboLearning(cmbTubeOD, val => { if (!AppConfigManager.Current.TubeODHistory.Contains(val)) { AppConfigManager.Current.TubeODHistory.Add(val); AppConfigManager.Save(); } });
+            setupComboLearning(cmbTubeLength, val => { if (!AppConfigManager.Current.TubeLengthHistory.Contains(val)) { AppConfigManager.Current.TubeLengthHistory.Add(val); AppConfigManager.Save(); } });
+            setupComboLearning(cmbTubeTHK, val => { if (!AppConfigManager.Current.TubeTHKHistory.Contains(val)) { AppConfigManager.Current.TubeTHKHistory.Add(val); AppConfigManager.Save(); } });
+            setupComboLearning(cmbNoOfPass, val => { if (!AppConfigManager.Current.NoOfPassHistory.Contains(val)) { AppConfigManager.Current.NoOfPassHistory.Add(val); AppConfigManager.Save(); } });
+            setupComboLearning(cmbBaffleQty, val => { if (!AppConfigManager.Current.BaffleQtyHistory.Contains(val)) { AppConfigManager.Current.BaffleQtyHistory.Add(val); AppConfigManager.Save(); } });
+
+            grpDrawingInfo.Controls.Add(pnlDrawInfo);
+            centerLayout.Controls.Add(grpDrawingInfo, 0, 0);
+
+            // CALCULATED SUMMARY
+            GroupBox grpSummary = new GroupBox
+            {
+                Text = "CALCULATED SUMMARY",
+                Font = sectionFont,
+                Dock = DockStyle.Fill,
+                Padding = new Padding(15),
+                Margin = new Padding(0, 10, 0, 0)
+            };
+
+            TableLayoutPanel pnlSummary = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                ColumnCount = 2,
                 AutoSize = true
             };
-            pnlDrawInfo.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            
-            Font drawInfoHeaderFont = new Font("Segoe UI Semibold", 13, FontStyle.Regular);
-            Font drawInfoLabelFont = new Font("Segoe UI", 10, FontStyle.Regular);
-            Font drawInfoTextFont = new Font("Segoe UI", 10, FontStyle.Regular);
+            pnlSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            pnlSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
 
-            Label lblDrawInfoHeader = new Label { Text = "DRAWING INFORMATION", Font = drawInfoHeaderFont, AutoSize = true, Margin = new Padding(0, 0, 0, 12) };
-            pnlDrawInfo.Controls.Add(lblDrawInfoHeader, 0, 0);
+            Label lblTubeQty = new Label { Text = "Tube Qty", Font = labelFont, AutoSize = true, Margin = new Padding(3, 5, 3, 0) };
+            txtTubeQty = new TextBox { Font = inputFont, ReadOnly = true, BackColor = Color.WhiteSmoke, Anchor = AnchorStyles.Left | AnchorStyles.Right, Margin = new Padding(3, 5, 3, 5) };
+            pnlSummary.Controls.Add(lblTubeQty, 0, 0);
+            pnlSummary.Controls.Add(txtTubeQty, 1, 0);
 
-            txtCustomerName = AddVerticalInputBlock(pnlDrawInfo, "Customer Name", drawInfoLabelFont, drawInfoTextFont, 1, false);
-            txtTitle = AddVerticalInputBlock(pnlDrawInfo, "Drawing Title", drawInfoLabelFont, drawInfoTextFont, 3, true);
-            txtProjectNo = AddVerticalInputBlock(pnlDrawInfo, "Project No", drawInfoLabelFont, drawInfoTextFont, 5, false);
-            txtDrawingNo = AddVerticalInputBlock(pnlDrawInfo, "Drawing No", drawInfoLabelFont, drawInfoTextFont, 7, false);
-            txtRevision = AddVerticalInputBlock(pnlDrawInfo, "Revision", drawInfoLabelFont, drawInfoTextFont, 9, false);
-            txtDate = AddVerticalInputBlock(pnlDrawInfo, "Date", drawInfoLabelFont, drawInfoTextFont, 11, false);
-            txtPreparedBy = AddVerticalInputBlock(pnlDrawInfo, "Prepared By", drawInfoLabelFont, drawInfoTextFont, 13, false);
-            txtCheckedBy = AddVerticalInputBlock(pnlDrawInfo, "Checked By", drawInfoLabelFont, drawInfoTextFont, 15, false);
-            txtApprovedBy = AddVerticalInputBlock(pnlDrawInfo, "Approved By", drawInfoLabelFont, drawInfoTextFont, 17, false);
+            Label lblShellID = new Label { Text = "Shell ID", Font = labelFont, AutoSize = true, Margin = new Padding(3, 5, 3, 0) };
+            txtShellID = new TextBox { Font = inputFont, ReadOnly = true, BackColor = Color.WhiteSmoke, Anchor = AnchorStyles.Left | AnchorStyles.Right, Margin = new Padding(3, 5, 3, 5) };
+            pnlSummary.Controls.Add(lblShellID, 0, 1);
+            pnlSummary.Controls.Add(txtShellID, 1, 1);
 
-            // Pre-fill sensible defaults
-            txtTitle.Text = "product for";
-            txtCustomerName.Text = "parth";
-            txtProjectNo.Text = "25-005";
-            txtDrawingNo.Text = "25-005-FLG-EX-1405";
-            txtPreparedBy.Text = "NSS";
-            txtCheckedBy.Text = "ASK";
-            txtApprovedBy.Text = "ASK";
-            txtRevision.Text = "0";
-            txtDate.Text = DateTime.Today.ToString("dd-MM-yyyy");
+            grpSummary.Controls.Add(pnlSummary);
+            centerLayout.Controls.Add(grpSummary, 0, 1);
 
-            pnlCalculated.Controls.Add(pnlDrawInfo, 0, 5);
-            mainTable.Controls.Add(pnlCalculated, 1, 0);
+            mainTable.Controls.Add(centerLayout, 1, 1);
 
-            // 4. RIGHT PANEL: PROPERTY GRID
-            TableLayoutPanel pnlGrid = new TableLayoutPanel
-            { 
+            // 4. RIGHT PANEL: ENGINEERING DATA
+            GroupBox grpData = new GroupBox
+            {
+                Text = "ENGINEERING PARAMETERS",
+                Font = sectionFont,
                 Dock = DockStyle.Fill,
-                ColumnCount = 1,
-                RowCount = 2,
-                Padding = new Padding(14, 12, 4, 0),
-                Margin = new Padding(18, 0, 0, 0),
-                MinimumSize = new Size(500, 0)
+                Margin = new Padding(10, 0, 0, 0),
+                Padding = new Padding(15)
             };
-            pnlGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            pnlGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            
-            Label lblGridHeader = new Label { Text = "Engineering Properties (Excel Lookup)", Font = sectionFont, AutoSize = true, Margin = new Padding(0, 0, 0, 12) };
-            pnlGrid.Controls.Add(lblGridHeader, 0, 0);
 
             dgvProperties = new DataGridView
             {
@@ -266,140 +321,180 @@ namespace MegaEngineeringSuite
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 AllowUserToAddRows = false,
                 AllowUserToDeleteRows = false,
+                AllowUserToResizeColumns = false,
+                AllowUserToResizeRows = false,
                 ReadOnly = true,
                 RowHeadersVisible = false,
-                BackgroundColor = Color.White,
+                BackgroundColor = Color.FromArgb(240, 244, 248),
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                Font = labelFont,
-                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
-                ColumnHeadersHeight = 44,
-                RowTemplate = { Height = 36 },
-                AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.None,
+                MultiSelect = false,
+                Font = new Font("Segoe UI", 10F, FontStyle.Regular),
+                EnableHeadersVisualStyles = false,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize,
+                RowTemplate = { Height = 35 },
+                AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCellsExceptHeaders,
                 BorderStyle = BorderStyle.FixedSingle,
                 CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
-                GridColor = Color.FromArgb(70, 76, 90),
-                MinimumSize = new Size(480, 0),
+                GridColor = Color.LightGray,
                 Margin = new Padding(0)
             };
+            
+            dgvProperties.DefaultCellStyle.WrapMode = DataGridViewTriState.False;
             dgvProperties.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dgvProperties.DefaultCellStyle.Padding = new Padding(8, 2, 8, 2);
-            dgvProperties.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dgvProperties.DefaultCellStyle.Padding = new Padding(5, 4, 5, 4);
+            dgvProperties.DefaultCellStyle.SelectionBackColor = Color.White;
+            dgvProperties.DefaultCellStyle.SelectionForeColor = Color.Black;
+            
+            dgvProperties.AlternatingRowsDefaultCellStyle.BackColor = Color.WhiteSmoke;
+            dgvProperties.AlternatingRowsDefaultCellStyle.SelectionBackColor = Color.WhiteSmoke;
+            dgvProperties.AlternatingRowsDefaultCellStyle.SelectionForeColor = Color.Black;
+            
+            dgvProperties.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(20, 40, 80);
+            dgvProperties.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            dgvProperties.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI Semibold", 10F);
+            dgvProperties.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dgvProperties.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.False;
             dgvProperties.ColumnHeadersDefaultCellStyle.Padding = new Padding(8, 4, 8, 4);
             
-            DataGridViewTextBoxColumn parameterColumn = new DataGridViewTextBoxColumn { Name = "Parameter", HeaderText = "Parameter Name", FillWeight = 64F };
-            DataGridViewTextBoxColumn valueColumn = new DataGridViewTextBoxColumn { Name = "Value", HeaderText = "Value", FillWeight = 36F };
+            DataGridViewTextBoxColumn parameterColumn = new DataGridViewTextBoxColumn { Name = "Parameter", HeaderText = "Parameter Name", FillWeight = 65F };
+            parameterColumn.DefaultCellStyle.Font = new Font("Segoe UI Semibold", 10F);
+            parameterColumn.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            DataGridViewTextBoxColumn valueColumn = new DataGridViewTextBoxColumn { Name = "Value", HeaderText = "Value", FillWeight = 35F };
+            valueColumn.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            
             dgvProperties.Columns.Add(parameterColumn);
             dgvProperties.Columns.Add(valueColumn);
             PopulateEmptyEngineeringProperties();
 
-            pnlGrid.Controls.Add(dgvProperties, 0, 1);
-            mainTable.Controls.Add(pnlGrid, 2, 0);
+            grpData.Controls.Add(dgvProperties);
+            mainTable.Controls.Add(grpData, 2, 1);
 
             // 5. BOTTOM PANEL: BUTTONS
-            FlowLayoutPanel pnlButtons = new FlowLayoutPanel
+            TableLayoutPanel pnlButtons = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.LeftToRight,
-                Padding = new Padding(0, 8, 0, 0),
-                WrapContents = false,
-                AutoScroll = true
+                ColumnCount = 5,
+                RowCount = 1,
+                Padding = new Padding(0, 10, 0, 10),
+                Margin = new Padding(0)
             };
-            mainTable.SetColumnSpan(pnlButtons, 3);
+            
+            for (int i = 0; i < 5; i++)
+            {
+                pnlButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+            }
 
-            Button btnCalculate = new Button { Name = "btnCalculate", Text = "Calculate", Tag = ThemeManager.PositiveActionButtonTag, Font = sectionFont, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly, MinimumSize = new Size(210, 50), Padding = new Padding(16, 0, 16, 0), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Margin = new Padding(0, 0, 12, 0) };
+            Font btnFont = new Font("Segoe UI Semibold", 10);
+            
+            Button btnCalculate = new Button { Name = "btnCalculate", Text = "Calculate", Tag = ThemeManager.PositiveActionButtonTag, Font = btnFont, Dock = DockStyle.Fill, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Margin = new Padding(0, 0, 10, 0) };
             btnCalculate.Click += BtnCalculate_Click;
             
-            Button btnGenerateTubeSheet = new Button { Name = "btnGenerateTubeSheet", Text = "Generate Tube Sheet", Font = sectionFont, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly, MinimumSize = new Size(250, 50), Padding = new Padding(16, 0, 16, 0), Margin = new Padding(0, 0, 12, 0) };
+            Button btnGenerateTubeSheet = new Button { Name = "btnGenerateTubeSheet", Text = "Generate Tube Sheet", Font = btnFont, Dock = DockStyle.Fill, Margin = new Padding(0, 0, 10, 0) };
             btnGenerateTubeSheet.Click += BtnGenerateTubeSheet_Click;
             
-            Button btnGenerateBodyFlange = new Button { Name = "btnGenerateBodyFlange", Text = "Generate Body Flange", Font = sectionFont, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly, MinimumSize = new Size(250, 50), Padding = new Padding(16, 0, 16, 0), Margin = new Padding(0, 0, 12, 0) };
+            Button btnGenerateBodyFlange = new Button { Name = "btnGenerateBodyFlange", Text = "Generate Body Flange", Font = btnFont, Dock = DockStyle.Fill, Margin = new Padding(0, 0, 10, 0) };
             btnGenerateBodyFlange.Click += BtnGenerateBodyFlange_Click;
             
-            Button btnExport = new Button { Name = "btnExport", Text = "Export Data", Font = sectionFont, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly, MinimumSize = new Size(200, 50), Padding = new Padding(16, 0, 16, 0), Margin = new Padding(0, 0, 12, 0) };
+            Button btnExport = new Button { Name = "btnExport", Text = "Export Data", Font = btnFont, Dock = DockStyle.Fill, Margin = new Padding(0, 0, 10, 0) };
             btnExport.Click += BtnExport_Click;
             
-            Button btnBack = new Button { Name = "btnBack", Text = "Back", Tag = ThemeManager.DangerActionButtonTag, Font = sectionFont, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly, MinimumSize = new Size(160, 50), Padding = new Padding(16, 0, 16, 0), Margin = new Padding(0, 0, 0, 0) };
+            Button btnBack = new Button { Name = "btnBack", Text = "Back", Tag = ThemeManager.DangerActionButtonTag, Font = btnFont, Dock = DockStyle.Fill, Margin = new Padding(0, 0, 0, 0) };
             btnBack.Click += BtnBack_Click;
 
-            pnlButtons.Controls.Add(btnCalculate);
-            pnlButtons.Controls.Add(btnGenerateTubeSheet);
-            pnlButtons.Controls.Add(btnGenerateBodyFlange);
-            pnlButtons.Controls.Add(btnExport);
-            pnlButtons.Controls.Add(btnBack);
+            pnlButtons.Controls.Add(btnCalculate, 0, 0);
+            pnlButtons.Controls.Add(btnGenerateTubeSheet, 1, 0);
+            pnlButtons.Controls.Add(btnGenerateBodyFlange, 2, 0);
+            pnlButtons.Controls.Add(btnExport, 3, 0);
+            pnlButtons.Controls.Add(btnBack, 4, 0);
 
-            mainTable.Controls.Add(pnlButtons, 0, 1);
+            mainTable.Controls.Add(pnlButtons, 0, 2);
+            mainTable.SetColumnSpan(pnlButtons, 3);
 
             Controls.Add(mainTable);
             
+            // 6. STATUS STRIP
+            statusStrip = new StatusStrip();
+            statusStrip.BackColor = Color.White;
+            
+            lblStatusReady = new ToolStripStatusLabel("Ready") { Margin = new Padding(10, 3, 20, 3) };
+            lblStatusExcel = new ToolStripStatusLabel("Excel ✔") { Margin = new Padding(0, 3, 20, 3) };
+            lblStatusCAD = new ToolStripStatusLabel("CAD ✔") { Margin = new Padding(0, 3, 20, 3) };
+            lblStatusTime = new ToolStripStatusLabel("Time : -") { Margin = new Padding(0, 3, 20, 3) };
+            lblStatusGenerated = new ToolStripStatusLabel("Generated : -") { Margin = new Padding(0, 3, 20, 3) };
+            
+            statusStrip.Items.Add(lblStatusReady);
+            statusStrip.Items.Add(new ToolStripSeparator());
+            statusStrip.Items.Add(lblStatusExcel);
+            statusStrip.Items.Add(new ToolStripSeparator());
+            statusStrip.Items.Add(lblStatusCAD);
+            statusStrip.Items.Add(new ToolStripSeparator());
+            statusStrip.Items.Add(lblStatusTime);
+            statusStrip.Items.Add(new ToolStripSeparator());
+            statusStrip.Items.Add(lblStatusGenerated);
+            
+            Controls.Add(statusStrip);
+
             // Apply Mega Engineering Branding
             CompanyBrandingService.ApplyBranding(this);
         }
 
-        private TextBox AddInputRow(TableLayoutPanel panel, string labelText, Font lblFont, Font txtFont, int row)
+        private ComboBox AddComboRow(TableLayoutPanel panel, string labelText, Font lblFont, Font inputFont, int row, bool dropdownList)
         {
             Label lbl = CreateInputLabel(labelText, lblFont);
-            TextBox txt = new TextBox { Font = txtFont, Anchor = AnchorStyles.Left | AnchorStyles.Right, Margin = new Padding(3, 8, 3, 8) };
-            txt.TextChanged += (s, e) => ClearInputValidation(txt);
+            ComboBox cmb = new ComboBox 
+            { 
+                Font = inputFont, 
+                Anchor = AnchorStyles.Left | AnchorStyles.Right, 
+                Margin = new Padding(3, 5, 3, 5),
+                DropDownStyle = dropdownList ? ComboBoxStyle.DropDownList : ComboBoxStyle.DropDown
+            };
+            if (!dropdownList)
+            {
+                cmb.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+                cmb.AutoCompleteSource = AutoCompleteSource.ListItems;
+            }
+            cmb.TextChanged += (s, e) => ClearInputValidation(cmb);
             
             panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             panel.Controls.Add(lbl, 0, row);
-            panel.Controls.Add(txt, 1, row);
+            panel.Controls.Add(cmb, 1, row);
             
-            return txt;
+            return cmb;
         }
 
-        private TextBox AddVerticalInputBlock(TableLayoutPanel panel, string labelText, Font lblFont, Font txtFont, int startRow, bool isMultiline)
+        private void AddComboValueIfNew(ComboBox comboBox, Action<string> addHistoryCallback)
         {
-            Label lbl = new Label 
-            { 
-                Text = labelText, 
-                Font = lblFont, 
-                AutoSize = true, 
-                Margin = new Padding(0, 10, 0, 2),
-                ForeColor = Color.FromArgb(70, 76, 90)
-            };
-            
-            TextBox txt = new TextBox 
-            { 
-                Font = txtFont, 
-                Anchor = AnchorStyles.Left | AnchorStyles.Right, 
-                Margin = new Padding(0, 0, 0, 5),
-                BorderStyle = BorderStyle.FixedSingle
-            };
+            string value = comboBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(value))
+                return;
 
-            if (isMultiline)
+            if (!comboBox.Items.Contains(value))
             {
-                txt.Multiline = true;
-                txt.Height = 45;
-                txt.ScrollBars = ScrollBars.Vertical;
+                comboBox.Items.Add(value);
+                addHistoryCallback(value);
             }
 
-            panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            panel.Controls.Add(lbl, 0, startRow);
-            panel.Controls.Add(txt, 0, startRow + 1);
-            
-            return txt;
+            comboBox.SelectedItem = value;
         }
 
         private DrawingInformation GetDrawingInformation()
         {
             DateTime parsedDate = DateTime.Today;
-            if (!string.IsNullOrWhiteSpace(txtDate.Text) && DateTime.TryParseExact(txtDate.Text, "dd-MM-yyyy", null, System.Globalization.DateTimeStyles.None, out DateTime tempDate))
+            if (!string.IsNullOrWhiteSpace(cmbDate.Text) && DateTime.TryParseExact(cmbDate.Text, "dd-MM-yyyy", null, System.Globalization.DateTimeStyles.None, out DateTime tempDate))
             {
                 parsedDate = tempDate;
             }
 
             return new DrawingInformation
             {
-                CustomerName = txtCustomerName.Text,
-                Title = txtTitle.Text,
-                ProjectNo = txtProjectNo.Text,
-                DrawingNo = txtDrawingNo.Text,
-                Revision = txtRevision.Text,
-                PreparedBy = txtPreparedBy.Text,
-                CheckedBy = txtCheckedBy.Text,
-                ApprovedBy = txtApprovedBy.Text,
+                CustomerName = cmbCustomerName.Text.Trim(),
+                Title = cmbTitle.Text.Trim(),
+                ProjectNo = cmbProjectNo.Text.Trim(),
+                DrawingNo = cmbDrawingNo.Text.Trim(),
+                Revision = cmbRevision.Text.Trim(),
+                PreparedBy = cmbPreparedBy.Text.Trim(),
+                CheckedBy = cmbCheckedBy.Text.Trim(),
+                ApprovedBy = cmbApprovedBy.Text.Trim(),
                 Date = parsedDate
             };
         }
@@ -424,16 +519,22 @@ namespace MegaEngineeringSuite
             errorProvider.Clear();
             ClearValidationStyles();
 
-            if (!ValidateNumericGreaterThanZero(txtHTA, "HTA must be a numeric value greater than 0.")) isValid = false;
-            if (!ValidateNumericGreaterThanZero(txtTubeOD, "Tube OD must be a numeric value greater than 0.")) isValid = false;
-            if (!ValidateNumericGreaterThanZero(txtTubeLength, "Tube Length must be a numeric value greater than 0.")) isValid = false;
-            if (!ValidateNumericGreaterThanZero(txtTubeTHK, "Tube THK must be a numeric value greater than 0.")) isValid = false;
+            if (string.IsNullOrWhiteSpace(cmbHTA.Text)) AddError(cmbHTA, "Required");
+            if (string.IsNullOrWhiteSpace(cmbTubeOD.Text)) AddError(cmbTubeOD, "Required");
+            if (string.IsNullOrWhiteSpace(cmbTubeLength.Text)) AddError(cmbTubeLength, "Required");
+            if (string.IsNullOrWhiteSpace(cmbTubeTHK.Text)) AddError(cmbTubeTHK, "Required");
+            if (string.IsNullOrWhiteSpace(cmbBaffleQty.Text)) AddError(cmbBaffleQty, "Required");
+            
+            if (!ValidateNumericGreaterThanZero(cmbHTA, "HTA must be a numeric value greater than 0.")) isValid = false;
+            if (!ValidateNumericGreaterThanZero(cmbTubeOD, "Tube OD must be a numeric value greater than 0.")) isValid = false;
+            if (!ValidateNumericGreaterThanZero(cmbTubeLength, "Tube Length must be a numeric value greater than 0.")) isValid = false;
+            if (!ValidateNumericGreaterThanZero(cmbTubeTHK, "Tube THK must be a numeric value greater than 0.")) isValid = false;
             
             int baffleQty;
-            if (!int.TryParse(txtBaffleQty.Text, out baffleQty) || baffleQty <= 0)
+            if (!int.TryParse(cmbBaffleQty.Text, out baffleQty) || baffleQty <= 0)
             {
-                errorProvider.SetError(txtBaffleQty, "Baffle Qty must be an integer greater than 0.");
-                SetInvalidInput(txtBaffleQty);
+                errorProvider.SetError(cmbBaffleQty, "Baffle Qty must be an integer greater than 0.");
+                SetInvalidInput(cmbBaffleQty);
                 isValid = false;
             }
 
@@ -442,35 +543,36 @@ namespace MegaEngineeringSuite
             return isValid;
         }
 
-        private bool ValidateNumericGreaterThanZero(TextBox txt, string errorMessage)
+        private void AddError(Control c, string msg) { errorProvider.SetError(c, msg); }
+
+        private bool ValidateNumericGreaterThanZero(ComboBox cmb, string errorMessage)
         {
             double val;
-            if (!double.TryParse(txt.Text, out val) || val <= 0)
+            if (!double.TryParse(cmb.Text, out val) || val <= 0)
             {
-                errorProvider.SetError(txt, errorMessage);
-                SetInvalidInput(txt);
+                errorProvider.SetError(cmb, errorMessage);
+                SetInvalidInput(cmb);
                 return false;
             }
             return true;
         }
 
-        private void SetInvalidInput(TextBox textBox)
+        private void SetInvalidInput(Control control)
         {
-            invalidControls.Add(textBox);
-            textBox.BackColor = ThemeManager.IsDarkMode ? Color.FromArgb(82, 32, 38) : Color.FromArgb(255, 235, 238);
-            textBox.ForeColor = ThemeManager.IsDarkMode ? Color.White : Color.FromArgb(120, 20, 30);
-            textBox.BorderStyle = BorderStyle.FixedSingle;
+            invalidControls.Add(control);
+            control.BackColor = ThemeManager.IsDarkMode ? Color.FromArgb(82, 32, 38) : Color.FromArgb(255, 235, 238);
+            control.ForeColor = ThemeManager.IsDarkMode ? Color.White : Color.FromArgb(120, 20, 30);
         }
 
-        private void ClearInputValidation(TextBox textBox)
+        private void ClearInputValidation(Control control)
         {
-            if (!invalidControls.Remove(textBox))
+            if (!invalidControls.Remove(control))
             {
                 return;
             }
 
-            errorProvider.SetError(textBox, string.Empty);
-            RestoreInputTheme(textBox);
+            errorProvider.SetError(control, string.Empty);
+            RestoreInputTheme(control);
 
             if (invalidControls.Count == 0)
             {
@@ -482,21 +584,17 @@ namespace MegaEngineeringSuite
         {
             foreach (Control control in invalidControls.ToList())
             {
-                if (control is TextBox textBox)
-                {
-                    RestoreInputTheme(textBox);
-                }
+                RestoreInputTheme(control);
             }
 
             invalidControls.Clear();
             lblValidationStatus.Text = string.Empty;
         }
 
-        private static void RestoreInputTheme(TextBox textBox)
+        private static void RestoreInputTheme(Control control)
         {
-            textBox.BackColor = ThemeManager.IsDarkMode ? Color.FromArgb(50, 50, 55) : Color.White;
-            textBox.ForeColor = ThemeManager.IsDarkMode ? Color.White : Color.FromArgb(20, 40, 80);
-            textBox.BorderStyle = BorderStyle.FixedSingle;
+            control.BackColor = ThemeManager.IsDarkMode ? Color.FromArgb(50, 50, 55) : Color.White;
+            control.ForeColor = ThemeManager.IsDarkMode ? Color.White : Color.FromArgb(20, 40, 80);
         }
 
         private void BtnCalculate_Click(object? sender, EventArgs e)
@@ -507,12 +605,13 @@ namespace MegaEngineeringSuite
                 return;
             }
 
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-                double hta = double.Parse(txtHTA.Text);
-                double tubeOD = double.Parse(txtTubeOD.Text);
-                double tubeLength = double.Parse(txtTubeLength.Text);
-                int noOfPass = int.Parse(cmbNoOfPass.SelectedItem?.ToString() ?? "4");
+                double hta = double.Parse(cmbHTA.Text);
+                double tubeOD = double.Parse(cmbTubeOD.Text);
+                double tubeLength = double.Parse(cmbTubeLength.Text);
+                int noOfPass = int.Parse(cmbNoOfPass.Text);
 
                 // Formula 1: Tube Quantity (using the Tubes-Per-Pass rounding logic from Excel Analysis)
                 double rawTubeQty = hta / ((tubeOD / 1000.0) * Math.PI * (tubeLength / 1000.0));
@@ -537,13 +636,18 @@ namespace MegaEngineeringSuite
                 currentData.HTA = hta;
                 currentData.TubeLength = tubeLength;
                 
-                if (int.TryParse(txtBaffleQty.Text, out int bQty))
+                if (int.TryParse(cmbBaffleQty.Text, out int bQty))
                     currentData.BaffleQty = bQty;
 
                 PopulateGrid(currentData);
 
                 // Phase 2: Geometry Engine & Validation
                 currentGeometry = geometryService.CalculateGeometry(currentData);
+                
+                sw.Stop();
+                lblStatusTime.Text = $"Time : {sw.Elapsed.TotalSeconds:F1} sec";
+                lblStatusExcel.Text = "Excel ✔";
+                lblStatusReady.Text = "Calculated";
             }
 
             catch (ArgumentException aex)
@@ -643,8 +747,11 @@ namespace MegaEngineeringSuite
                 return;
             }
 
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             try
             {
+                lblStatusReady.Text = "Generating...";
+                statusStrip.Refresh();
                 MegaEngineeringSuite.Infrastructure.Logging.SimpleLogger.Log("Workflow", "Tube Sheet Generation Started");
                 var tempService = new TemplateDrawingService();
                 var groupedViews = tempService.GenerateTemplateViews(currentGeometry, currentData);
@@ -690,11 +797,17 @@ namespace MegaEngineeringSuite
                 Debug.WriteLine($"Process Arguments: \"{result.CadExecutable}\" {result.Arguments}");
                 Debug.WriteLine(result.ScrContent);
 #endif
+                sw.Stop();
+                lblStatusTime.Text = $"Time : {sw.Elapsed.TotalSeconds:F1} sec";
+                lblStatusCAD.Text = "CAD ✔";
+                lblStatusGenerated.Text = "Generated : Tube Sheet";
+                lblStatusReady.Text = "Ready";
             }
             catch (Exception ex)
             {
                 Debug.WriteLine(ex);
                 MessageBox.Show("CAD launch failed. Please verify that GstarCAD is installed and try again.", "CAD Launch Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                lblStatusReady.Text = "Error";
             }
         }
 
@@ -706,8 +819,10 @@ namespace MegaEngineeringSuite
                 return;
             }
 
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             try
             {
+                lblStatusReady.Text = "Generating...";
                 MegaEngineeringSuite.Infrastructure.Logging.SimpleLogger.Log("Workflow", "Body Flange Generation Started");
                 
                 // Map the data (includes validation)
@@ -739,11 +854,18 @@ namespace MegaEngineeringSuite
                         Process.Start(new ProcessStartInfo { FileName = outputPath, UseShellExecute = true });
                     }
                     MegaEngineeringSuite.Infrastructure.Logging.SimpleLogger.Log("Workflow", "Drawing Opened");
+                    
+                    sw.Stop();
+                    lblStatusTime.Text = $"Time : {sw.Elapsed.TotalSeconds:F1} sec";
+                    lblStatusCAD.Text = "CAD ✔";
+                    lblStatusGenerated.Text = "Generated : Body Flange";
+                    lblStatusReady.Text = "Ready";
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to generate Body Flange:\n{ex.Message}", "Generation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                lblStatusReady.Text = "Error";
             }
         }
 
