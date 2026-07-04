@@ -33,7 +33,7 @@ namespace MegaEngineeringSuite
 
     public static class AppConfigManager
     {
-        private static readonly string SettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.json");
+        private static string SettingsPath => Path.Combine(RootFolder, "Config", "Settings.json");
         private static AppSettings? _current;
 
         // Portable Root resolution
@@ -96,6 +96,9 @@ namespace MegaEngineeringSuite
             if (!Directory.Exists(GeneratedDrawingsFolder)) Directory.CreateDirectory(GeneratedDrawingsFolder);
             if (!Directory.Exists(GeneratedLispFolder)) Directory.CreateDirectory(GeneratedLispFolder);
             if (!Directory.Exists(LogsFolder)) Directory.CreateDirectory(LogsFolder);
+            
+            string configFolder = Path.Combine(RootFolder, "Config");
+            if (!Directory.Exists(configFolder)) Directory.CreateDirectory(configFolder);
         }
 
         public static void Load()
