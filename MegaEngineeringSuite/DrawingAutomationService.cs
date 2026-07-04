@@ -475,7 +475,7 @@ namespace MegaEngineeringSuite
                 File.WriteAllText(scriptPath, lspContent.ToString());
                 
                 // Save Backup
-                string generatedDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "GeneratedLisp");
+                string generatedDir = AppConfigManager.GeneratedLispFolder;
                 if (!Directory.Exists(generatedDir)) Directory.CreateDirectory(generatedDir);
                 string backupPath = Path.Combine(generatedDir, scriptName);
                 File.WriteAllText(backupPath, lspContent.ToString());
@@ -1195,7 +1195,7 @@ namespace MegaEngineeringSuite
                 File.WriteAllText(scriptPath, lspContent.ToString());
                 
                 // Save Backup
-                string generatedDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "GeneratedLisp");
+                string generatedDir = AppConfigManager.GeneratedLispFolder;
                 if (!Directory.Exists(generatedDir)) Directory.CreateDirectory(generatedDir);
                 string backupPath = Path.Combine(generatedDir, scriptName);
                 File.WriteAllText(backupPath, lspContent.ToString());

@@ -5,7 +5,7 @@ namespace MegaEngineeringSuite.Infrastructure.Logging
 {
     public static class SimpleLogger
     {
-        private static readonly string LogDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
+        private static readonly string LogDirectory = AppConfigManager.LogsFolder;
 
         public static void Log(string module, string message)
         {
