@@ -11,6 +11,7 @@ namespace MegaEngineeringSuite
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
+            StartupValidator.Validate();
             Application.Run(new Form1());
         }
     }

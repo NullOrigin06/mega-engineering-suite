@@ -56,6 +56,8 @@ namespace MegaEngineeringSuite
         }
 
         public static string TemplatesFolder => Path.Combine(RootFolder, "Templates");
+        public static string DrawingsTemplateFolder => Path.Combine(TemplatesFolder, "Drawings");
+        public static string ExcelTemplateFolder => Path.Combine(TemplatesFolder, "Excel");
         public static string GeneratedDrawingsFolder => Path.Combine(RootFolder, "GeneratedDrawings");
         public static string GeneratedLispFolder => Path.Combine(RootFolder, "GeneratedLisp");
         public static string LogsFolder => Path.Combine(RootFolder, "Logs");
@@ -93,6 +95,8 @@ namespace MegaEngineeringSuite
         public static void InitializeFolders()
         {
             if (!Directory.Exists(TemplatesFolder)) Directory.CreateDirectory(TemplatesFolder);
+            if (!Directory.Exists(DrawingsTemplateFolder)) Directory.CreateDirectory(DrawingsTemplateFolder);
+            if (!Directory.Exists(ExcelTemplateFolder)) Directory.CreateDirectory(ExcelTemplateFolder);
             if (!Directory.Exists(GeneratedDrawingsFolder)) Directory.CreateDirectory(GeneratedDrawingsFolder);
             if (!Directory.Exists(GeneratedLispFolder)) Directory.CreateDirectory(GeneratedLispFolder);
             if (!Directory.Exists(LogsFolder)) Directory.CreateDirectory(LogsFolder);
@@ -126,19 +130,19 @@ namespace MegaEngineeringSuite
 
             if (string.IsNullOrEmpty(_current.ExcelTemplatePath) || !File.Exists(_current.ExcelTemplatePath))
             {
-                _current.ExcelTemplatePath = Path.Combine(TemplatesFolder, "Heat Exchanger BOM Details.xlsx");
+                _current.ExcelTemplatePath = Path.Combine(ExcelTemplateFolder, "Heat Exchanger BOM Details.xlsx");
                 settingsUpdated = true;
             }
 
             if (string.IsNullOrEmpty(_current.DwgTemplatePath) || !File.Exists(_current.DwgTemplatePath))
             {
-                _current.DwgTemplatePath = Path.Combine(TemplatesFolder, "FINAL TUBESHEET.dwg");
+                _current.DwgTemplatePath = Path.Combine(DrawingsTemplateFolder, "FINAL TUBESHEET.dwg");
                 settingsUpdated = true;
             }
 
             if (string.IsNullOrEmpty(_current.BonnetTemplatePath) || !File.Exists(_current.BonnetTemplatePath))
             {
-                _current.BonnetTemplatePath = Path.Combine(TemplatesFolder, "BAFFLE_Flange_template.dwg");
+                _current.BonnetTemplatePath = Path.Combine(DrawingsTemplateFolder, "BAFFLE_Flange_template.dwg");
                 settingsUpdated = true;
             }
 
