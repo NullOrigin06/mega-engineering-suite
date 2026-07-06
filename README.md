@@ -15,7 +15,7 @@ Generate production-ready engineering drawings directly from engineering paramet
 [![AutoLISP](https://img.shields.io/badge/AutoLISP-333333?style=flat-square&logo=gnu-bash&logoColor=white)](#)
 [![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg?style=flat-square)](#)
 [![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg?style=flat-square)](#)
-[![License: MEGA EPC PVT LTD](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](#)
+[![License: MEGA EPC PVT LTD](https://img.shields.io/badge/License-MEGA_EPC_PVT_LTD-yellow.svg?style=flat-square)](#)
 
 <br>
 
