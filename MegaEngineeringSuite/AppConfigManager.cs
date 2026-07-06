@@ -53,7 +53,9 @@ namespace MegaEngineeringSuite
             string currentDir = AppDomain.CurrentDomain.BaseDirectory;
             while (!string.IsNullOrEmpty(currentDir))
             {
-                if (Directory.Exists(Path.Combine(currentDir, "Templates")))
+                if (File.Exists(Path.Combine(currentDir, "MegaEngineeringSuite.sln")) ||
+                    File.Exists(Path.Combine(currentDir, "MegaEngineeringSuite.slnx")) ||
+                    Directory.Exists(Path.Combine(currentDir, ".git")))
                 {
                     _rootFolder = currentDir;
                     return;
@@ -103,18 +105,18 @@ namespace MegaEngineeringSuite
 
             bool settingsUpdated = false;
 
-            // Dynamically set default template paths if empty
-            if (string.IsNullOrEmpty(_current.ExcelTemplatePath))
+            // Dynamically set default template paths if empty or file doesn't exist
+            if (string.IsNullOrWhiteSpace(_current.ExcelTemplatePath) || !File.Exists(_current.ExcelTemplatePath))
             {
                 _current.ExcelTemplatePath = Path.Combine(_rootFolder, "Templates", "Heat Exchanger BOM Details.xlsx");
                 settingsUpdated = true;
             }
-            if (string.IsNullOrEmpty(_current.DwgTemplatePath))
+            if (string.IsNullOrWhiteSpace(_current.DwgTemplatePath) || !File.Exists(_current.DwgTemplatePath))
             {
                 _current.DwgTemplatePath = Path.Combine(_rootFolder, "Templates", "FINAL TUBESHEET.dwg");
                 settingsUpdated = true;
             }
-            if (string.IsNullOrEmpty(_current.BonnetTemplatePath))
+            if (string.IsNullOrWhiteSpace(_current.BonnetTemplatePath) || !File.Exists(_current.BonnetTemplatePath))
             {
                 _current.BonnetTemplatePath = Path.Combine(_rootFolder, "Templates", "BAFFLE_Flange_template.dwg");
                 settingsUpdated = true;

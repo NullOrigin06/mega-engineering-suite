@@ -21,11 +21,21 @@
     "Channel Details For",
     "Floating Head Details For"
   ],
-  "HTAHistory": [],
-  "TubeODHistory": [],
-  "TubeLengthHistory": [],
-  "TubeTHKHistory": [],
-  "BaffleQtyHistory": [],
+  "HTAHistory": [
+    "100"
+  ],
+  "TubeODHistory": [
+    "25.4"
+  ],
+  "TubeLengthHistory": [
+    "3000"
+  ],
+  "TubeTHKHistory": [
+    "1.6"
+  ],
+  "BaffleQtyHistory": [
+    "5"
+  ],
   "NoOfPassHistory": [
     "1",
     "2",

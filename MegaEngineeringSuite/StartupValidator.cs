@@ -21,80 +21,108 @@ namespace MegaEngineeringSuite
             var result = new ValidationResult();
             var config = AppConfigManager.Current;
             var missingFiles = new List<string>();
-            var logLines = new List<string> { "Application Information", "", $"Root Folder:\n{AppConfigManager.RootFolder}", "" };
+            var templatesFolder = Path.Combine(AppConfigManager.RootFolder, "Templates");
+
+            var logLines = new List<string> 
+            { 
+                "Root Folder", 
+                AppConfigManager.RootFolder,
+                "",
+                "Templates Folder",
+                templatesFolder,
+                ""
+            };
 
             // 1. Validate Templates
             string dwgPath = config.DwgTemplatePath;
             string bonnetPath = config.BonnetTemplatePath;
             string excelPath = config.ExcelTemplatePath;
 
-            if (File.Exists(dwgPath))
-                logLines.Add("Tube Sheet:\nFOUND\n");
-            else
-            {
-                logLines.Add("Tube Sheet:\nMISSING\n");
-                missingFiles.Add("FINAL TUBESHEET.dwg");
-            }
+            bool dwgExists = File.Exists(dwgPath);
+            bool bonnetExists = File.Exists(bonnetPath);
+            bool excelExists = File.Exists(excelPath);
 
-            if (File.Exists(bonnetPath))
-                logLines.Add("Bonnet:\nFOUND\n");
-            else
-            {
-                logLines.Add("Bonnet:\nMISSING\n");
-                missingFiles.Add("BAFFLE_Flange_template.dwg");
-            }
+            logLines.Add("Tube Sheet");
+            logLines.Add(dwgPath);
+            logLines.Add($"Exists={(dwgExists ? "True" : "False")}");
+            logLines.Add("");
 
-            if (File.Exists(excelPath))
-                logLines.Add("Excel:\nFOUND\n");
-            else
-            {
-                logLines.Add("Excel:\nMISSING\n");
-                missingFiles.Add("Heat Exchanger BOM Details.xlsx");
-            }
+            logLines.Add("Bonnet");
+            logLines.Add(bonnetPath);
+            logLines.Add($"Exists={(bonnetExists ? "True" : "False")}");
+            logLines.Add("");
 
+            logLines.Add("Excel");
+            logLines.Add(excelPath);
+            logLines.Add($"Exists={(excelExists ? "True" : "False")}");
+            logLines.Add("");
+
+            if (!dwgExists) missingFiles.Add("FINAL TUBESHEET.dwg");
+            if (!bonnetExists) missingFiles.Add("BAFFLE_Flange_template.dwg");
+            if (!excelExists) missingFiles.Add("Heat Exchanger BOM Details.xlsx");
+
+            string missingTemplatesMsg = null;
             if (missingFiles.Count > 0)
             {
                 result.TemplatesValid = false;
-                string msg = "Expected Folder:\n" + Path.Combine(AppConfigManager.RootFolder, "Templates") + "\n\nMissing Files:\n";
+                string msg = "Missing Runtime Resources\n\nRoot Folder\n" + AppConfigManager.RootFolder + "\n\nTemplates Folder\n" + templatesFolder + "\n\nMissing\n\n";
                 foreach (var f in missingFiles)
-                    msg += $"- {f}\n";
+                    msg += $"• {f}\n\n";
+                msg += "Generation modules will remain disabled until the missing resources are restored.";
+                missingTemplatesMsg = msg;
+            }
 
-                MessageBox.Show(msg, "Missing Templates", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            // Check Generated Folders
+            string[] reqFolders = { "GeneratedDrawings", "GeneratedLisp", "Logs", "Config" };
+            foreach (var f in reqFolders)
+            {
+                string p = Path.Combine(AppConfigManager.RootFolder, f);
+                logLines.Add(f);
+                logLines.Add(p);
+                logLines.Add($"Exists={(Directory.Exists(p) ? "True" : "False")}");
+                logLines.Add("");
             }
 
             // 2. Validate CAD Executable
-            if (string.IsNullOrEmpty(config.CadPath) || !File.Exists(config.CadPath))
+            bool cadExists = !string.IsNullOrEmpty(config.CadPath) && File.Exists(config.CadPath);
+            logLines.Add("CAD");
+            logLines.Add(config.CadPath ?? "None");
+            logLines.Add($"Exists={(cadExists ? "True" : "False")}");
+            logLines.Add("");
+
+            string missingCadMsg = null;
+            if (!cadExists)
             {
                 result.CadValid = false;
-                logLines.Add("CAD:\nMISSING\n");
-                MessageBox.Show("GstarCAD not found.\n\nPlease install GstarCAD before using Mega Engineering Suite.", "CAD Missing", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-            else
-            {
-                logLines.Add("CAD:\nFOUND\n");
+                missingCadMsg = "GstarCAD not found.\n\nPlease install GstarCAD before using Mega Engineering Suite.";
             }
 
             // 3. Validate COM Connection
+            string comStatus = "False";
+            string comErrorMsg = null;
             try
             {
                 Type? type = Type.GetTypeFromProgID("GstarCAD.Application");
                 if (type == null)
                 {
                     result.ComValid = false;
-                    logLines.Add("COM:\nDISCONNECTED\n");
-                    MessageBox.Show("Unable to connect to GstarCAD COM.\n\nGstarCAD COM components are not registered properly.", "COM Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    comErrorMsg = "Unable to connect to GstarCAD COM.\n\nGstarCAD COM components are not registered properly.";
                 }
                 else
                 {
-                    logLines.Add("COM:\nCONNECTED\n");
+                    comStatus = "True";
                 }
             }
             catch
             {
                 result.ComValid = false;
-                logLines.Add("COM:\nERROR\n");
-                MessageBox.Show("Unable to connect to GstarCAD COM.\n\nAn unexpected error occurred while querying the COM registry.", "COM Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                comErrorMsg = "Unable to connect to GstarCAD COM.\n\nAn unexpected error occurred while querying the COM registry.";
             }
+            
+            logLines.Add("COM");
+            logLines.Add("GstarCAD.Application");
+            logLines.Add($"Exists={comStatus}");
+            logLines.Add("");
 
             // Write Log
             try
@@ -103,6 +131,16 @@ namespace MegaEngineeringSuite
                 File.WriteAllLines(logPath, logLines);
             }
             catch { }
+
+            // Display MessageBoxes after logging so headless testing isn't completely blocked before logs are written
+            if (missingTemplatesMsg != null)
+                MessageBox.Show(missingTemplatesMsg, "Missing Runtime Resources", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            
+            if (missingCadMsg != null)
+                MessageBox.Show(missingCadMsg, "CAD Missing", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+            if (comErrorMsg != null)
+                MessageBox.Show(comErrorMsg, "COM Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 
             return result;
         }
