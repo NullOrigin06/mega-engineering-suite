@@ -19,11 +19,12 @@ Generate production-ready engineering drawings directly from engineering paramet
 
 <br>
 
-<div style="border: 1px solid #e1e4e8; padding: 40px; margin: 20px 0; background-color: #f6f8fa; border-radius: 6px;">
-  <video src="docs/assets/cad_automation_demo.mp4" width="100%" controls autoplay loop muted></video>
-  <br/>
-  <p><i>Tube Sheet Generation | Baffle Generation | AutoLISP Automation | Template-Based Drafting</i></p>
-</div>
+<p align="center">
+  <video width="900" controls autoplay muted loop playsinline>
+    <source src="docs/assets/cad_automation_demo.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+</p>
 
 </div>
 
