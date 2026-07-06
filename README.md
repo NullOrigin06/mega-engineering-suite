@@ -14,7 +14,7 @@ Generate production-ready engineering drawings directly from engineering paramet
 [![GstarCAD](https://img.shields.io/badge/GstarCAD-004481?style=flat-square&logo=autocad&logoColor=white)](#)
 [![AutoLISP](https://img.shields.io/badge/AutoLISP-333333?style=flat-square&logo=gnu-bash&logoColor=white)](#)
 [![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg?style=flat-square)](#)
-[![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/Version-1.0.3-blue.svg?style=flat-square)](#)
 [![License: MEGA EPC PVT LTD](https://img.shields.io/badge/License-MEGA_EPC_PVT_LTD-yellow.svg?style=flat-square)](#)
 
 <br>
@@ -29,7 +29,7 @@ Generate production-ready engineering drawings directly from engineering paramet
 
 Industrial equipment design traditionally relies on manual CAD drafting, a process that is time-consuming, prone to human error, and difficult to standardize across engineering teams. Generating accurate layouts for tube sheets and baffles requires precise geometric calculations and iterative positioning.
 
-MEGA Engineering Suite addresses this engineering problem by replacing manual drafting with programmatic generation. By entering strict engineering parameters into the suite, the application computes the required geometry, resolves spatial constraints, and generates deterministic AutoLISP scripts. These scripts directly interface with GstarCAD (or AutoCAD) to output standardized, production-ready engineering drawings in seconds. The modular architecture ensures that new equipment types and layout variations can be seamlessly integrated into the existing workflow.
+MEGA Engineering Suite addresses this engineering problem by replacing manual drafting with programmatic generation. By entering strict engineering parameters into the suite, the application computes the required geometry, resolves spatial constraints, and generates deterministic output. These scripts and COM instructions directly interface with GstarCAD to output standardized, production-ready engineering drawings in seconds. The modular architecture ensures that new equipment types and layout variations can be seamlessly integrated into the existing workflow.
 
 ---
 
@@ -38,10 +38,10 @@ MEGA Engineering Suite addresses this engineering problem by replacing manual dr
 | Feature | Description |
 | --- | --- |
 | Parametric CAD Generation | Automatically generates drawings from engineering parameters |
-| AutoLISP Automation | Produces complete drafting scripts |
-| Template Anchors | Places drawings accurately inside CAD templates |
-| Modular Architecture | Supports independent engineering modules |
-| Drawing Standardization | Ensures consistent drafting output |
+| Standardized Document Lifecycle | Immutable master templates with automated drafting copies |
+| COM Automation | Direct manipulation of CAD entities and title blocks |
+| Modular Architecture | Flat, scalable structure supporting independent modules |
+| Self-Healing Validation | Startup validations to ensure required templates exist |
 
 ---
 
@@ -51,38 +51,21 @@ MEGA Engineering Suite addresses this engineering problem by replacing manual dr
 
 | Capability | Status |
 | --- | --- |
-| Front Tube Sheet | Complete |
-| Rear Tube Sheet | Complete |
-| Tube Layout | Complete |
-| Bolt Hole Generation | Complete |
-| Partition Plates | Complete |
-| Side Views | Complete |
-| Dimensioning | Complete |
-| Annotation Placement | Complete |
+| Front / Rear Tube Sheet | Complete |
+| Tube Layout & Bolt Holes | Complete |
+| Partition Plates & Side Views | Complete |
+| Dimensioning & Annotations | Complete |
 | Bonnet Flange Integration | Complete |
-| Title Block Attribute Mapping | Complete |
+| LISP Generation Engine | Complete |
 
-### Baffle Module
-
-| Capability | Status |
-| --- | --- |
-| Top Cut Baffle | Complete |
-| Bottom Cut Baffle | Complete |
-| Dynamic Cut Geometry | Complete |
-| Tube Clearance | Complete |
-| Automatic Dimensions | Complete |
-| Layer Management | Complete |
-| Leader Generation | Complete |
-| Annotation Engine | Complete |
-
-### Flange Module
+### Flange Module (Bonnet)
 
 | Capability | Status |
 | --- | --- |
-| Body Flange (Bonnet) | Complete |
 | Dimensional Lookups | Complete |
 | GstarCAD COM Automation | Complete |
-| Title Block Extraction | Complete |
+| Title Block Extraction & Update | Complete |
+| Isolated Template Pipeline | Complete |
 
 ---
 
@@ -90,12 +73,26 @@ MEGA Engineering Suite addresses this engineering problem by replacing manual dr
 
 ```mermaid
 graph TD;
-    A[Engineering Inputs] --> B[Calculation Engine];
-    B --> C[Geometry Generation];
-    C --> D[Drawing Generation];
-    D --> E[AutoLISP Generator];
-    E --> F[GstarCAD Automation];
+    A[Engineering Inputs] --> B[Validation & App Config];
+    B --> C[Calculation Engine];
+    C --> D[CAD Adapter / Automation Service];
+    D --> E[Template Copied to GeneratedDrawings];
+    E --> F[GstarCAD COM / AutoLISP Execution];
     F --> G[Production CAD Drawing];
+```
+
+---
+
+## CAD Document Lifecycle
+
+The suite adheres to a strict, standardized CAD document lifecycle to ensure templates remain uncorrupted and Administrator privileges are never required:
+
+```mermaid
+graph TD;
+    A[Master Template] -->|Copy| B[GeneratedDrawings Folder];
+    B -->|Open via COM| C[Modify Geometry & Attributes];
+    C -->|Save| D[Output Drawing];
+    D -->|Close| E[Display to User];
 ```
 
 ---
@@ -104,103 +101,64 @@ graph TD;
 
 | Technology | Purpose |
 | --- | --- |
-| C# | Desktop application |
-| .NET | Framework |
-| Windows Forms | User Interface |
-| AutoLISP | CAD automation |
-| GstarCAD | CAD platform |
-| Python | Utility scripts |
-
----
-
-## Screenshots
-
-<br>
-
-**Application Dashboard**
-> `[ Screenshot Placeholder ]`
-
-<br>
-
-**Tube Sheet Module**
-> `[ Screenshot Placeholder ]`
-
-<br>
-
-**Baffle Module**
-> `[ Screenshot Placeholder ]`
-
-<br>
-
-**Generated Engineering Drawing**
-> `[ Screenshot Placeholder ]`
-
----
-
-## Workflow
-
-```mermaid
-graph TD;
-    A[Engineering Data] --> B[Calculations];
-    B --> C[Geometry];
-    C --> D[CAD Entities];
-    D --> E[AutoLISP];
-    E --> F[GstarCAD];
-    F --> G[Engineering Drawing];
-```
+| C# (.NET 10.0) | Core application, forms, and COM adapters |
+| ClosedXML | Reading parameters from Excel datasets |
+| GstarCAD COM API | Direct programmatic CAD drafting |
+| AutoLISP | Batch geometric calculations in CAD |
 
 ---
 
 ## Repository Structure
 
+The suite uses a flat, highly portable architecture ensuring it runs immediately upon cloning:
+
 ```text
 MEGA Engineering Suite
 │
-├── Modules
-│   ├── TubeSheet
-│   ├── Baffle
-│   ├── Flange
-│   └── Tank
+├── MegaEngineeringSuite      # Core Application & Modules (C#)
+│   ├── BonnetFlange          # Bonnet Flange generator & annotation engine
+│   ├── TubeSheet             # Tube Sheet automation & geometry
+│   ├── Infrastructure        # CAD Adapters, COM Sessions, & Logging
+│   └── Config                # Configuration managers & validation
 │
-├── Geometry
+├── Templates                 # Immutable CAD (.dwg) & Excel (.xlsx) templates
 │
-├── CalculationEngine
+├── GeneratedDrawings         # Output directory for finalized DWG files
 │
-├── DrawingAutomation
+├── GeneratedLisp             # Output directory for generated LISP scripts
 │
-├── Templates
+├── Logs                      # System diagnostics and execution logs
 │
-└── Resources
+├── Config                    # Application configuration (Settings.json)
+│
+├── Docs                      # Engineering Standards & Deployment Guides
+│
+└── TestConsole               # Headless COM testing utility
 ```
 
 ---
 
 ## Future Roadmap
 
-| Module | Status |
+| Module / Feature | Status |
 | --- | --- |
 | TubeSheet | Complete |
-| Baffle | Complete |
-| Flange | Complete |
+| Flange / Bonnet | Complete |
+| Baffle | Planned |
 | Nozzle | Planned |
 | Pipe Support | Planned |
 | Tank | Planned |
 | BOM Generation | Planned |
-| Report Generation | Planned |
 | Multi-CAD Support | Planned |
-| REST API | Planned |
 
 ---
 
 ## Documentation
 
-| Document | Description |
+| Document | Link |
 | --- | --- |
-| Installation | Setup instructions |
-| Architecture | Internal design |
-| Modules | Available automation modules |
-| Development | Contributor guide |
-| License | Project license |
+| CAD Lifecycle Standard | [CAD_Document_Lifecycle_Standard.md](docs/CAD_Document_Lifecycle_Standard.md) |
+| Deployment Guide | [Deployment_Guide.md](docs/Deployment_Guide.md) |
 
 ---
 
