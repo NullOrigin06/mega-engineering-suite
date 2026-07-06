@@ -20,10 +20,7 @@ Generate production-ready engineering drawings directly from engineering paramet
 <br>
 
 <p align="center">
-  <video width="900" controls autoplay muted loop playsinline>
-    <source src="docs/assets/cad_automation_demo.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
+  <img src="docs/assets/cad_automation_demo.gif" width="900" alt="CAD Automation Demo">
 </p>
 
 </div>
