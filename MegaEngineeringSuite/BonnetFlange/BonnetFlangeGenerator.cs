@@ -43,6 +43,34 @@ namespace MegaEngineeringSuite.BonnetFlange
             var swClose = new Stopwatch();
             CadOperationTimes innerTimes = new CadOperationTimes();
 
+            SimpleLogger.Log("BonnetFlange", "--- BONNET GENERATION ---");
+            SimpleLogger.Log("BonnetFlange", $"Template: {templatePath}");
+            SimpleLogger.Log("BonnetFlange", $"Output: {outputPath}");
+
+            // 1. Copy Template Before Launch
+            try
+            {
+                if (File.Exists(outputPath))
+                {
+                    File.SetAttributes(outputPath, FileAttributes.Normal);
+                    File.Delete(outputPath);
+                }
+
+                File.Copy(templatePath, outputPath);
+                File.SetAttributes(outputPath, FileAttributes.Normal);
+                
+                if (!File.Exists(outputPath))
+                {
+                    throw new IOException("Template copy failed: Output file does not exist after copy operation.");
+                }
+                SimpleLogger.Log("BonnetFlange", "Copy SUCCESS");
+            }
+            catch (Exception ex)
+            {
+                SimpleLogger.Log("BonnetFlange", $"Copy FAILED: {ex.Message}");
+                throw;
+            }
+
             // 2. Connect to CAD & Update
             swAcquire.Start();
             using (ICadAdapter cadAdapter = new GstarCadAdapter())
@@ -50,7 +78,8 @@ namespace MegaEngineeringSuite.BonnetFlange
                 swAcquire.Stop();
                 
                 swOpen.Start();
-                cadAdapter.OpenDrawing(templatePath);
+                cadAdapter.OpenDrawing(outputPath);
+                SimpleLogger.Log("BonnetFlange", "Open SUCCESS");
                 swOpen.Stop();
 
                 var engine = new AnnotationEngine(cadAdapter);
@@ -58,14 +87,17 @@ namespace MegaEngineeringSuite.BonnetFlange
                 
                 // Update Title Block
                 cadAdapter.UpdateTitleBlockAttributes(drawInfo);
+                SimpleLogger.Log("BonnetFlange", "Annotation SUCCESS");
 
                 swSave.Start();
-                cadAdapter.SaveAs(outputPath);
+                cadAdapter.Save();
+                SimpleLogger.Log("BonnetFlange", "Save SUCCESS");
                 swSave.Stop();
                 
                 swClose.Start();
             }
             swClose.Stop();
+            SimpleLogger.Log("BonnetFlange", "Close SUCCESS");
 
             SimpleLogger.Log("BonnetFlange", $"Output: {outputPath}");
             SimpleLogger.Log("BonnetFlange", "Finished");

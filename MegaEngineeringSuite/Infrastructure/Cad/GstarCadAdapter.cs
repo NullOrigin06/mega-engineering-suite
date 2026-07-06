@@ -23,6 +23,19 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
             if (_cadApp == null) throw new InvalidOperationException("CAD application is not initialized.");
             
             _cadDoc = _cadApp.Documents.Open(filePath);
+            
+            if (_cadDoc == null)
+            {
+                throw new InvalidOperationException($"Failed to open document: {filePath}");
+            }
+            
+            string actualPath = _cadDoc.FullName;
+            if (!actualPath.Equals(filePath, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException($"CAD opened unexpected document. Expected: {filePath}, Actual: {actualPath}");
+            }
+            
+            SimpleLogger.Log("GstarCadAdapter", $"Successfully verified and opened: {actualPath}");
         }
 
         public CadOperationTimes ReplaceAnnotationPlaceholders(Dictionary<string, string> replacements)
@@ -252,6 +265,12 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
             
             // Explicitly saving directly without any Visual Refresh operations
             _cadDoc.SaveAs(newFilePath);
+        }
+
+        public void Save()
+        {
+            if (_cadDoc == null) throw new InvalidOperationException("No drawing is currently open.");
+            _cadDoc.Save();
         }
 
         public void CloseDrawing()

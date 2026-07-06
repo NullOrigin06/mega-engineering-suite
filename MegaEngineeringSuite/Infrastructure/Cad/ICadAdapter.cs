@@ -15,6 +15,7 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
         CadOperationTimes ReplaceAnnotationPlaceholders(Dictionary<string, string> replacements);
         void UpdateTitleBlockAttributes(DrawingInformation info);
         void SaveAs(string newFilePath);
+        void Save();
         void CloseDrawing();
     }
 }
