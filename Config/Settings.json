@@ -1,0 +1,42 @@
+{
+  "CadPath": "C:\\Program Files\\Gstarsoft\\GstarCAD2026\\gcad.exe",
+  "ExcelTemplatePath": "C:\\Users\\PARTH\\source\\repos\\MegaEngineeringSuite\\Templates\\Heat Exchanger BOM Details.xlsx",
+  "DwgTemplatePath": "C:\\Users\\PARTH\\source\\repos\\MegaEngineeringSuite\\Templates\\FINAL TUBESHEET.dwg",
+  "BonnetTemplatePath": "C:\\Users\\PARTH\\source\\repos\\MegaEngineeringSuite\\Templates\\BAFFLE_Flange_template.dwg",
+  "BonnetOutputFolder": "C:\\Users\\PARTH\\source\\repos\\MegaEngineeringSuite\\GeneratedDrawings",
+  "CustomerHistory": [
+    "MEGA EPC",
+    "L\u0026T",
+    "Thermax",
+    "BHEL",
+    "Reliance"
+  ],
+  "DrawingNoHistory": [],
+  "DrawingTitleHistory": [
+    "Bonnet Flange Details For",
+    "Tube Sheet Details For",
+    "Body Flange Details For",
+    "Heat Chamber Details For",
+    "Cylinder Details For",
+    "Channel Details For",
+    "Floating Head Details For"
+  ],
+  "HTAHistory": [],
+  "TubeODHistory": [],
+  "TubeLengthHistory": [],
+  "TubeTHKHistory": [],
+  "BaffleQtyHistory": [],
+  "NoOfPassHistory": [
+    "1",
+    "2",
+    "4",
+    "6",
+    "8"
+  ],
+  "ProjectNoHistory": [],
+  "RevisionHistory": [],
+  "DateHistory": [],
+  "PreparedByHistory": [],
+  "CheckedByHistory": [],
+  "ApprovedByHistory": []
+}

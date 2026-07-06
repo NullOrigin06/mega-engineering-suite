@@ -1,0 +1,19 @@
+--- CAD LAUNCH LOG (PHASE T1F COM AUTOMATION) ---
+Target DWG: C:/Users/PARTH/source/repos/MegaEngineeringSuite/GeneratedLisp/TubeSheet_Output_800_20260704_153402.dwg
+Launching Process: C:/Users/PARTH/source/repos/MegaEngineeringSuite/GeneratedLisp/TubeSheet_Output_800_20260704_153402.dwg
+SUCCESS: Attached to COM via ProgID 'GstarCAD.Application'
+Poll 1: 6 open documents.
+  Inspecting [0-index 0]: C:\Users\PARTH\source\repos\MegaEngineeringSuite\GeneratedLisp\TubeSheet_Output_800_20260704_151216.dwg
+  Inspecting [0-index 1]: C:\Users\PARTH\source\repos\MegaEngineeringSuite\GeneratedLisp\TubeSheet_Output_800_20260704_151305.dwg
+  Inspecting [0-index 2]: C:\Users\PARTH\source\repos\MegaEngineeringSuite\GeneratedLisp\TubeSheet_Output_800_20260704_151454.dwg
+  Inspecting [0-index 3]: C:\Users\PARTH\source\repos\MegaEngineeringSuite\GeneratedLisp\TubeSheet_Output_800_20260704_151548.dwg
+  Inspecting [0-index 4]: C:\Users\PARTH\source\repos\MegaEngineeringSuite\GeneratedLisp\TubeSheet_Output_800_20260704_152420.dwg
+  Inspecting [0-index 5]: C:\Users\PARTH\source\repos\MegaEngineeringSuite\GeneratedLisp\TubeSheet_Output_800_20260704_153402.dwg
+SUCCESS: Found target document.
+Activating document...
+Skipping diagnostic CIRCLE and TEXT; Proceeding to load LISP directly.
+  SendCommand: _.ZOOM\n_E\n
+Sending LISP load command...
+  SendCommand: (load "C:/Users/PARTH/AppData/Local/Temp/TubeSheet_Draw_800_20260704_153402.lsp")\n
+SUCCESS: Commands dispatched.
+-------------------------------------------------

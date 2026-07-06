@@ -197,6 +197,11 @@ namespace MegaEngineeringSuite.BonnetFlange
             btnReset = CreateButton("↺ Reset", Color.WhiteSmoke, Color.Black);
             btnBack = CreateButton("⬅ Back", Color.FromArgb(220, 220, 220), Color.Black);
 
+            if (Program.StartupValidation != null && !Program.StartupValidation.TemplatesValid)
+            {
+                btnGenerate.Enabled = false;
+            }
+
             tlp.RowCount = 5;
             tlp.Controls.Add(btnGenerate, 0, 0);
             tlp.Controls.Add(btnOpenDrawing, 0, 1);

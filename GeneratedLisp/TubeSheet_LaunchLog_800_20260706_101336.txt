@@ -1,0 +1,45 @@
+--- CAD LAUNCH LOG (PHASE T1F COM AUTOMATION) ---
+Target DWG: C:/Users/PARTH/source/repos/MegaEngineeringSuite/GeneratedLisp/TubeSheet_Output_800_20260706_101336.dwg
+Launching Process: C:/Users/PARTH/source/repos/MegaEngineeringSuite/GeneratedLisp/TubeSheet_Output_800_20260706_101336.dwg
+SUCCESS: Attached to COM via ProgID 'GstarCAD.Application'
+Poll 1: 1 open documents.
+  Inspecting [0-index 0]: 
+Poll 2: 1 open documents.
+  Inspecting [0-index 0]: 
+Poll 3: 2 open documents.
+  Inspecting [0-index 0]: 
+  Inspecting [0-index 1]: C:\Users\PARTH\source\repos\MegaEngineeringSuite\Templates\Drawings\BAFFLE_Flange_template.dwg
+Poll 4: 2 open documents.
+  Inspecting [0-index 0]: 
+  Inspecting [0-index 1]: C:\Users\PARTH\source\repos\MegaEngineeringSuite\Templates\Drawings\BAFFLE_Flange_template.dwg
+Poll 5: 2 open documents.
+  Inspecting [0-index 0]: 
+  Inspecting [0-index 1]: C:\Users\PARTH\source\repos\MegaEngineeringSuite\Templates\Drawings\BAFFLE_Flange_template.dwg
+Poll 6: 2 open documents.
+  Inspecting [0-index 0]: 
+  Inspecting [0-index 1]: C:\Users\PARTH\source\repos\MegaEngineeringSuite\Templates\Drawings\BAFFLE_Flange_template.dwg
+Poll 7: 2 open documents.
+  Inspecting [0-index 0]: 
+  Inspecting [0-index 1]: C:\Users\PARTH\source\repos\MegaEngineeringSuite\Templates\Drawings\BAFFLE_Flange_template.dwg
+Poll 8: 2 open documents.
+  Inspecting [0-index 0]: 
+  Inspecting [0-index 1]: C:\Users\PARTH\source\repos\MegaEngineeringSuite\Templates\Drawings\BAFFLE_Flange_template.dwg
+Poll 9: 2 open documents.
+  Inspecting [0-index 0]: 
+  Inspecting [0-index 1]: C:\Users\PARTH\source\repos\MegaEngineeringSuite\Templates\Drawings\BAFFLE_Flange_template.dwg
+Poll 10: 2 open documents.
+  Inspecting [0-index 0]: 
+  Inspecting [0-index 1]: C:\Users\PARTH\source\repos\MegaEngineeringSuite\Templates\Drawings\BAFFLE_Flange_template.dwg
+Poll 11: 2 open documents.
+  Inspecting [0-index 0]: 
+  Inspecting [0-index 1]: C:\Users\PARTH\source\repos\MegaEngineeringSuite\Templates\Drawings\BAFFLE_Flange_template.dwg
+Poll 12: 1 open documents.
+  Inspecting [0-index 0]: 
+Poll 13: 1 open documents.
+  Inspecting [0-index 0]: 
+Poll 14: 1 open documents.
+  Inspecting [0-index 0]: 
+Poll 15: 1 open documents.
+  Inspecting [0-index 0]: 
+FAILED: Could not find target document within 15 seconds.
+-------------------------------------------------

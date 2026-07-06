@@ -410,6 +410,13 @@ namespace MegaEngineeringSuite
             mainTable.Controls.Add(pnlButtons, 0, 2);
             mainTable.SetColumnSpan(pnlButtons, 3);
 
+            if (Program.StartupValidation != null && !Program.StartupValidation.TemplatesValid)
+            {
+                btnGenerateTubeSheet.Enabled = false;
+                btnGenerateBodyFlange.Enabled = false;
+                // We'll leave btnCalculate and btnExport enabled as they don't depend on DWG templates
+            }
+
             Controls.Add(mainTable);
             
             // 6. STATUS STRIP
