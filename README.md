@@ -2,7 +2,7 @@
 
 # MEGA Engineering Suite
 
-**Professional CAD Automation Platform**
+**Professional CAD Automation Software**
 
 Generate production-ready engineering drawings directly from engineering parameters using C#, AutoLISP, and GstarCAD automation.
 
