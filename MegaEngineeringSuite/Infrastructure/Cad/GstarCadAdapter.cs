@@ -176,10 +176,9 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
                             string tag = attr.TagString;
                             string tagUpper = tag.ToUpper();
 
-                            // Clean up Title for single-line if needed, but append customer name below it
+                            // Clean up Title for single-line
                             string safeTitle = info.Title?.Trim() ?? "";
-                            string safeCustomer = info.CustomerName?.Trim() ?? "";
-                            string fullTitle = string.IsNullOrEmpty(safeCustomer) ? safeTitle : safeTitle + Environment.NewLine + safeCustomer;
+                            string fullTitle = safeTitle;
                             
                             string dateStr = info.Date.ToString("dd-MM-yyyy");
 
