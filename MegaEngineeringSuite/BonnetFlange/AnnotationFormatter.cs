@@ -6,6 +6,17 @@ namespace MegaEngineeringSuite.BonnetFlange
     {
         public static Dictionary<string, string> Format(BonnetFlangeData data)
         {
+            double shellId = data.ShellID > 0 ? data.ShellID : data.LinerID;
+            double partitionPlateThk = 5.0; // Constant from previous implementation
+            
+            // BOM1 (Surretion Ring)
+            double bom1Wt = 0.7854 * (System.Math.Pow(data.LinerOD, 2) - System.Math.Pow(shellId, 2)) * partitionPlateThk * 8e-6 * 2;
+            string bom1Size = $"OD.{data.LinerOD} x ID.{shellId} x {partitionPlateThk} THK.";
+            
+            // BOM2 (Bonnet Flange)
+            double bom2Wt = 0.7854 * (System.Math.Pow(data.OD, 2) - System.Math.Pow(data.ID, 2)) * data.Thickness * 7.85e-6 * 2;
+            string bom2Size = $"OD.{data.OD} x ID.{data.ID} x {data.Thickness} THK.";
+
             return new Dictionary<string, string>
             {
                 { "BF_OD", $"O.D. {data.OD}" },
@@ -17,7 +28,11 @@ namespace MegaEngineeringSuite.BonnetFlange
                 { "BF_SHELL_ID", data.ShellID.ToString() },
                 { "BF_BOLT1", $"Ø{data.BoltHoleDia}, {data.BoltQty} NOS." },
                 { "BF_BOLT2", $"{data.PCD} P.C.D." },
-                { "BF_THRD", (data.Thickness - 10).ToString() }
+                { "BF_THRD", (data.Thickness - 10).ToString() },
+                { "BOM1_SIZE", bom1Size },
+                { "BOM1_WT", bom1Wt.ToString("F1") },
+                { "BOM2_SIZE", bom2Size },
+                { "BOM2_WT", bom2Wt.ToString("F1") }
             };
         }
     }
