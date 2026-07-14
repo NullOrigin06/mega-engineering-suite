@@ -9,6 +9,7 @@
     <TargetFramework>net10.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms><UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <NoWarn>CS8600;CS8602;CS8603;CS8604;CS8618</NoWarn>
   </PropertyGroup>
 
 </Project>

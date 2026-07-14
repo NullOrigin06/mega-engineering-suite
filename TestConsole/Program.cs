@@ -33,7 +33,7 @@ namespace COMTestApp
                     var generator = new BonnetFlangeGenerator();
                     return generator.Generate(data, new DrawingInformation());
                 }).GetAwaiter().GetResult();
-                
+                TemplateAuditor.RunAudit();
                 Console.WriteLine("Success: " + outputPath);
             }
             catch (Exception ex)

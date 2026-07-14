@@ -18,6 +18,13 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
             _cadApp = CadSessionManager.Instance.GetCadApplication();
         }
 
+        public void AttachToExistingSession(object cadApp, object cadDoc)
+        {
+            _cadApp = cadApp;
+            _cadDoc = cadDoc;
+            SimpleLogger.Log("GstarCadAdapter", "Attached to existing CAD session and document.");
+        }
+
         public void OpenDrawing(string filePath)
         {
             if (_cadApp == null) throw new InvalidOperationException("CAD application is not initialized.");
@@ -36,6 +43,145 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
             }
             
             SimpleLogger.Log("GstarCadAdapter", $"Successfully verified and opened: {actualPath}");
+        }
+
+        public void SetSystemVariable(string name, object value)
+        {
+            if (_cadDoc == null) throw new InvalidOperationException("No drawing is currently open.");
+            _cadDoc.SetVariable(name, value);
+        }
+
+        public object GetSystemVariable(string name)
+        {
+            if (_cadDoc == null) throw new InvalidOperationException("No drawing is currently open.");
+            return _cadDoc.GetVariable(name);
+        }
+
+        public void SendCommand(string command)
+        {
+            if (_cadDoc == null) throw new InvalidOperationException("No drawing is currently open.");
+            _cadDoc.SendCommand(command);
+        }
+
+        public CadDocumentIdentity GetDocumentIdentity()
+        {
+            if (_cadDoc == null) throw new InvalidOperationException("No drawing is currently open.");
+            
+            var identity = new CadDocumentIdentity();
+            try
+            {
+                identity.DocumentName = _cadDoc.Name;
+                identity.FullPath = _cadDoc.FullName;
+                identity.IsActiveDocument = _cadDoc.Name == _cadApp.ActiveDocument.Name;
+                
+                // Attempt to get database/pointer details if possible via COM
+                try { identity.DatabaseHandle = _cadDoc.Database?.GetHashCode().ToString() ?? "N/A"; } catch { identity.DatabaseHandle = "N/A"; }
+                
+                try 
+                { 
+                    dynamic activeLayout = _cadDoc.ActiveLayout;
+                    identity.LayoutName = activeLayout.Name;
+                    dynamic modelSpace = _cadDoc.ModelSpace;
+                    identity.ModelSpaceCount = modelSpace.Count;
+                } 
+                catch 
+                { 
+                    identity.LayoutName = "Unknown"; 
+                }
+            }
+            catch (Exception ex)
+            {
+                identity.DocumentName = "ERROR: " + ex.Message;
+            }
+            return identity;
+        }
+
+        public dynamic GetEntityByHandle(string handle)
+        {
+            if (_cadDoc == null) throw new InvalidOperationException("No drawing is currently open.");
+            return _cadDoc.HandleToObject(handle);
+        }
+
+        public List<MegaEngineeringSuite.TubeSheet.PlaceholderDescriptor> DiscoverPlaceholders(DiscoveryMode mode = DiscoveryMode.MetaLayers)
+        {
+            if (_cadDoc == null) throw new InvalidOperationException("No drawing is currently open.");
+
+            var descriptors = new List<MegaEngineeringSuite.TubeSheet.PlaceholderDescriptor>();
+            dynamic layouts = _cadDoc.Layouts;
+            int layoutCount = layouts.Count;
+
+            for (int l = 0; l < layoutCount; l++)
+            {
+                dynamic layout = layouts.Item(l);
+                bool isPaperSpace = layout.ModelType == false;
+                
+                dynamic block = layout.Block;
+                int count = block.Count;
+
+                for (int i = 0; i < count; i++)
+                {
+                    dynamic entity = block.Item(i);
+                    string layer = entity.Layer;
+
+                    bool shouldProcess = mode == DiscoveryMode.All || layer.StartsWith("META_", StringComparison.OrdinalIgnoreCase);
+
+                    if (shouldProcess)
+                    {
+                        string entityName = entity.EntityName;
+                        string? currentText = null;
+                        
+                        try
+                        {
+                            if (entityName.Contains("Dimension"))
+                            {
+                                currentText = entity.TextOverride;
+                            }
+                            else if (entityName.Contains("MText") || entityName.Contains("Text") || entityName.Contains("MLeader"))
+                            {
+                                currentText = entity.TextString;
+                            }
+                            else if (entityName == "AcDbBlockReference" && entity.HasAttributes)
+                            {
+                                dynamic attributes = entity.GetAttributes();
+                                foreach (dynamic attr in attributes)
+                                {
+                                    descriptors.Add(new MegaEngineeringSuite.TubeSheet.PlaceholderDescriptor
+                                    {
+                                        EntityHandle = attr.Handle,
+                                        PlaceholderName = attr.TextString,
+                                        Layer = layer,
+                                        EntityType = "AttributeReference",
+                                        OwnerBlock = entity.Name,
+                                        PaperSpace = isPaperSpace,
+                                        ObjectId = attr.ObjectID
+                                    });
+                                }
+                                continue;
+                            }
+                        }
+                        catch
+                        {
+                            // Swallow unsupported property exceptions
+                        }
+
+                        if (!string.IsNullOrEmpty(currentText))
+                        {
+                            descriptors.Add(new MegaEngineeringSuite.TubeSheet.PlaceholderDescriptor
+                            {
+                                EntityHandle = entity.Handle,
+                                PlaceholderName = currentText,
+                                Layer = layer,
+                                EntityType = entityName.Replace("AcDb", ""),
+                                OwnerBlock = layout.Name,
+                                PaperSpace = isPaperSpace,
+                                ObjectId = entity.ObjectID
+                            });
+                        }
+                    }
+                }
+            }
+
+            return descriptors;
         }
 
         public CadOperationTimes ReplaceAnnotationPlaceholders(Dictionary<string, string> replacements)
@@ -309,6 +455,69 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
         {
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+        }
+        public List<MegaEngineeringSuite.TubeSheet.BlockAttributeDescriptor> DiscoverBlockAttributes(string blockName)
+        {
+            if (_cadDoc == null) throw new InvalidOperationException("No drawing is currently open.");
+            var descriptors = new List<MegaEngineeringSuite.TubeSheet.BlockAttributeDescriptor>();
+            dynamic layouts = _cadDoc.Layouts;
+            int layoutCount = layouts.Count;
+
+            for (int l = 0; l < layoutCount; l++)
+            {
+                dynamic layout = layouts.Item(l);
+                dynamic block = layout.Block;
+                int count = block.Count;
+
+                for (int i = 0; i < count; i++)
+                {
+                    dynamic entity = block.Item(i);
+                    string entityName = entity.EntityName;
+
+                    if (entityName == "AcDbBlockReference" && entity.Name.Equals(blockName, StringComparison.OrdinalIgnoreCase) && entity.HasAttributes)
+                    {
+                        dynamic attributes = entity.GetAttributes();
+                        foreach (dynamic attr in attributes)
+                        {
+                            descriptors.Add(new MegaEngineeringSuite.TubeSheet.BlockAttributeDescriptor
+                            {
+                                BlockHandle = entity.Handle,
+                                AttributeHandle = attr.Handle,
+                                Tag = attr.TagString,
+                                Value = attr.TextString,
+                                Layout = layout.Name,
+                                BlockName = entity.Name,
+                                IsConstant = attr.Constant,
+                                IsInvisible = attr.Invisible
+                            });
+                        }
+                    }
+                }
+            }
+            return descriptors;
+        }
+
+        public string UpdateBlockAttribute(string blockHandle, string tag, string newValue)
+        {
+            if (_cadDoc == null) throw new InvalidOperationException("No drawing is currently open.");
+            
+            dynamic blockEntity = _cadDoc.HandleToObject(blockHandle);
+            if (blockEntity.EntityName != "AcDbBlockReference" || !blockEntity.HasAttributes)
+            {
+                throw new InvalidOperationException($"Entity {blockHandle} is not a valid BlockReference with attributes.");
+            }
+
+            dynamic attributes = blockEntity.GetAttributes();
+            foreach (dynamic attr in attributes)
+            {
+                if (attr.TagString.Equals(tag, StringComparison.OrdinalIgnoreCase))
+                {
+                    attr.TextString = newValue;
+                    return attr.TextString; // Read-back
+                }
+            }
+
+            throw new InvalidOperationException($"Attribute with tag '{tag}' not found in block '{blockHandle}'.");
         }
     }
 }

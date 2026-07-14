@@ -6,6 +6,8 @@ namespace MegaEngineeringSuite
 {
     public class AppSettings
     {
+        public bool UsePipelineV2 { get; set; } = true;
+        public bool EnablePipelineDiagnostics { get; set; } = true;
         public string CadPath { get; set; } = @"C:\Program Files\Gstarsoft\GstarCAD2026\gcad.exe";
         public string ExcelTemplatePath { get; set; } = "";
         public string DwgTemplatePath { get; set; } = "";
@@ -183,6 +185,7 @@ namespace MegaEngineeringSuite
             // 3. standard installation directories
             string[] commonPaths = new string[]
             {
+                @"C:\Program Files\Gstarsoft\GstarCAD2027\gcad.exe",
                 @"C:\Program Files\Gstarsoft\GstarCAD2026\gcad.exe",
                 @"C:\Program Files\Gstarsoft\GstarCAD2025\gcad.exe",
                 @"C:\Program Files\Gstarsoft\GstarCAD2024\gcad.exe",

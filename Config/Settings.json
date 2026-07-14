@@ -1,4 +1,6 @@
 {
+  "UsePipelineV2": true,
+  "EnablePipelineDiagnostics": true,
   "CadPath": "C:\\Program Files\\Gstarsoft\\GstarCAD2026\\gcad.exe",
   "ExcelTemplatePath": "C:\\Users\\PARTH\\source\\repos\\MegaEngineeringSuite\\Templates\\Heat Exchanger BOM Details.xlsx",
   "DwgTemplatePath": "C:\\Users\\PARTH\\source\\repos\\MegaEngineeringSuite\\Templates\\FINAL TUBESHEET.dwg",
@@ -9,9 +11,13 @@
     "L\u0026T",
     "Thermax",
     "BHEL",
-    "Reliance"
+    "Reliance",
+    "parth"
   ],
-  "DrawingNoHistory": [],
+  "DrawingNoHistory": [
+    "25-005-FLG-EX-1405",
+    "15"
+  ],
   "DrawingTitleHistory": [
     "Bonnet Flange Details For",
     "Tube Sheet Details For",
@@ -31,7 +37,8 @@
     "3000"
   ],
   "TubeTHKHistory": [
-    "1.6"
+    "1.6",
+    "4"
   ],
   "BaffleQtyHistory": [
     "5"
@@ -43,10 +50,20 @@
     "6",
     "8"
   ],
-  "ProjectNoHistory": [],
-  "RevisionHistory": [],
+  "ProjectNoHistory": [
+    "12"
+  ],
+  "RevisionHistory": [
+    "5"
+  ],
   "DateHistory": [],
-  "PreparedByHistory": [],
-  "CheckedByHistory": [],
-  "ApprovedByHistory": []
+  "PreparedByHistory": [
+    "io"
+  ],
+  "CheckedByHistory": [
+    "oi"
+  ],
+  "ApprovedByHistory": [
+    "iooi"
+  ]
 }

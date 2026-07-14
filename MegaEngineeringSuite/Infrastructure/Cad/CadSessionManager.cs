@@ -106,5 +106,20 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
 
             throw new Exception("Could not find or start any supported CAD application.");
         }
+        public void ReleaseCadApplication()
+        {
+            if (_cadApp != null)
+            {
+                try
+                {
+                    Marshal.ReleaseComObject(_cadApp);
+                }
+                catch { }
+                finally
+                {
+                    _cadApp = null;
+                }
+            }
+        }
     }
 }

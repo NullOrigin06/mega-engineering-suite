@@ -746,7 +746,7 @@ namespace MegaEngineeringSuite
             }
         }
 
-        private void BtnGenerateTubeSheet_Click(object? sender, EventArgs e)
+        private async void BtnGenerateTubeSheet_Click(object? sender, EventArgs e)
         {
             if (currentData == null || currentGeometry == null)
             {
@@ -796,6 +796,26 @@ namespace MegaEngineeringSuite
                 
                 lastGeneratedLispPath = result.BackupPath;
                 lastGeneratedScrPath = result.BackupScrPath;
+
+                if (AppConfigManager.Current.UsePipelineV2)
+                {
+                    lblStatusReady.Text = "Generating V2...";
+                    var tsData = new MegaEngineeringSuite.TubeSheet.TubeSheetData
+                    {
+                        OutsideDiameter = currentData.TubeSheetFinishOD,
+                        InsideDiameter = currentData.ShellID,
+                        StepOutsideDiameter = currentData.TubeSheetFinishOD, // Placeholder
+                        Thickness = currentData.TubeSheetFinishTHK
+                    };
+                    
+                    var drawInfo = GetDrawingInformation();
+                    var orchestrator = new MegaEngineeringSuite.TubeSheet.PipelineOrchestrator();
+                    bool success = await orchestrator.RunV2PipelineAsync(result, tsData, drawInfo);
+                    if (!success)
+                    {
+                        MessageBox.Show("Pipeline V2 failed or timed out.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
 
 #if DEBUG
                 Debug.WriteLine("AutoLISP and SCR scripts generated.");

@@ -20,6 +20,8 @@ namespace MegaEngineeringSuite
         public string CadExecutable { get; set; } = string.Empty;
         public string Arguments { get; set; } = string.Empty;
         public string ScrContent { get; set; } = string.Empty;
+        public object? CadApplication { get; set; }
+        public object? CadDocument { get; set; }
     }
 
     public class DrawingAutomationService
@@ -703,6 +705,7 @@ namespace MegaEngineeringSuite
                 // Set system variables for script safety
                 lspContent.AppendLine("(setvar \"CMDECHO\" 0)");
                 lspContent.AppendLine("(setvar \"OSMODE\" 0)");
+                MegaEngineeringSuite.TubeSheet.PipelineSynchronizationEmitter.PrependSynchronizationSignal(lspContent);
                 lspContent.AppendLine();
 
                 // Implement Phase T4 - Rear Tubesheet Base Geometry (Template View)
@@ -1189,7 +1192,7 @@ namespace MegaEngineeringSuite
                 
                 lspContent.AppendLine("(command \"_.ZOOM\" \"_E\")");
                 lspContent.AppendLine("(princ \"\\nTubeSheet multi-anchor template views generated successfully.\")");
-                lspContent.AppendLine("(princ)");
+                MegaEngineeringSuite.TubeSheet.PipelineSynchronizationEmitter.AppendSynchronizationSignal(lspContent);
 
                 // Save to Temp
                 File.WriteAllText(scriptPath, lspContent.ToString());
@@ -1234,7 +1237,7 @@ namespace MegaEngineeringSuite
                 string[] progIds = { "GstarCAD.Application", "Gcad.Application", "GCAD.Application" };
                 
                 int attempts = 0;
-                while (gstarApp == null && attempts < 15)
+                while (gstarApp == null && attempts < 45)
                 {
                     Thread.Sleep(1000);
                     attempts++;
@@ -1250,6 +1253,7 @@ namespace MegaEngineeringSuite
                     }
                 }
 
+                dynamic targetDoc = null;
                 if (gstarApp == null)
                 {
                     log.AppendLine("FAILED: Could not attach to GstarCAD COM Server.");
@@ -1259,9 +1263,8 @@ namespace MegaEngineeringSuite
                     log.AppendLine($"SUCCESS: Attached to COM via ProgID '{connectedProgId}'");
 
                     // 3. Find the Document
-                    dynamic targetDoc = null;
                     attempts = 0;
-                    while (targetDoc == null && attempts < 15)
+                    while (targetDoc == null && attempts < 45)
                     {
                         Thread.Sleep(1000);
                         attempts++;
@@ -1345,7 +1348,7 @@ namespace MegaEngineeringSuite
                     }
                     else
                     {
-                        log.AppendLine("FAILED: Could not find target document within 15 seconds.");
+                        log.AppendLine("FAILED: Could not find target document within 45 seconds.");
                     }
                 }
 
@@ -1362,7 +1365,9 @@ namespace MegaEngineeringSuite
                     BackupScrPath = "",
                     CadExecutable = "COM Launch",
                     Arguments = outDwgPath,
-                    ScrContent = logMessage
+                    ScrContent = logMessage,
+                    CadApplication = gstarApp,
+                    CadDocument = targetDoc
                 };
             }
             catch (Exception ex)
