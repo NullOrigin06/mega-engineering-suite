@@ -805,7 +805,13 @@ namespace MegaEngineeringSuite
                         OutsideDiameter = currentData.TubeSheetFinishOD,
                         InsideDiameter = currentData.ShellID,
                         StepOutsideDiameter = currentData.TubeSheetFinishOD, // Placeholder
-                        Thickness = currentData.TubeSheetFinishTHK
+                        Thickness = currentData.TubeSheetFinishTHK,
+                        
+                        // BOM Properties
+                        TubeSheetFinishOD = currentData.TubeSheetFinishOD,
+                        TubeSheetFinishTHK = currentData.TubeSheetFinishTHK,
+                        TubeSheetWeight = MegaEngineeringSuite.Calculations.EngineeringCalculator.CalculateTubeSheetWeight(currentData),
+
                     };
                     
                     var drawInfo = GetDrawingInformation();

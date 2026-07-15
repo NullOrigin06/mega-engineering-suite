@@ -18,12 +18,17 @@ namespace MegaEngineeringSuite.TubeSheet
         {
             var values = new Dictionary<string, string>();
 
-            if (profile == MigrationProfile.Stage8_DetailADimensions)
+            if (profile == MigrationProfile.Stage8_DetailADimensions || profile == MigrationProfile.Stage10_BOM)
             {
                 values["TS_OD"] = _data.OutsideDiameter.ToString();
                 values["TS_ID"] = _data.InsideDiameter.ToString();
                 values["TS_STEP_OD"] = _data.StepOutsideDiameter.ToString();
                 values["TS_THK"] = _data.Thickness.ToString(); // Or StepInsideDiameter if that's intended, but prompt says TS_THK. I will map it to Thickness. Wait, user said TS_THK is the new authoritative name.
+
+                // Production BOM placeholders
+                values["BOM_TS_SIZE"] = $"%%C{_data.TubeSheetFinishOD} x {_data.TubeSheetFinishTHK}";
+                values["WHT1"] = Math.Round(_data.TubeSheetWeight, 1).ToString("F1");
+
             }
             else
             {

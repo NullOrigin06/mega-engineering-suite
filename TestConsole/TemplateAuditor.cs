@@ -42,7 +42,7 @@ namespace COMTestApp
             
             var schema = new TubeSheetPlaceholderSchema();
             var validator = new PlaceholderSchemaValidator();
-            var report = validator.ValidateSchema(pipelineContext.PlaceholderIndex, schema);
+            var report = validator.ValidateSchema(pipelineContext.PlaceholderIndex, schema.GetDefinitions());
 
             string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs", "TemplateAuditReport.md");
             using (var writer = new StreamWriter(logPath, false))

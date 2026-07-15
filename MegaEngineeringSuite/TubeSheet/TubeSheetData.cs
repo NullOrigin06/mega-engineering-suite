@@ -12,5 +12,11 @@ namespace MegaEngineeringSuite.TubeSheet
         public double InsideDiameter { get; set; } = 800;
         public double StepOutsideDiameter { get; set; } = 1050;
         public double StepInsideDiameter { get; set; } = 750;
+
+        // BOM Properties (Pipeline V2)
+        public double TubeSheetFinishOD { get; set; }
+        public double TubeSheetFinishTHK { get; set; }
+        public double TubeSheetWeight { get; set; }
+
     }
 }

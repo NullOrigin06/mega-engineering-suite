@@ -140,7 +140,7 @@ namespace MegaEngineeringSuite.TubeSheet
             discoveryEngine.DiscoverAnnotations(context);
 
             var schema = new TubeSheetPlaceholderSchema();
-            var activeProfile = MigrationProfile.Stage8_DetailADimensions;
+            var activeProfile = MigrationProfile.Stage10_BOM;
             var activeDefinitions = schema.GetActiveProfileDefinitions(activeProfile).ToList();
             var activeNames = new HashSet<string>(activeDefinitions.Select(d => d.PlaceholderName), StringComparer.OrdinalIgnoreCase);
 
@@ -177,8 +177,8 @@ namespace MegaEngineeringSuite.TubeSheet
 
             // Phase C: Resolution & Replacement
             // --- PHASE 3: Replacement Planning ---
-            var data = new TubeSheetData();
-            var info = new DrawingInformation();
+            var data = context.Data;
+            var info = context.Info;
             var provider = new TubeSheetPlaceholderProvider(data, info);
             
             // Generate profile-specific dictionary

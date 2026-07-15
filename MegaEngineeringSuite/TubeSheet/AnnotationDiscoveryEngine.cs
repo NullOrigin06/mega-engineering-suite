@@ -32,7 +32,7 @@ namespace MegaEngineeringSuite.TubeSheet
                 // Execute live COM discovery via CadAdapter (using All mode to find DIM layers)
                 var livePlaceholders = context.CadAdapter.DiscoverPlaceholders(DiscoveryMode.All);
                 
-                var activeProfile = MigrationProfile.Stage8_DetailADimensions;
+                var activeProfile = MigrationProfile.Stage10_BOM;
                 var schema = new TubeSheetPlaceholderSchema();
                 var activeNames = new System.Collections.Generic.HashSet<string>(
                     System.Linq.Enumerable.Select(schema.GetActiveProfileDefinitions(activeProfile), d => d.PlaceholderName), 

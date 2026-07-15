@@ -28,20 +28,33 @@
     "Floating Head Details For"
   ],
   "HTAHistory": [
-    "100"
+    "100",
+    "200",
+    "120"
   ],
   "TubeODHistory": [
-    "25.4"
+    "25.4",
+    "6000",
+    "19.05",
+    "2\u0060",
+    "2"
   ],
   "TubeLengthHistory": [
-    "3000"
+    "3000",
+    "3500",
+    "19.05",
+    "6000",
+    "2"
   ],
   "TubeTHKHistory": [
     "1.6",
-    "4"
+    "4",
+    "2"
   ],
   "BaffleQtyHistory": [
-    "5"
+    "5",
+    "6",
+    "12"
   ],
   "NoOfPassHistory": [
     "1",

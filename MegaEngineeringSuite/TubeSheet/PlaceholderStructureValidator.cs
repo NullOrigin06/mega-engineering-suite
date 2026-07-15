@@ -51,7 +51,8 @@ namespace MegaEngineeringSuite.TubeSheet
                 
                 // Rule: Layer
                 bool isLayerValid = p.Layer.StartsWith("META_", System.StringComparison.OrdinalIgnoreCase) || 
-                                    p.Layer.Equals("DIM", System.StringComparison.OrdinalIgnoreCase);
+                                    p.Layer.Equals("DIM", System.StringComparison.OrdinalIgnoreCase) ||
+                                    p.Layer.Equals("TEXT", System.StringComparison.OrdinalIgnoreCase);
                 RuntimeTraceLogger.Log($"- Rule [Layer Valid (META_ or DIM)]: {(isLayerValid ? "PASS" : "FAIL")}");
                 if (!isLayerValid)
                 {

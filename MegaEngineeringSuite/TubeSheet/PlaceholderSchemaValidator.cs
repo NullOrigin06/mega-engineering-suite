@@ -50,7 +50,8 @@ namespace MegaEngineeringSuite.TubeSheet
 
                 if (!definition.Required && !discoveredNames.Contains(definition.PlaceholderName))
                 {
-                    RuntimeTraceLogger.Log($"- RESULT: MISSING OPTIONAL (Allowed)");
+                    RuntimeTraceLogger.Log($"Placeholder Missing: {definition.PlaceholderName}");
+                    RuntimeTraceLogger.Log("Replacement skipped.");
                     report.MissingOptional.Add(definition.PlaceholderName);
                     continue;
                 }

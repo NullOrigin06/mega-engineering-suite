@@ -48,6 +48,27 @@ namespace MegaEngineeringSuite.TubeSheet
                     WritableProperty = "TextOverride",
                     OwnerModule = "DetailA"
                 },
+                new SchemaDefinition
+                {
+                    PlaceholderName = "BOM_TS_SIZE",
+                    Style = IdentifierStyle.Flat,
+                    Required = false,
+                    AllowedLayers = new List<string> { "BOM", "TEXT", "0" },
+                    AllowedEntityTypes = new List<string> { "Text", "MText", "AcDbText", "AcDbMText" },
+                    WritableProperty = "TextString",
+                    OwnerModule = "BOM"
+                },
+                new SchemaDefinition
+                {
+                    PlaceholderName = "WHT1",
+                    Style = IdentifierStyle.Flat,
+                    Required = false,
+                    AllowedLayers = new List<string> { "BOM", "TEXT", "0" },
+                    AllowedEntityTypes = new List<string> { "Text", "MText", "AcDbText", "AcDbMText" },
+                    WritableProperty = "TextString",
+                    OwnerModule = "BOM"
+                },
+
                 // Keep the legacy <TS_OD> versions if needed for other profiles, 
                 // but the prompt says: "Update TubeSheetPlaceholderSchema so that the Stage8_DetailADimensions profile contains exactly TS_OD... Retain all existing schema definitions for future migration stages."
                 new SchemaDefinition
@@ -125,6 +146,23 @@ namespace MegaEngineeringSuite.TubeSheet
                         def.PlaceholderName == "TS_ID" ||
                         def.PlaceholderName == "TS_STEP_OD" ||
                         def.PlaceholderName == "TS_THK")
+                    {
+                        active.Add(def);
+                    }
+                }
+                return active;
+            }
+            else if (profile == MigrationProfile.Stage10_BOM)
+            {
+                var active = new List<SchemaDefinition>();
+                foreach (var def in all)
+                {
+                    if (def.PlaceholderName == "TS_OD" ||
+                        def.PlaceholderName == "TS_ID" ||
+                        def.PlaceholderName == "TS_STEP_OD" ||
+                        def.PlaceholderName == "TS_THK" ||
+                        def.PlaceholderName == "BOM_TS_SIZE" ||
+                        def.PlaceholderName == "WHT1")
                     {
                         active.Add(def);
                     }
