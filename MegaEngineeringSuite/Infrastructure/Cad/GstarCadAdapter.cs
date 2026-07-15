@@ -12,6 +12,26 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
         private dynamic? _cadDoc;
         private bool _disposedValue;
 
+        // --- Performance Profiling Counters ---
+        public static int CounterGetObjectByHandle = 0;
+        public static int CounterEntityReads = 0;
+        public static int CounterEntityWrites = 0;
+        public static int CounterLayoutScans = 0;
+        public static int CounterModelSpaceIterations = 0;
+        public static int CounterRegens = 0;
+        public static int CounterSaves = 0;
+
+        public static void ResetCounters()
+        {
+            CounterGetObjectByHandle = 0;
+            CounterEntityReads = 0;
+            CounterEntityWrites = 0;
+            CounterLayoutScans = 0;
+            CounterModelSpaceIterations = 0;
+            CounterRegens = 0;
+            CounterSaves = 0;
+        }
+
         public GstarCadAdapter()
         {
             // Acquire CAD instance centrally (reusing if possible)
@@ -60,6 +80,10 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
         public void SendCommand(string command)
         {
             if (_cadDoc == null) throw new InvalidOperationException("No drawing is currently open.");
+            if (command.IndexOf("REGEN", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                CounterRegens++;
+            }
             _cadDoc.SendCommand(command);
         }
 
@@ -98,11 +122,12 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
 
         public dynamic GetEntityByHandle(string handle)
         {
+            CounterGetObjectByHandle++;
             if (_cadDoc == null) throw new InvalidOperationException("No drawing is currently open.");
             return _cadDoc.HandleToObject(handle);
         }
 
-        public List<MegaEngineeringSuite.TubeSheet.PlaceholderDescriptor> DiscoverPlaceholders(DiscoveryMode mode = DiscoveryMode.MetaLayers)
+        public System.Collections.Generic.List<MegaEngineeringSuite.TubeSheet.PlaceholderDescriptor> DiscoverPlaceholders(DiscoveryMode mode = DiscoveryMode.MetaLayers, System.Collections.Generic.Dictionary<string, dynamic>? entityCache = null, System.Collections.Generic.Dictionary<string, dynamic>? titleBlockCache = null)
         {
             if (_cadDoc == null) throw new InvalidOperationException("No drawing is currently open.");
 
@@ -112,6 +137,7 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
 
             for (int l = 0; l < layoutCount; l++)
             {
+                CounterLayoutScans++;
                 dynamic layout = layouts.Item(l);
                 bool isPaperSpace = layout.ModelType == false;
                 
@@ -120,7 +146,9 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
 
                 for (int i = 0; i < count; i++)
                 {
+                    CounterModelSpaceIterations++;
                     dynamic entity = block.Item(i);
+                    CounterEntityReads++;
                     string layer = entity.Layer;
 
                     bool shouldProcess = mode == DiscoveryMode.All || layer.StartsWith("META_", StringComparison.OrdinalIgnoreCase);
@@ -145,7 +173,7 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
                                 dynamic attributes = entity.GetAttributes();
                                 foreach (dynamic attr in attributes)
                                 {
-                                    descriptors.Add(new MegaEngineeringSuite.TubeSheet.PlaceholderDescriptor
+                                    var desc = new MegaEngineeringSuite.TubeSheet.PlaceholderDescriptor
                                     {
                                         EntityHandle = attr.Handle,
                                         PlaceholderName = attr.TextString,
@@ -154,7 +182,17 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
                                         OwnerBlock = entity.Name,
                                         PaperSpace = isPaperSpace,
                                         ObjectId = attr.ObjectID
-                                    });
+                                    };
+                                    descriptors.Add(desc);
+                                    if (entityCache != null)
+                                    {
+                                        entityCache[attr.Handle] = attr;
+                                    }
+                                    if (titleBlockCache != null)
+                                    {
+                                        string tagUpper = attr.TagString.ToUpper();
+                                        titleBlockCache[tagUpper] = attr;
+                                    }
                                 }
                                 continue;
                             }
@@ -166,7 +204,7 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
 
                         if (!string.IsNullOrEmpty(currentText))
                         {
-                            descriptors.Add(new MegaEngineeringSuite.TubeSheet.PlaceholderDescriptor
+                            var desc = new MegaEngineeringSuite.TubeSheet.PlaceholderDescriptor
                             {
                                 EntityHandle = entity.Handle,
                                 PlaceholderName = currentText,
@@ -175,7 +213,12 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
                                 OwnerBlock = layout.Name,
                                 PaperSpace = isPaperSpace,
                                 ObjectId = entity.ObjectID
-                            });
+                            };
+                            descriptors.Add(desc);
+                            if (entityCache != null)
+                            {
+                                entityCache[entity.Handle] = entity;
+                            }
                         }
                     }
                 }
@@ -284,12 +327,11 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
             };
         }
 
-        public void UpdateTitleBlockAttributes(DrawingInformation info)
+        public void UpdateTitleBlockAttributes(DrawingInformation info, System.Collections.Generic.Dictionary<string, dynamic>? titleBlockCache = null)
         {
             if (_cadDoc == null) throw new InvalidOperationException("No drawing is currently open.");
             
-            dynamic layouts = _cadDoc.Layouts;
-            int layoutCount = layouts.Count;
+            SimpleLogger.Log("BonnetFlange", "Updating Title Block Attributes...");
             
             bool titleUpdated = false;
             bool customerUpdated = false;
@@ -301,7 +343,81 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
             bool approvedUpdated = false;
             bool dateUpdated = false;
 
-            SimpleLogger.Log("BonnetFlange", "Updating Title Block Attributes...");
+            string safeTitle = info.Title?.Trim() ?? "";
+            string fullTitle = safeTitle;
+            string dateStr = info.Date.ToString("dd-MM-yyyy");
+
+            if (titleBlockCache != null && titleBlockCache.Count > 0)
+            {
+                // Fast path: use cache
+                foreach (var kvp in titleBlockCache)
+                {
+                    string tagUpper = kvp.Key;
+                    dynamic attr = kvp.Value;
+                    
+                    if (tagUpper == "TITLE" || tagUpper == "TITLE1" || tagUpper == "TITLE2" || tagUpper == "DWG_TITLE" || tagUpper == "DRAWING_TITLE") 
+                    { 
+                        if (attr.TextString != fullTitle) { attr.TextString = fullTitle; }
+                        titleUpdated = true; 
+                        SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tagUpper}] to: {fullTitle.Replace(Environment.NewLine, "\\n")}");
+                    }
+                    else if (tagUpper == "CUSTOMER" || tagUpper == "CLIENT" || tagUpper == "CUST") 
+                    { 
+                        if (attr.TextString != info.CustomerName) { attr.TextString = info.CustomerName; }
+                        customerUpdated = true; 
+                        SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tagUpper}] to: {info.CustomerName}");
+                    }
+                    else if (tagUpper == "PROJECT" || tagUpper == "PROJECTNO" || tagUpper == "PROJECT_NO" || tagUpper == "PROJECTNUMBER" || tagUpper == "PROJ") 
+                    { 
+                        if (attr.TextString != info.ProjectNo) { attr.TextString = info.ProjectNo; }
+                        projectUpdated = true; 
+                        SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tagUpper}] to: {info.ProjectNo}");
+                    }
+                    else if (tagUpper == "DRAWINGNO" || tagUpper == "DRAWING_NO" || tagUpper == "DWGNO" || tagUpper == "DWG_NO" || tagUpper == "DRG_NO" || tagUpper == "DWG") 
+                    { 
+                        if (attr.TextString != info.DrawingNo) { attr.TextString = info.DrawingNo; }
+                        drawingNoUpdated = true; 
+                        SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tagUpper}] to: {info.DrawingNo}");
+                    }
+                    else if (tagUpper == "REV" || tagUpper == "REVISION" || tagUpper == "REV_NO" || tagUpper == "REV." || tagUpper == "0") 
+                    { 
+                        if (attr.TextString != info.Revision) { attr.TextString = info.Revision; }
+                        revUpdated = true; 
+                        SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tagUpper}] to: {info.Revision}");
+                    }
+                    else if (tagUpper == "DRAWN" || tagUpper == "DRAWN_BY" || tagUpper == "DRAWNBY" || tagUpper == "PREPARED_BY" || tagUpper == "DRN") 
+                    { 
+                        if (attr.TextString != info.PreparedBy) { attr.TextString = info.PreparedBy; }
+                        drawnUpdated = true; 
+                        SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tagUpper}] to: {info.PreparedBy}");
+                    }
+                    else if (tagUpper == "CHECKED" || tagUpper == "CHECKED_BY" || tagUpper == "CHECKEDBY" || tagUpper == "CHK") 
+                    { 
+                        if (attr.TextString != info.CheckedBy) { attr.TextString = info.CheckedBy; }
+                        checkedUpdated = true; 
+                        SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tagUpper}] to: {info.CheckedBy}");
+                    }
+                    else if (tagUpper == "APPROVED" || tagUpper == "APPROVED_BY" || tagUpper == "APPROVEDBY" || tagUpper == "APP") 
+                    { 
+                        if (attr.TextString != info.ApprovedBy) { attr.TextString = info.ApprovedBy; }
+                        approvedUpdated = true; 
+                        SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tagUpper}] to: {info.ApprovedBy}");
+                    }
+                    else if (tagUpper == "DATE" || tagUpper == "ISSUEDATE" || tagUpper == "ISSUE_DATE") 
+                    { 
+                        if (attr.TextString != dateStr) { attr.TextString = dateStr; }
+                        dateUpdated = true; 
+                        SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tagUpper}] to: {dateStr}");
+                    }
+                }
+                return; // End fast path
+            }
+            
+            // Slow path: Full ModelSpace scan
+            dynamic layouts = _cadDoc.Layouts;
+            int layoutCount = layouts.Count;
+
+            SimpleLogger.Log("BonnetFlange", "Updating Title Block Attributes (Slow path)...");
 
             for (int l = 0; l < layoutCount; l++)
             {
@@ -323,46 +439,43 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
                             string tagUpper = tag.ToUpper();
 
                             // Clean up Title for single-line
-                            string safeTitle = info.Title?.Trim() ?? "";
-                            string fullTitle = safeTitle;
-                            
-                            string dateStr = info.Date.ToString("dd-MM-yyyy");
+                            // Variables safeTitle, fullTitle, dateStr already defined in outer scope
 
                             if (tagUpper == "TITLE" || tagUpper == "TITLE1" || tagUpper == "TITLE2" || tagUpper == "DWG_TITLE" || tagUpper == "DRAWING_TITLE") 
                             { 
-                                attr.TextString = fullTitle; 
+                                if (attr.TextString != fullTitle) { attr.TextString = fullTitle; }
                                 titleUpdated = true; 
-                                SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tag}] to: {fullTitle.Replace(Environment.NewLine, "\\n")}");
+                                SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tagUpper}] to: {fullTitle.Replace(Environment.NewLine, "\\n")}");
                             }
                             else if (tagUpper == "CUSTOMER" || tagUpper == "CLIENT" || tagUpper == "CUST") 
                             { 
-                                attr.TextString = info.CustomerName; 
+                                if (attr.TextString != info.CustomerName) { attr.TextString = info.CustomerName; }
                                 customerUpdated = true; 
-                                SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tag}] to: {info.CustomerName}");
+                                SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tagUpper}] to: {info.CustomerName}");
                             }
                             else if (tagUpper == "PROJECT" || tagUpper == "PROJECTNO" || tagUpper == "PROJECT_NO" || tagUpper == "PROJECTNUMBER" || tagUpper == "PROJ") 
                             { 
-                                attr.TextString = info.ProjectNo; 
+                                if (attr.TextString != info.ProjectNo) { attr.TextString = info.ProjectNo; }
                                 projectUpdated = true; 
-                                SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tag}] to: {info.ProjectNo}");
+                                SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tagUpper}] to: {info.ProjectNo}");
                             }
                             else if (tagUpper == "DRAWINGNO" || tagUpper == "DRAWING_NO" || tagUpper == "DWGNO" || tagUpper == "DWG_NO" || tagUpper == "DRG_NO" || tagUpper == "DWG") 
                             { 
-                                attr.TextString = info.DrawingNo; 
+                                if (attr.TextString != info.DrawingNo) { attr.TextString = info.DrawingNo; }
                                 drawingNoUpdated = true; 
-                                SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tag}] to: {info.DrawingNo}");
+                                SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tagUpper}] to: {info.DrawingNo}");
                             }
                             else if (tagUpper == "REV" || tagUpper == "REVISION" || tagUpper == "REV_NO" || tagUpper == "REV." || tagUpper == "0") 
                             { 
-                                attr.TextString = info.Revision; 
+                                if (attr.TextString != info.Revision) { attr.TextString = info.Revision; }
                                 revUpdated = true; 
-                                SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tag}] to: {info.Revision}");
+                                SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tagUpper}] to: {info.Revision}");
                             }
                             else if (tagUpper == "DRAWN" || tagUpper == "DRAWN_BY" || tagUpper == "DRAWNBY" || tagUpper == "PREPARED_BY" || tagUpper == "DRN") 
                             { 
-                                attr.TextString = info.PreparedBy; 
+                                if (attr.TextString != info.PreparedBy) { attr.TextString = info.PreparedBy; }
                                 drawnUpdated = true; 
-                                SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tag}] to: {info.PreparedBy}");
+                                SimpleLogger.Log("BonnetFlange", $"Updated attribute [{tagUpper}] to: {info.PreparedBy}");
                             }
                             else if (tagUpper == "CHECKED" || tagUpper == "CHECKED_BY" || tagUpper == "CHECKEDBY" || tagUpper == "CHK" || tagUpper == "CHKD") 
                             { 
@@ -407,7 +520,7 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
         public void SaveAs(string newFilePath)
         {
             if (_cadDoc == null) throw new InvalidOperationException("No drawing is currently open.");
-            
+            CounterSaves++;
             // Explicitly saving directly without any Visual Refresh operations
             _cadDoc.SaveAs(newFilePath);
         }
@@ -415,7 +528,23 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
         public void Save()
         {
             if (_cadDoc == null) throw new InvalidOperationException("No drawing is currently open.");
+            CounterSaves++;
             _cadDoc.Save();
+        }
+
+        public void ReleaseDocumentReference()
+        {
+            if (_cadDoc != null)
+            {
+                try
+                {
+                    Marshal.ReleaseComObject(_cadDoc);
+                }
+                finally
+                {
+                    _cadDoc = null;
+                }
+            }
         }
 
         public void CloseDrawing()
@@ -423,8 +552,7 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
             if (_cadDoc != null)
             {
                 _cadDoc.Close(false); // Do not save changes to the template itself
-                Marshal.ReleaseComObject(_cadDoc);
-                _cadDoc = null;
+                ReleaseDocumentReference();
             }
         }
 
@@ -513,6 +641,7 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
                 if (attr.TagString.Equals(tag, StringComparison.OrdinalIgnoreCase))
                 {
                     attr.TextString = newValue;
+                    CounterEntityWrites++;
                     return attr.TextString; // Read-back
                 }
             }

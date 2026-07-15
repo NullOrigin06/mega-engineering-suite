@@ -47,9 +47,8 @@ namespace MegaEngineeringSuite.TubeSheet
                 if (!context.GeometryAlreadyGenerated)
                 {
                     await ExecutePhaseAsync(context, "GeometryGenerationPhase", () => GeometryGenerationPhaseAsync(context));
+                    await ExecutePhaseAsync(context, "SynchronizationPhase", () => SynchronizationPhaseAsync(context));
                 }
-
-                await ExecutePhaseAsync(context, "SynchronizationPhase", () => SynchronizationPhaseAsync(context));
                 
                 await ExecutePhaseAsync(context, "DrawingNormalizationPhase", () => { DrawingNormalizationPhase(context); return Task.CompletedTask; });
                 
@@ -266,13 +265,22 @@ namespace MegaEngineeringSuite.TubeSheet
             var beforeSaveIdentity = context.CadAdapter.GetDocumentIdentity();
             LogDocumentAudit("FinalSessionReport.md", "Immediately before Save()", beforeSaveIdentity);
 
-            // In actual implementation, context.CadAdapter.Save() is called here
+            context.CadAdapter.Save();
             
             // START: Session Identity Audit - After Save
             var afterSaveIdentity = context.CadAdapter.GetDocumentIdentity();
             LogDocumentAudit("FinalSessionReport.md", "Immediately after Save()", afterSaveIdentity);
-
-            CadSessionManager.Instance.ReleaseCadApplication();
+            
+            switch (context.ExecutionMode)
+            {
+                case PipelineExecutionMode.Automation:
+                    context.CadAdapter.CloseDrawing();
+                    break;
+                case PipelineExecutionMode.Interactive:
+                    context.CadAdapter.ReleaseDocumentReference();
+                    SimpleLogger.Log("TubeSheetPipeline", "Interactive Mode: Leaving drawing open for user review.");
+                    break;
+            }
         }
 
         private void LogSessionIdentityAudit(string workingDrawingPath, CadDocumentIdentity identity)
@@ -320,7 +328,7 @@ namespace MegaEngineeringSuite.TubeSheet
         private void ExecuteRollback(PipelineContext context, Exception ex)
         {
             SimpleLogger.Log("TubeSheetPipeline", $"ROLLBACK TRIGGERED. Exception: {ex.Message}");
-            CadSessionManager.Instance.ReleaseCadApplication();
+            // We intentionally do NOT release the CAD Application here. Orchestrator handles drawing close.
         }
     }
 }

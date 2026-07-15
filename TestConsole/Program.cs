@@ -1,9 +1,6 @@
 using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using MegaEngineeringSuite.Infrastructure.Cad;
 
 namespace TestConsole
 {
@@ -11,165 +8,91 @@ namespace TestConsole
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Stage 11.4 - COM Search Starting...");
-
-            string templatePath = @"C:\Users\PARTH\source\repos\MegaEngineeringSuite\Templates\FINAL TUBESHEET.dwg";
-            string logPath = @"C:\Users\PARTH\source\repos\MegaEngineeringSuite\MegaEngineeringSuite\bin\Debug\net10.0-windows\Logs\Stage11_4_COMSearch.md";
+            Console.WriteLine("--- COMPARING PARITY DRAWINGS ---");
+            string baselinePath = @"C:\Users\PARTH\source\repos\MegaEngineeringSuite\GeneratedDrawings\BaselineParity.dwg";
+            string currentPath = @"C:\Users\PARTH\source\repos\MegaEngineeringSuite\GeneratedDrawings\CurrentParity.dwg";
             
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine("# Stage 11.4 DWG and COM Identity Audit\n");
+            var type = Type.GetTypeFromProgID("GstarCAD.Application");
+            dynamic acadApp = Activator.CreateInstance(type);
+            acadApp.Visible = true;
+            
+            Console.WriteLine("Extracting Baseline Data...");
+            dynamic docB = acadApp.Documents.Open(baselinePath, true);
+            var baselineTexts = ExtractTexts(docB);
+            docB.Close(false);
+            
+            Console.WriteLine("Extracting Current Data...");
+            dynamic docC = acadApp.Documents.Open(currentPath, true);
+            var currentTexts = ExtractTexts(docC);
+            docC.Close(false);
 
-            sb.AppendLine("## 1. File Identity Audit: Source Template");
-            if (File.Exists(templatePath))
+            int diffCount = 0;
+            Console.WriteLine("\n--- PARITY RESULTS ---");
+            foreach(var bKey in baselineTexts.Keys)
             {
-                FileInfo fi = new FileInfo(templatePath);
-                sb.AppendLine($"- **Path**: {templatePath}");
-                sb.AppendLine($"- **Size**: {fi.Length} bytes");
-                sb.AppendLine($"- **Last Modified**: {fi.LastWriteTime}");
-                sb.AppendLine($"- **SHA256**: {GetHash(templatePath)}");
-            }
-            else
-            {
-                sb.AppendLine("Template DWG not found at expected path!");
+                if (!currentTexts.ContainsKey(bKey))
+                {
+                    Console.WriteLine($"MISSING IN CURRENT: {bKey}");
+                    diffCount++;
+                }
+                else if (baselineTexts[bKey] != currentTexts[bKey])
+                {
+                    Console.WriteLine($"MISMATCH: '{bKey}' -> Baseline: '{baselineTexts[bKey]}', Current: '{currentTexts[bKey]}'");
+                    diffCount++;
+                }
             }
             
-            string genDir = @"C:\Users\PARTH\source\repos\MegaEngineeringSuite\GeneratedDrawings";
-            string generatedPath = "";
-            if (Directory.Exists(genDir))
+            foreach(var cKey in currentTexts.Keys)
             {
-                var latestFile = new DirectoryInfo(genDir).GetFiles("TubeSheet_Output_*.dwg").OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
-                if (latestFile != null)
+                if (!baselineTexts.ContainsKey(cKey))
                 {
-                    generatedPath = latestFile.FullName;
-                    sb.AppendLine("\n## 2. File Identity Audit: Latest Generated Output");
-                    sb.AppendLine($"- **Path**: {generatedPath}");
-                    sb.AppendLine($"- **Size**: {latestFile.Length} bytes");
-                    sb.AppendLine($"- **Last Modified**: {latestFile.LastWriteTime}");
-                    sb.AppendLine($"- **SHA256**: {GetHash(generatedPath)}");
+                    Console.WriteLine($"EXTRA IN CURRENT: {cKey} = {currentTexts[cKey]}");
+                    diffCount++;
                 }
             }
 
-            sb.AppendLine("\n## 3. Live COM Search Audit");
-            try
+            Console.WriteLine($"\nTotal Mismatches Found: {diffCount}");
+            if (diffCount == 0)
             {
-                dynamic acadApp = CadSessionManager.Instance.GetCadApplication();
-                if (acadApp == null)
-                {
-                    sb.AppendLine("**COM ERROR**: Could not connect to GstarCAD Application.");
-                }
-                else
-                {
-                    string[] targets = { "BOM_TS_SIZE", "WHT1", "BOM_BAFFLE_SIZE", "WHT2", "1070", "238" };
-                    
-                    if (File.Exists(templatePath))
-                    {
-                        sb.AppendLine("\n### --- SEARCHING TEMPLATE DWG ---");
-                        dynamic doc = acadApp.Documents.Open(templatePath);
-                        SearchDocument(doc, targets, sb);
-                        doc.Close(false);
-                    }
-                    
-                    if (File.Exists(generatedPath))
-                    {
-                        sb.AppendLine("\n### --- SEARCHING LATEST GENERATED DWG ---");
-                        dynamic doc2 = acadApp.Documents.Open(generatedPath);
-                        SearchDocument(doc2, targets, sb);
-                        doc2.Close(false);
-                    }
-                }
+                Console.WriteLine("PARITY CHECK PASSED - 100% MATCH!");
             }
-            catch (Exception ex)
-            {
-                sb.AppendLine($"\n**COM ERROR**: {ex.Message}");
-            }
-
-            File.WriteAllText(logPath, sb.ToString());
-            Console.WriteLine($"Audit complete. Report saved to:\n{logPath}");
-            Console.WriteLine(sb.ToString());
+            
+            acadApp.Quit();
         }
 
-        static void SearchDocument(dynamic doc, string[] targets, StringBuilder sb)
+        static Dictionary<string, string> ExtractTexts(dynamic doc)
         {
-            sb.AppendLine($"**Active Document**: `{doc.FullName}`");
+            var results = new Dictionary<string, string>();
             
-            SearchSpace(doc.ModelSpace, "ModelSpace", targets, sb);
-            SearchSpace(doc.PaperSpace, "PaperSpace", targets, sb);
-            
-            sb.AppendLine("\nSearching inside Block Definitions (Unexploded Blocks)...");
-            foreach (dynamic block in doc.Blocks)
+            foreach (dynamic space in new[] { doc.ModelSpace, doc.PaperSpace })
             {
-                string bName = block.Name;
-                if (bName.StartsWith("*Model") || bName.StartsWith("*Paper")) continue;
-                SearchSpace(block, $"Block Definition: {bName}", targets, sb);
-            }
-        }
-
-        static void SearchSpace(dynamic space, string spaceName, string[] targets, StringBuilder sb)
-        {
-            bool foundAny = false;
-            foreach (dynamic entity in space)
-            {
-                string objName = entity.ObjectName;
-                if (objName == "AcDbText" || objName == "AcDbMText")
+                for (int i = 0; i < space.Count; i++)
                 {
-                    string textString = entity.TextString;
-                    foreach (var target in targets)
+                    dynamic entity = space.Item(i);
+                    string eType = entity.ObjectName;
+                    
+                    if (eType == "AcDbText" || eType == "AcDbMText")
                     {
-                        if (textString.Contains(target))
+                        string val = entity.TextString;
+                        // Use coordinate as a sort of "key" since handles change
+                        string key = $"{eType}_X{Math.Round(entity.InsertionPoint[0], 2)}_Y{Math.Round(entity.InsertionPoint[1], 2)}";
+                        if (!results.ContainsKey(key))
                         {
-                            if (!foundAny)
-                            {
-                                sb.AppendLine($"\n#### Matches in {spaceName}:");
-                                foundAny = true;
-                            }
-                            sb.AppendLine($"- **Entity**: {objName}");
-                            sb.AppendLine($"  - Handle: {entity.Handle}");
-                            sb.AppendLine($"  - Layer: {entity.Layer}");
-                            sb.AppendLine($"  - Text: `{textString}`");
+                            results[key] = val;
                         }
                     }
-                }
-                else if (objName == "AcDbBlockReference")
-                {
-                    if (entity.HasAttributes)
+                    else if (eType == "AcDbBlockReference" && entity.HasAttributes)
                     {
                         var atts = entity.GetAttributes();
                         foreach (dynamic att in atts)
                         {
-                            string textString = att.TextString;
-                            string tagString = att.TagString;
-                            foreach (var target in targets)
-                            {
-                                if (textString.Contains(target) || tagString.Contains(target))
-                                {
-                                    if (!foundAny)
-                                    {
-                                        sb.AppendLine($"\n#### Matches in {spaceName}:");
-                                        foundAny = true;
-                                    }
-                                    sb.AppendLine($"- **Entity**: BlockReference Attribute (Block: {entity.Name})");
-                                    sb.AppendLine($"  - Handle: {att.Handle}");
-                                    sb.AppendLine($"  - Tag: {tagString}");
-                                    sb.AppendLine($"  - Text: `{textString}`");
-                                }
-                            }
+                            string key = $"ATTR_{entity.Name}_{att.TagString}";
+                            results[key] = att.TextString;
                         }
                     }
                 }
             }
-        }
-
-        static string GetHash(string path)
-        {
-            if (!File.Exists(path)) return "File not found";
-            using (var sha = SHA256.Create())
-            {
-                using (var stream = File.OpenRead(path))
-                {
-                    byte[] hash = sha.ComputeHash(stream);
-                    return BitConverter.ToString(hash).Replace("-", "").ToUpperInvariant();
-                }
-            }
+            return results;
         }
     }
 }

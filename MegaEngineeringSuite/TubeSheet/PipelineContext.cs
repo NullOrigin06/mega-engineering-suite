@@ -9,11 +9,14 @@ namespace MegaEngineeringSuite.TubeSheet
     {
         public TubeSheetData Data { get; set; } = new TubeSheetData();
         public DrawingInformation Info { get; set; } = new DrawingInformation();
+        public PipelineExecutionMode ExecutionMode { get; set; } = PipelineExecutionMode.Automation;
         public string WorkingDrawingPath { get; set; } = string.Empty;
         public ICadAdapter CadAdapter { get; set; }
         public ISynchronizationProvider SyncProvider { get; set; }
         public CancellationToken CancellationToken { get; set; }
         public PlaceholderIndex PlaceholderIndex { get; set; } = new PlaceholderIndex();
+        public System.Collections.Generic.Dictionary<string, dynamic> EntityCache { get; set; } = new System.Collections.Generic.Dictionary<string, dynamic>();
+        public System.Collections.Generic.Dictionary<string, dynamic> TitleBlockCache { get; set; } = new System.Collections.Generic.Dictionary<string, dynamic>();
         
         public bool WorkingCopyPrepared { get; set; } = false;
         public bool GeometryAlreadyGenerated { get; set; } = false;

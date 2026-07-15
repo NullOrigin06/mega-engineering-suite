@@ -17,53 +17,52 @@ namespace MegaEngineeringSuite.TubeSheet
 
             SimpleLogger.Log("TitleBlockService", "Starting Title Block Phase");
 
-            // 1. Discover
-            var allAttributes = cadAdapter.DiscoverBlockAttributes("A2");
-            var discoveryLog = new List<string> { "# Stage 9 - Title Block Discovery\n\n| Block Name | Block Handle | Attribute Handle | Tag | Value | Layout |", "|---|---|---|---|---|---|" };
-            foreach (var attr in allAttributes)
+            // 1. Discover using Cache
+            var targetAttributes = context.TitleBlockCache;
+            
+            var discoveryLog = new List<string> { "# Stage 9 - Title Block Discovery (Cached)\n\n| Tag | Value | Handle |", "|---|---|---|" };
+            foreach (var kvp in targetAttributes)
             {
-                discoveryLog.Add($"| {attr.BlockName} | {attr.BlockHandle} | {attr.AttributeHandle} | {attr.Tag} | {attr.Value.Replace("\n", "\\n").Replace("\r", "")} | {attr.Layout} |");
+                try
+                {
+                    string tag = kvp.Key;
+                    string val = kvp.Value.TextString;
+                    string handle = kvp.Value.Handle;
+                    discoveryLog.Add($"| {tag} | {val.Replace("\n", "\\n").Replace("\r", "")} | {handle} |");
+                }
+                catch { }
             }
             File.WriteAllLines(Path.Combine(artifactsDir, "Stage9_TitleBlockDiscovery.md"), discoveryLog);
 
-            if (allAttributes.Count == 0)
+            if (targetAttributes.Count == 0)
             {
-                SimpleLogger.Log("TitleBlockService", "WARNING: No A2 block found or it has no attributes.");
+                SimpleLogger.Log("TitleBlockService", "WARNING: No Title Block attributes found in cache.");
                 return;
             }
-
-            // Identify the unique block handles
-            var blockHandles = allAttributes.Select(a => a.BlockHandle).Distinct().ToList();
-            if (blockHandles.Count > 1)
-            {
-                SimpleLogger.Log("TitleBlockService", $"WARNING: Found {blockHandles.Count} A2 blocks. Using the first one in PaperSpace if possible.");
-            }
-
-            // Choose the target block (prefer Layout != "Model")
-            string targetBlockHandle = blockHandles.FirstOrDefault(h => allAttributes.First(a => a.BlockHandle == h).Layout != "Model") ?? blockHandles.First();
-            var targetAttributes = allAttributes.Where(a => a.BlockHandle == targetBlockHandle).ToList();
 
             // 2. Validate & Map
             var mappingProfile = new TitleBlockMappingProfile();
             var mappingLog = new List<string> { "# Stage 9 - Title Block Mapping\n\n| Expected Tag | Target Value | Discovered Attribute Handle | Status |", "|---|---|---|---|" };
             
-            var replacementQueue = new List<(BlockAttributeDescriptor descriptor, string expectedTag, string targetValue)>();
+            var replacementQueue = new List<(dynamic attr, string expectedTag, string targetValue)>();
 
             foreach (var mapping in mappingProfile.TagMappings)
             {
                 string expectedTag = mapping.Key;
                 string targetValue = mapping.Value(info);
+                string tagUpper = expectedTag.ToUpper();
 
-                var discoveredAttr = targetAttributes.FirstOrDefault(a => a.Tag.Equals(expectedTag, StringComparison.OrdinalIgnoreCase));
-                if (discoveredAttr != null)
+                if (targetAttributes.ContainsKey(tagUpper))
                 {
-                    mappingLog.Add($"| {expectedTag} | {targetValue.Replace("\n", "\\n").Replace("\r", "")} | {discoveredAttr.AttributeHandle} | MATCH |");
+                    dynamic discoveredAttr = targetAttributes[tagUpper];
+                    string attrHandle = discoveredAttr.Handle;
+                    mappingLog.Add($"| {expectedTag} | {targetValue.Replace("\n", "\\n").Replace("\r", "")} | {attrHandle} | MATCH |");
                     replacementQueue.Add((discoveredAttr, expectedTag, targetValue));
                 }
                 else
                 {
                     mappingLog.Add($"| {expectedTag} | {targetValue.Replace("\n", "\\n").Replace("\r", "")} | N/A | **WARNING: MISSING** |");
-                    SimpleLogger.Log("TitleBlockService", $"WARNING: Expected tag {expectedTag} not found in A2 block.");
+                    SimpleLogger.Log("TitleBlockService", $"WARNING: Expected tag {expectedTag} not found in cache.");
                 }
             }
             File.WriteAllLines(Path.Combine(artifactsDir, "Stage9_TitleBlockMapping.md"), mappingLog);
@@ -80,10 +79,24 @@ namespace MegaEngineeringSuite.TubeSheet
                 string status = "FAIL";
                 try
                 {
-                    readBack = cadAdapter.UpdateBlockAttribute(item.descriptor.BlockHandle, item.expectedTag, item.targetValue);
+                    // Lazy Verification
+                    string currentText = item.attr.TextString;
+                    if (currentText != item.targetValue)
+                    {
+                        item.attr.TextString = item.targetValue;
+                        MegaEngineeringSuite.Infrastructure.Cad.GstarCadAdapter.CounterEntityWrites++;
+                        
+                        readBack = item.attr.TextString;
+                        MegaEngineeringSuite.Infrastructure.Cad.GstarCadAdapter.CounterEntityReads++;
+                    }
+                    else
+                    {
+                        readBack = item.targetValue;
+                    }
+
                     if (readBack == item.targetValue)
                     {
-                        status = "PASS";
+                        status = (currentText != item.targetValue) ? "PASS" : "PASS (SKIPPED - MATCHES)";
                     }
                     else
                     {
@@ -98,18 +111,18 @@ namespace MegaEngineeringSuite.TubeSheet
                     SimpleLogger.Log("TitleBlockService", $"COM Error updating tag {item.expectedTag}: {ex.Message}");
                 }
 
-                string safeOld = item.descriptor.Value.Replace("\n", "\\n").Replace("\r", "");
-                string safeNew = item.targetValue.Replace("\n", "\\n").Replace("\r", "");
-                string safeReadBack = readBack.Replace("\n", "\\n").Replace("\r", "");
-
-                replacementLog.Add($"| {item.expectedTag} | {safeOld} | {safeNew} | {safeReadBack} | {status} |");
-
-                summaryLog.Add($"### {item.expectedTag}");
-                summaryLog.Add($"**Old:**\n{safeOld}\n");
-                summaryLog.Add($"**New:**\n{safeNew}\n");
-                if (status != "PASS") summaryLog.Add($"**Read Back:**\n{safeReadBack}\n");
-                summaryLog.Add($"**Status:** {status}\n");
-                summaryLog.Add("---");
+                string oldVal = "";
+                try { oldVal = item.attr.TextString; } catch { }
+                replacementLog.Add($"| {item.expectedTag} | {oldVal.Replace("\n", "\\n").Replace("\r", "")} | {item.targetValue.Replace("\n", "\\n").Replace("\r", "")} | {readBack.Replace("\n", "\\n").Replace("\r", "")} | {status} |");
+                
+                if (status.Contains("FAIL") || status.Contains("ERROR"))
+                {
+                    summaryLog.Add($"- ❌ **Failed to update:** `{item.expectedTag}`");
+                }
+                else
+                {
+                    summaryLog.Add($"- ✅ **Successfully updated:** `{item.expectedTag}` to `{item.targetValue.Replace("\n", "\\n").Replace("\r", "")}`");
+                }
             }
             
             File.WriteAllLines(Path.Combine(artifactsDir, "Stage9_TitleBlockReplacement.md"), replacementLog);

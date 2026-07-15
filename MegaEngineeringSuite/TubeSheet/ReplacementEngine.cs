@@ -40,46 +40,107 @@ namespace MegaEngineeringSuite.TubeSheet
 
                         try
                         {
-                            var beforeHandleIdentity = context.CadAdapter.GetDocumentIdentity();
-                            File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs", "HandleDocumentAudit.md"), 
-                                $"# Immediately before HandleToObject()\n**Current Document:** {beforeHandleIdentity.DocumentName}\n**Handle:** {instruction.Handle}\n---------------------------------------------------------\n");
-
-                            var entity = context.CadAdapter.GetEntityByHandle(instruction.Handle);
-                            string entityName = entity.EntityName;
+                            var totalSw = Stopwatch.StartNew();
                             
-                            var afterHandleIdentity = context.CadAdapter.GetDocumentIdentity();
-                            string entityLayer = "Unknown";
-                            string entityTextOverride = "N/A";
-                            try { entityLayer = entity.Layer; } catch { }
-                            try { if (entityName.Contains("Dimension")) entityTextOverride = entity.TextOverride; } catch { }
-
-                            File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs", "HandleDocumentAudit.md"), 
-                                $"# Immediately after HandleToObject()\n**ObjectName:** {entityName}\n**Layer:** {entityLayer}\n**TextOverride:** {entityTextOverride}\n**Document Name:** {afterHandleIdentity.DocumentName}\n---------------------------------------------------------\n");
-                            
-                            // Replace the placeholder inline with the replacement value
-                            string currentText = instruction.CurrentValue;
-                            string newText = currentText.Replace(instruction.Placeholder, instruction.ReplacementValue);
-
-                            if (entityName.Contains("Dimension"))
+                            // 1. Lookup from Cache
+                            var stepSw = Stopwatch.StartNew();
+                            dynamic entity;
+                            if (context.EntityCache.ContainsKey(instruction.Handle))
                             {
-                                entity.TextOverride = newText;
+                                entity = context.EntityCache[instruction.Handle];
                             }
                             else
                             {
-                                entity.TextString = newText;
+                                entity = context.CadAdapter.GetEntityByHandle(instruction.Handle);
+                                context.EntityCache[instruction.Handle] = entity;
+                                MegaEngineeringSuite.Infrastructure.Cad.GstarCadAdapter.CounterGetObjectByHandle++;
+                            }
+                            string entityName = entity.EntityName;
+                            stepSw.Stop();
+                            long lookupTime = stepSw.ElapsedMilliseconds;
+
+                            // 2. Read Layer
+                            stepSw.Restart();
+                            string entityLayer = "Unknown";
+                            try { entityLayer = entity.Layer; } catch { }
+                            stepSw.Stop();
+                            long readLayerTime = stepSw.ElapsedMilliseconds;
+
+                            // 3. Read Text
+                            stepSw.Restart();
+                            string currentTextFromEntity = "";
+                            if (entityName.Contains("Dimension")) { currentTextFromEntity = entity.TextOverride; }
+                            else { currentTextFromEntity = entity.TextString; }
+                            MegaEngineeringSuite.Infrastructure.Cad.GstarCadAdapter.CounterEntityReads++;
+                            stepSw.Stop();
+                            long readTextTime = stepSw.ElapsedMilliseconds;
+
+                            // 4. Lazy Verification & Write
+                            stepSw.Restart();
+                            string currentText = instruction.CurrentValue;
+                            string newText = currentText.Replace(instruction.Placeholder, instruction.ReplacementValue);
+                            
+                            bool needsUpdate = currentTextFromEntity != newText;
+                            long writeTime = 0;
+                            long readBackTime = 0;
+                            string readBack = currentTextFromEntity;
+                            
+                            if (needsUpdate)
+                            {
+                                if (entityName.Contains("Dimension"))
+                                {
+                                    entity.TextOverride = newText;
+                                    MegaEngineeringSuite.Infrastructure.Cad.GstarCadAdapter.CounterEntityWrites++;
+                                }
+                                else
+                                {
+                                    entity.TextString = newText;
+                                    MegaEngineeringSuite.Infrastructure.Cad.GstarCadAdapter.CounterEntityWrites++;
+                                }
+                                stepSw.Stop();
+                                writeTime = stepSw.ElapsedMilliseconds;
+
+                                // 5. Read Back
+                                stepSw.Restart();
+                                MegaEngineeringSuite.Infrastructure.Cad.GstarCadAdapter.CounterEntityReads++;
+                                readBack = entityName.Contains("Dimension") ? entity.TextOverride : entity.TextString;
+                                stepSw.Stop();
+                                readBackTime = stepSw.ElapsedMilliseconds;
+                            }
+                            else
+                            {
+                                stepSw.Stop();
                             }
 
-                            // Immediate Read-back
-                            string readBack = entityName.Contains("Dimension") ? entity.TextOverride : entity.TextString;
+                            totalSw.Stop();
+                            long totalTime = totalSw.ElapsedMilliseconds;
+
                             writer.WriteLine($"Read-back: {readBack}");
                             if (readBack == newText)
                             {
-                                writer.WriteLine("Status: SUCCESS");
+                                writer.WriteLine("Status: SUCCESS" + (needsUpdate ? "" : " (SKIPPED - VALUE ALREADY MATCHES)"));
                             }
                             else
                             {
                                 writer.WriteLine("Status: FAILED (Read-back mismatch)");
                             }
+
+                            string breakdownPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs", "Stage12_COMBreakdown.md");
+                            if (!File.Exists(breakdownPath))
+                            {
+                                File.WriteAllText(breakdownPath, "# COM Operation Breakdown\n\n```\n");
+                            }
+                            
+                            string breakdownData = $@"Entity {instruction.Handle}
+Lookup      {lookupTime} ms
+Read Layer  {readLayerTime} ms
+Read Text   {readTextTime} ms
+Write       {writeTime} ms
+Read Back   {readBackTime} ms
+Total       {totalTime} ms
+
+";
+                            File.AppendAllText(breakdownPath, breakdownData);
                         }
                         catch (Exception ex)
                         {

@@ -8,7 +8,7 @@ namespace MegaEngineeringSuite.TubeSheet
 {
     public class PipelineOrchestrator
     {
-        public async Task<bool> RunV2PipelineAsync(DrawingAutomationResult result, TubeSheetData data, DrawingInformation info)
+        public async Task<bool> RunV2PipelineAsync(DrawingAutomationResult result, TubeSheetData data, DrawingInformation info, PipelineExecutionMode mode = PipelineExecutionMode.Automation)
         {
             SimpleLogger.Log("PipelineOrchestrator", "Starting V2 Pipeline Orchestration.");
 
@@ -27,10 +27,11 @@ namespace MegaEngineeringSuite.TubeSheet
 
             var pipeline = new TubeSheetDrawingPipeline(cadAdapter, geometryGenerator, null!, syncProvider);
 
-            // Create context with 60s timeout
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            // Create context with 300s timeout for profiling
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(300));
             var context = new PipelineContext(cadAdapter, syncProvider, cts.Token)
             {
+                ExecutionMode = mode,
                 Data = data,
                 Info = info,
                 WorkingDrawingPath = result.Arguments, // This holds the outDwgPath

@@ -30,5 +30,10 @@ namespace MegaEngineeringSuite.TubeSheet
             File.WriteAllText(path, _trace.ToString());
             _trace.Clear();
         }
+
+        public static void Clear()
+        {
+            _trace.Clear();
+        }
     }
 }

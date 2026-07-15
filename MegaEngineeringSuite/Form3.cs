@@ -816,7 +816,7 @@ namespace MegaEngineeringSuite
                     
                     var drawInfo = GetDrawingInformation();
                     var orchestrator = new MegaEngineeringSuite.TubeSheet.PipelineOrchestrator();
-                    bool success = await orchestrator.RunV2PipelineAsync(result, tsData, drawInfo);
+                    bool success = await orchestrator.RunV2PipelineAsync(result, tsData, drawInfo, MegaEngineeringSuite.TubeSheet.PipelineExecutionMode.Interactive);
                     if (!success)
                     {
                         MessageBox.Show("Pipeline V2 failed or timed out.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
