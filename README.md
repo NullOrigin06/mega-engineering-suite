@@ -1,115 +1,207 @@
 <div align="center">
 
-# MEGA Engineering Suite 
+# Mega Engineering Suite
+**Professional Engineering Drawing Automation for GstarCAD**
 
-**Professional CAD Automation Software**
+*Transforming engineering parameters into production-ready CAD drawings instantly through powerful COM automation.*
 
-Generate production-ready engineering drawings directly from engineering parameters using C#, AutoLISP, and GstarCAD automation.
+**Version v1.2.0**
 
-<br>
-
-[![C#](https://img.shields.io/badge/C%23-239120?style=flat-square&logo=c-sharp&logoColor=white)](#)
-[![.NET](https://img.shields.io/badge/.NET-512BD4?style=flat-square&logo=dotnet&logoColor=white)](#)
-[![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)](#)
-[![GstarCAD](https://img.shields.io/badge/GstarCAD-004481?style=flat-square&logo=autocad&logoColor=white)](#)
-[![AutoLISP](https://img.shields.io/badge/AutoLISP-333333?style=flat-square&logo=gnu-bash&logoColor=white)](#)
-[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg?style=flat-square)](#)
-[![Version](https://img.shields.io/badge/Version-1.2.0-blue.svg?style=flat-square)](#)
+[![Latest Release](https://img.shields.io/badge/Release-v1.2.0-blue.svg?style=flat-square)](#)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet&logoColor=white)](#)
+[![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?style=flat-square&logo=windows&logoColor=white)](#)
+[![GstarCAD](https://img.shields.io/badge/CAD-GstarCAD-004481?style=flat-square&logo=autocad&logoColor=white)](#)
+[![Status](https://img.shields.io/badge/Status-Production_Ready-brightgreen.svg?style=flat-square)](#)
 [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-yellow.svg?style=flat-square)](#)
 
 <br>
 
 <p align="center">
-  <img src="docs/Images/cad_automation_demo.gif" width="900" alt="CAD Automation Demo">
+  <img src="docs/images/banner.png" width="900" alt="Mega Engineering Suite Banner">
 </p>
 
 </div>
 
-## 📖 Overview
+---
 
-Industrial equipment design traditionally relies on manual CAD drafting, a process that is time-consuming, prone to human error, and difficult to standardize across engineering teams. Generating accurate layouts for tube sheets and baffles requires precise geometric calculations and iterative positioning.
+## 📖 Project Overview
 
-MEGA Engineering Suite addresses this engineering problem by replacing manual drafting with programmatic generation. By entering strict engineering parameters into the suite, the application computes the required geometry, resolves spatial constraints, and generates deterministic output. These scripts and COM instructions directly interface with GstarCAD to output standardized, production-ready engineering drawings in seconds. The modular architecture ensures that new equipment types and layout variations can be seamlessly integrated into the existing workflow.
+**Mega Engineering Suite** is a state-of-the-art Windows desktop application designed to bridge the gap between mechanical engineering calculations and physical drafting. Built for mechanical engineers, designers, and draftsmen, the software eliminates repetitive manual CAD work by completely automating the creation of standardized, high-quality industrial drawings.
+
+### The Engineering Workflow
+In traditional engineering environments, designing industrial equipment like heat exchangers or pressure vessels involves complex calculations that are subsequently handed off to a drafter to reproduce manually in a CAD system. This gap introduces significant human error, bottleneck delays, and inconsistencies in drawing standards.
+
+### The Solution
+Mega Engineering Suite resolves this by binding directly to the GstarCAD COM API. Users simply input their verified engineering parameters, and the suite autonomously processes the spatial geometry, resolves drawing constraints, writes the Bill of Materials (BOM), updates the Title Block, and generates a finalized DWG—all within a matter of seconds.
+
+**Benefits:**
+- **Zero Drafting Errors:** Direct parameter-to-drawing translation.
+- **Massive Time Savings:** Drawing generation reduced from hours to seconds.
+- **Strict Standardization:** Enforces identical drafting styles and formatting universally.
 
 ---
 
-## ✨ Features
+## ✨ Core Features
 
-| Feature | Description |
+| Capability | Description |
 | --- | --- |
-| **Parametric CAD Generation** | Automatically generates deterministic drawings directly from engineering parameters. |
-| **Immutable Template Management** | Adheres to a standard document lifecycle with master templates and isolated, automated drafting copies. |
-| **COM Automation Engine** | Direct manipulation of CAD entities, drawing attributes, and title block integrations without manual intervention. |
-| **Self-Healing Validations** | Startup checks ensure required configurations, templates, and runtime environments exist before execution. |
-| **BOM and Annotations** | Fully automates Tube Sheet Bill of Materials generation and spatial annotations dynamically. |
+| **Tube Sheet Module** | Fully automated layout and geometric drafting of industrial tube sheets. |
+| **Dynamic Placeholder Engine** | Advanced, fault-tolerant text replacement pipeline operating deep within CAD model space. |
+| **Title Block Automation** | Programmatically populates engineering metadata, revision tracking, and approvals. |
+| **BOM Generation** | Automatically calculates, aligns, and injects Bill of Material tables directly into the drawing. |
+| **Excel Lookup Integration** | Reads standardized hardware dimensions and material properties dynamically from Excel data banks. |
+| **GstarCAD COM Automation** | Native, ultra-low-latency interaction with the GstarCAD drafting engine. |
+| **Interactive Generation** | Keeps the drawing instance alive and active for engineers to review the output in real-time. |
+| **Professional Windows Installer** | Single-click Inno Setup deployment with automatic permission escalation and dependency validation. |
 
 ---
 
 ## 🏗️ Architecture
 
+The application relies on a strictly deterministic, unidirectional data flow utilizing a decoupled pipeline architecture.
+
 ```mermaid
 graph TD;
-    A[Engineering Inputs] --> B[Validation & App Config];
-    B --> C[Calculation Engine];
-    C --> D[CAD Adapter / Automation Service];
-    D --> E[Template Copied to GeneratedDrawings];
-    E --> F[GstarCAD COM / AutoLISP Execution];
-    F --> G[Production CAD Drawing];
+    Input[User Input] --> Calc[Engineering Calculator];
+    Calc --> Excel[Excel Lookup Services];
+    Excel --> Pipeline[Drawing Pipeline Engine];
+    Pipeline --> Placeholder[Placeholder Resolution];
+    Placeholder --> TitleBlock[Title Block Injection];
+    TitleBlock --> BOM[BOM Generation];
+    BOM --> DWG[Generated Production Drawing];
+    
+    style Input fill:#f9f,stroke:#333,stroke-width:2px
+    style DWG fill:#bbf,stroke:#333,stroke-width:2px
 ```
-
-The system uses a state-of-the-art Pipeline architecture, separating Discovery, Validation, and Replacement phases to ensure fault-tolerance and robustness when working with COM components.
 
 ---
 
-## 🚀 Installation & Build Instructions
+## 📸 Interface & Outputs
 
-### Prerequisites
-- .NET 10.0 SDK or higher
-- GstarCAD 2023 or newer installed
-- Windows 10/11
+<div align="center">
+  
+**Home Dashboard**  
+<img src="docs/images/home.png" width="800" alt="Home Dashboard Placeholder">
 
-### Build from Source
-1. Clone the repository:
-   ```cmd
-   git clone https://github.com/your-org/MegaEngineeringSuite.git
-   ```
-2. Navigate to the project directory:
-   ```cmd
-   cd MegaEngineeringSuite
-   ```
-3. Restore dependencies and build the solution:
-   ```cmd
-   dotnet restore
-   dotnet build -c Release
-   ```
-4. Run the suite:
-   ```cmd
-   dotnet run --project MegaEngineeringSuite/MegaEngineeringSuite.csproj
-   ```
+**Engineering Input Form**  
+<img src="docs/images/form.png" width="800" alt="Form Placeholder">
+
+**Generated Drawing Layout**  
+<img src="docs/images/drawing.png" width="800" alt="Drawing Placeholder">
+
+**Automated BOM Detail**  
+<img src="docs/images/bom.png" width="800" alt="BOM Placeholder">
+
+**Setup Installer**  
+<img src="docs/images/installer.png" width="800" alt="Installer Placeholder">
+
+</div>
+
+---
+
+## 🚀 Installation & Deployment
+
+Deploying the suite is fully automated via the provided Windows Installer.
+
+1. **Download Installer:** Obtain `MegaEngineeringSuite_Setup_v1.2.0.exe` from the latest GitHub Release.
+2. **Run Setup:** Execute the installer (requires Administrator privileges).
+3. **Install Dependencies:**
+   - Ensure **GstarCAD** is installed and activated.
+   - Ensure the **.NET 10.0 Desktop Runtime** is installed.
+4. **Launch:** Run *Mega Engineering Suite* from your Start Menu or Desktop shortcut.
 
 ---
 
 ## 🛠️ Technology Stack
 
-* **Core Framework:** C# / .NET 10.0 (Windows Forms)
-* **CAD Engine Integration:** GstarCAD Type Libraries (COM Interop)
-* **Geometric Generation:** AutoLISP
-* **Data Processing:** ClosedXML (Excel Integration)
+| Technology | Purpose |
+| --- | --- |
+| **C# / .NET 10** | Core application logic and execution framework. |
+| **WinForms** | Rapid, stable user interface development. |
+| **GstarCAD COM API** | Direct CAD automation, entity manipulation, and rendering. |
+| **ExcelDataReader** | High-speed, dependency-free Excel parsing for engineering tables. |
+| **Inno Setup** | Professional, secure Windows deployment and uninstallation. |
 
 ---
 
-## 🗺️ Roadmap
+## 📁 Repository Structure
 
-- [x] Tube Sheet Parametric Engine
-- [x] GstarCAD COM Interactive/Automation Lifecycle
-- [x] Title Block Synchronization
-- [x] Bill of Materials (BOM) Automation
-- [ ] Inno Setup Windows Installer
-- [ ] Flange Module Expansion
-- [ ] Tank & Nozzle Design Generation
+```text
+MegaEngineeringSuite/
+├── MegaEngineeringSuite/            # Main C# Source Code
+│   ├── BonnetFlange/                # Form & Module Logic
+│   ├── Infrastructure/              # CAD Interfaces & COM Wrappers
+│   ├── TubeSheet/                   # Core Generators & Calculators
+│   └── Properties/                  # Application Metadata
+├── Config/                          # External Settings JSON
+├── Templates/                       # Master DWG & Excel Templates
+├── installer/                       # Deployment configurations
+│   ├── InnoSetup/                   # Setup.iss compilation script
+│   └── Output/                      # Compiled setup executables
+└── README.md                        # Documentation
+```
+
+---
+
+## 📦 Modules
+
+### Current Capabilities
+- ✅ **Tube Sheet:** Full drafting, dimensioning, and annotation.
+
+### Future Expansion
+- ⏳ **Flange:** Standardized blind and slip-on flange generation.
+- ⏳ **Nozzle:** Custom equipment nozzle sizing and placement.
+- ⏳ **Pipe Support:** Structural pipe support and hanger detailing.
+- ⏳ **Tank:** Pressure vessel and atmospheric tank profiling.
+- ⏳ **Report Generator:** Automated PDF calculation summaries.
+
+---
+
+## 🗺️ Development Roadmap
+
+**Completed:**
+- [x] Base Application Architecture
+- [x] Interactive Drawing Pipeline
+- [x] Placeholder Resolution Engine
+- [x] Automated BOM & Title Block
+- [x] Professional Inno Setup Installer
+- [x] Production Release (v1.2.0)
+
+**Upcoming:**
+- [ ] Flange Module Integration
+- [ ] Nozzle Module Integration
+- [ ] Pipe Support Module Integration
+- [ ] Tank Module Integration
+- [ ] Native PDF Export Automation
+- [ ] Native DXF Export Automation
+
+---
+
+## ⚡ Performance & Stability
+
+Mega Engineering Suite is engineered for rigorous production environments.
+- **Optimized COM Communication:** Reduces cross-process call overhead, ensuring CAD geometry is generated nearly instantaneously.
+- **Interactive Drawing Mode:** Maintains the active COM connection rather than generating flat files, allowing immediate visual inspection by the engineer.
+- **Stable Production Architecture:** Hardened against missing resources, locked files, and COM timeout faults, ensuring zero downtime.
+
+---
+
+## 🛡️ Repository Quality
+
+> [!IMPORTANT]  
+> **Production Certified**  
+> This repository is fully stabilized and version-controlled. It features a clean, pipeline-driven architecture and is bundled with a highly secure, automated deployment installer.
 
 ---
 
 ## 📄 License
 
-This software is licensed under a **Proprietary License** by MEGA EPC PVT LTD. All Rights Reserved. See the [LICENSE](LICENSE) file for details.
+Proprietary License. Copyright © 2026 Parth Devs. All Rights Reserved.
+
+---
+
+## 👨‍💻 Author
+
+**Parth Devs**  
+*Lead Software Architect & Engineering Developer*  
+Dedicated to automating heavy industry design through advanced software engineering.
