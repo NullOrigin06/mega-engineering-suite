@@ -52,19 +52,6 @@ namespace MegaEngineeringSuite
 
         private static void DetermineRootFolder()
         {
-            string currentDir = AppDomain.CurrentDomain.BaseDirectory;
-            while (!string.IsNullOrEmpty(currentDir))
-            {
-                if (File.Exists(Path.Combine(currentDir, "MegaEngineeringSuite.sln")) ||
-                    File.Exists(Path.Combine(currentDir, "MegaEngineeringSuite.slnx")) ||
-                    Directory.Exists(Path.Combine(currentDir, ".git")))
-                {
-                    _rootFolder = currentDir;
-                    return;
-                }
-                currentDir = Directory.GetParent(currentDir)?.FullName ?? "";
-            }
-            // Fallback to BaseDirectory if not found upwards
             _rootFolder = AppDomain.CurrentDomain.BaseDirectory;
         }
 

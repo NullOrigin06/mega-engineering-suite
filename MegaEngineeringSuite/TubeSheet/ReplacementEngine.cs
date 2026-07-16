@@ -125,22 +125,7 @@ namespace MegaEngineeringSuite.TubeSheet
                                 writer.WriteLine("Status: FAILED (Read-back mismatch)");
                             }
 
-                            string breakdownPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs", "Stage12_COMBreakdown.md");
-                            if (!File.Exists(breakdownPath))
-                            {
-                                File.WriteAllText(breakdownPath, "# COM Operation Breakdown\n\n```\n");
-                            }
-                            
-                            string breakdownData = $@"Entity {instruction.Handle}
-Lookup      {lookupTime} ms
-Read Layer  {readLayerTime} ms
-Read Text   {readTextTime} ms
-Write       {writeTime} ms
-Read Back   {readBackTime} ms
-Total       {totalTime} ms
 
-";
-                            File.AppendAllText(breakdownPath, breakdownData);
                         }
                         catch (Exception ex)
                         {

@@ -10,25 +10,22 @@ namespace MegaEngineeringSuite.TubeSheet
 
         public static void Log(string message)
         {
-            _trace.AppendLine(message);
+            // Production hardening: Disable runtime trace
         }
 
         public static void LogPhaseStart(string phaseName)
         {
-            Log($"[{DateTime.Now:HH:mm:ss.fff}] START PHASE: {phaseName}");
+            // Production hardening
         }
 
         public static void LogPhaseEnd(string phaseName, string result, long durationMs)
         {
-            Log($"[{DateTime.Now:HH:mm:ss.fff}] END PHASE: {phaseName} ........ {result} (Duration: {durationMs}ms)\n");
+            // Production hardening
         }
 
         public static void DumpTrace()
         {
-            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs", "Stage8_7_RuntimeTrace.md");
-            Directory.CreateDirectory(Path.GetDirectoryName(path));
-            File.WriteAllText(path, _trace.ToString());
-            _trace.Clear();
+            // Production hardening: Disable trace file dumping
         }
 
         public static void Clear()

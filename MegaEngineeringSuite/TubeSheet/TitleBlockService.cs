@@ -13,7 +13,7 @@ namespace MegaEngineeringSuite.TubeSheet
         {
             var cadAdapter = context.CadAdapter;
             var info = context.Info;
-            string artifactsDir = @"C:\Users\PARTH\.gemini\antigravity-ide\brain\1137cba5-f0e6-446f-ad1b-9447135c7a43\";
+
 
             SimpleLogger.Log("TitleBlockService", "Starting Title Block Phase");
 
@@ -32,7 +32,7 @@ namespace MegaEngineeringSuite.TubeSheet
                 }
                 catch { }
             }
-            File.WriteAllLines(Path.Combine(artifactsDir, "Stage9_TitleBlockDiscovery.md"), discoveryLog);
+
 
             if (targetAttributes.Count == 0)
             {
@@ -65,7 +65,7 @@ namespace MegaEngineeringSuite.TubeSheet
                     SimpleLogger.Log("TitleBlockService", $"WARNING: Expected tag {expectedTag} not found in cache.");
                 }
             }
-            File.WriteAllLines(Path.Combine(artifactsDir, "TitleBlockMapping.md"), mappingLog);
+
 
             // 3. Replace
             var replacementLog = new List<string> { "# Title Block Replacement\n\n| Tag | Old Value | New Value | Read Back Value | Status |", "|---|---|---|---|---|" };
@@ -125,9 +125,6 @@ namespace MegaEngineeringSuite.TubeSheet
                 }
             }
             
-            File.WriteAllLines(Path.Combine(artifactsDir, "TitleBlockReplacement.md"), replacementLog);
-            File.WriteAllLines(Path.Combine(artifactsDir, "TitleBlockVerification.md"), replacementLog); // Verification is same data
-            File.WriteAllLines(Path.Combine(artifactsDir, "TitleBlockSummary.md"), summaryLog);
 
             if (anyFailed)
             {
