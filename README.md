@@ -86,11 +86,11 @@ graph TD;
 **Engineering Input Form**  
 <img src="docs/images/form.png" width="800" alt="Form Placeholder">
 
-**Generated Drawing Layout**  
-<img src="docs/images/drawing.png" width="800" alt="Drawing Placeholder">
+**Generated Tubesheet Drawing**  
+<img src="docs/images/drawing1.png" width="800" alt="Drawing Placeholder">
 
-**Automated BOM Detail**  
-<img src="docs/images/bom.png" width="800" alt="BOM Placeholder">
+**Generated Baffle Drawing**  
+<img src="docs/images/drawing2.png" width="800" alt="BOM Placeholder">
 
 **Setup Installer**  
 <img src="docs/images/installer.png" width="800" alt="Installer Placeholder">
