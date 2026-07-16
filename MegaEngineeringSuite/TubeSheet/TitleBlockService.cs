@@ -20,7 +20,7 @@ namespace MegaEngineeringSuite.TubeSheet
             // 1. Discover using Cache
             var targetAttributes = context.TitleBlockCache;
             
-            var discoveryLog = new List<string> { "# Stage 9 - Title Block Discovery (Cached)\n\n| Tag | Value | Handle |", "|---|---|---|" };
+            var discoveryLog = new List<string> { "# Title Block Discovery (Cached)\n\n| Tag | Value | Handle |", "|---|---|---|" };
             foreach (var kvp in targetAttributes)
             {
                 try
@@ -42,7 +42,7 @@ namespace MegaEngineeringSuite.TubeSheet
 
             // 2. Validate & Map
             var mappingProfile = new TitleBlockMappingProfile();
-            var mappingLog = new List<string> { "# Stage 9 - Title Block Mapping\n\n| Expected Tag | Target Value | Discovered Attribute Handle | Status |", "|---|---|---|---|" };
+            var mappingLog = new List<string> { "# Title Block Mapping\n\n| Expected Tag | Target Value | Discovered Attribute Handle | Status |", "|---|---|---|---|" };
             
             var replacementQueue = new List<(dynamic attr, string expectedTag, string targetValue)>();
 
@@ -65,11 +65,11 @@ namespace MegaEngineeringSuite.TubeSheet
                     SimpleLogger.Log("TitleBlockService", $"WARNING: Expected tag {expectedTag} not found in cache.");
                 }
             }
-            File.WriteAllLines(Path.Combine(artifactsDir, "Stage9_TitleBlockMapping.md"), mappingLog);
+            File.WriteAllLines(Path.Combine(artifactsDir, "TitleBlockMapping.md"), mappingLog);
 
             // 3. Replace
-            var replacementLog = new List<string> { "# Stage 9 - Title Block Replacement\n\n| Tag | Old Value | New Value | Read Back Value | Status |", "|---|---|---|---|---|" };
-            var summaryLog = new List<string> { "# Stage 9 - Title Block Summary\n" };
+            var replacementLog = new List<string> { "# Title Block Replacement\n\n| Tag | Old Value | New Value | Read Back Value | Status |", "|---|---|---|---|---|" };
+            var summaryLog = new List<string> { "# Title Block Summary\n" };
             
             bool anyFailed = false;
 
@@ -125,9 +125,9 @@ namespace MegaEngineeringSuite.TubeSheet
                 }
             }
             
-            File.WriteAllLines(Path.Combine(artifactsDir, "Stage9_TitleBlockReplacement.md"), replacementLog);
-            File.WriteAllLines(Path.Combine(artifactsDir, "Stage9_TitleBlockVerification.md"), replacementLog); // Verification is same data
-            File.WriteAllLines(Path.Combine(artifactsDir, "Stage9_TitleBlockSummary.md"), summaryLog);
+            File.WriteAllLines(Path.Combine(artifactsDir, "TitleBlockReplacement.md"), replacementLog);
+            File.WriteAllLines(Path.Combine(artifactsDir, "TitleBlockVerification.md"), replacementLog); // Verification is same data
+            File.WriteAllLines(Path.Combine(artifactsDir, "TitleBlockSummary.md"), summaryLog);
 
             if (anyFailed)
             {
