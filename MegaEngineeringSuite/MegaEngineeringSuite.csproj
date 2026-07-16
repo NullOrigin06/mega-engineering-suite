@@ -21,7 +21,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="..\Templates\**">
+    <Content Include="..\Templates\**" Exclude="..\Templates\**\*.bak;..\Templates\**\*.dwl;..\Templates\**\*.dwl2">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <Link>Templates\%(RecursiveDir)%(Filename)%(Extension)</Link>
@@ -44,6 +44,14 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
   </ItemGroup>
+
+  <!-- Post-publish cleanup to remove PDB files from the publish directory while keeping Release builds debuggable -->
+  <Target Name="RemovePdbFilesAfterPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <PdbsToDelete Include="$(PublishDir)\**\*.pdb" />
+    </ItemGroup>
+    <Delete Files="@(PdbsToDelete)" />
+  </Target>
 
   <ItemGroup>
     <EmbeddedResource Update="Properties\Resources.resx">
