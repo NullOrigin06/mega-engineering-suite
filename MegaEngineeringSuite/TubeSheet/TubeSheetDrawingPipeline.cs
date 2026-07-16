@@ -26,7 +26,7 @@ namespace MegaEngineeringSuite.TubeSheet
 
         public async Task<string> ExecuteAsync(PipelineContext context)
         {
-            RuntimeTraceLogger.Log("## Stage 8.7 Runtime Trace - Pipeline Execution Timeline");
+            RuntimeTraceLogger.Log("## Pipeline Execution Timeline");
             try
             {
                 await ExecutePhaseAsync(context, "ValidationPhase", () => { ValidatePhase(context); return Task.CompletedTask; });
@@ -39,10 +39,6 @@ namespace MegaEngineeringSuite.TubeSheet
                         return Task.CompletedTask;
                     });
                 }
-
-                // START: Session Identity Audit
-                var startIdentity = context.CadAdapter.GetDocumentIdentity();
-                LogSessionIdentityAudit(context.WorkingDrawingPath, startIdentity);
 
                 if (!context.GeometryAlreadyGenerated)
                 {
@@ -130,10 +126,6 @@ namespace MegaEngineeringSuite.TubeSheet
         {
             SimpleLogger.Log("TubeSheetPipeline", "Phase 4: Annotations (META_ANNOTATIONS)...");
             
-            // START: Session Identity Audit - Before Discovery
-            var beforeDiscoveryIdentity = context.CadAdapter.GetDocumentIdentity();
-            LogDocumentAudit("DocumentAudit.md", "Immediately before Discovery", beforeDiscoveryIdentity);
-
             // Phase A: Discovery
             var discoveryEngine = new AnnotationDiscoveryEngine();
             discoveryEngine.DiscoverAnnotations(context);
@@ -152,7 +144,7 @@ namespace MegaEngineeringSuite.TubeSheet
                     activeIndex.Add(p);
                 }
             }
-            SimpleLogger.Log("TubeSheetPipeline", $"Filtered {context.PlaceholderIndex.Count} discovered down to {activeIndex.Count} active placeholders for Stage 8.");
+            SimpleLogger.Log("TubeSheetPipeline", $"Filtered {context.PlaceholderIndex.Count} discovered down to {activeIndex.Count} active placeholders.");
 
             // Phase B: Validation
             var structureValidator = new PlaceholderStructureValidator();
@@ -191,12 +183,10 @@ namespace MegaEngineeringSuite.TubeSheet
 
             if (!planReport.Success)
             {
-                // Generate a log for the plan to inspect why it failed
-                LogReplacementPlan(replacementPlan);
+                // Log replacement plan validation failure
                 throw new Exception($"Replacement Plan Validation Failed: {string.Join(", ", planReport.Errors)}");
             }
             
-            LogReplacementPlan(replacementPlan);
 
             var replacementEngine = new ReplacementEngine();
             replacementEngine.ExecutePlan(replacementPlan, context);
@@ -205,49 +195,6 @@ namespace MegaEngineeringSuite.TubeSheet
             verificationEngine.VerifyReplacements(replacementPlan, context);
 
             SimpleLogger.Log("TubeSheetPipeline", "Phase 4 Replacement & Verification Complete.");
-        }
-
-        private void LogReplacementPlan(ReplacementPlan plan)
-        {
-            RuntimeTraceLogger.Log("\n### Replacement Plan Validation");
-            if (plan.Instructions.Count == 0)
-            {
-                RuntimeTraceLogger.Log("Plan is empty. Reason: No placeholders resolved successfully or mapping failed.");
-            }
-            
-            foreach (var instruction in plan.Instructions)
-            {
-                RuntimeTraceLogger.Log("------------------------------------");
-                RuntimeTraceLogger.Log(instruction.Placeholder);
-                RuntimeTraceLogger.Log("↓");
-                RuntimeTraceLogger.Log(instruction.ReplacementValue);
-                RuntimeTraceLogger.Log("↓");
-                RuntimeTraceLogger.Log(instruction.Handle);
-                RuntimeTraceLogger.Log("↓");
-                RuntimeTraceLogger.Log(instruction.ExpectedEntityType ?? "UNKNOWN");
-                RuntimeTraceLogger.Log("↓");
-                RuntimeTraceLogger.Log(instruction.ReplacementValue);
-            }
-
-            string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs", "ReplacementPlan.log");
-            using (var writer = new StreamWriter(logPath, false))
-            {
-                writer.WriteLine("====================================");
-                writer.WriteLine("Replacement Plan Log");
-                writer.WriteLine($"Timestamp: {DateTime.Now}");
-                writer.WriteLine($"Validated: {plan.IsValidated}");
-                writer.WriteLine("====================================");
-
-                foreach (var instruction in plan.Instructions)
-                {
-                    writer.WriteLine("------------------------------------");
-                    writer.WriteLine($"Handle: {instruction.Handle}");
-                    writer.WriteLine($"Placeholder: {instruction.Placeholder}");
-                    writer.WriteLine($"Replacement: {instruction.ReplacementValue}");
-                    writer.WriteLine($"Ready: {instruction.Ready}");
-                    writer.WriteLine($"Validation: {instruction.ValidationState}");
-                }
-            }
         }
 
         private void TitleBlockPhase(PipelineContext context)
@@ -261,16 +208,9 @@ namespace MegaEngineeringSuite.TubeSheet
         {
             SimpleLogger.Log("TubeSheetPipeline", "Phase 7: Finalizing & Saving...");
 
-            // START: Session Identity Audit - Before Save
-            var beforeSaveIdentity = context.CadAdapter.GetDocumentIdentity();
-            LogDocumentAudit("FinalSessionReport.md", "Immediately before Save()", beforeSaveIdentity);
-
             context.CadAdapter.Save();
             
-            // START: Session Identity Audit - After Save
-            var afterSaveIdentity = context.CadAdapter.GetDocumentIdentity();
-            LogDocumentAudit("FinalSessionReport.md", "Immediately after Save()", afterSaveIdentity);
-            
+
             switch (context.ExecutionMode)
             {
                 case PipelineExecutionMode.Automation:
@@ -283,47 +223,6 @@ namespace MegaEngineeringSuite.TubeSheet
             }
         }
 
-        private void LogSessionIdentityAudit(string workingDrawingPath, CadDocumentIdentity identity)
-        {
-            string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs", "SessionIdentityAudit.md");
-            using (var writer = new StreamWriter(logPath, false))
-            {
-                writer.WriteLine("# Pipeline Start Session Identity Audit");
-                writer.WriteLine($"**The WorkingDrawingPath supplied by Form3:** {workingDrawingPath}");
-                writer.WriteLine($"**The Document returned by GstarCadAdapter:** {identity.FullPath}");
-                writer.WriteLine($"**The ActiveDocument returned by the COM Application:** {(identity.IsActiveDocument ? identity.FullPath : "MISMATCH")}");
-                
-                if (workingDrawingPath != identity.FullPath || !identity.IsActiveDocument)
-                {
-                    writer.WriteLine("## CRITICAL WARNING: DOCUMENT MISMATCH");
-                    writer.WriteLine("The pipeline has lost its grip on the active document.");
-                }
-                else
-                {
-                    writer.WriteLine("## SUCCESS: Document pointers match.");
-                }
-            }
-        }
-
-        private void LogDocumentAudit(string fileName, string phase, CadDocumentIdentity identity, string additionalInfo = "")
-        {
-            string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs", fileName);
-            using (var writer = new StreamWriter(logPath, true)) // Append mode
-            {
-                writer.WriteLine($"# {phase}");
-                writer.WriteLine($"**Document Name:** {identity.DocumentName}");
-                writer.WriteLine($"**Full File Path:** {identity.FullPath}");
-                writer.WriteLine($"**Database Handle:** {identity.DatabaseHandle}");
-                writer.WriteLine($"**IsActiveDocument:** {identity.IsActiveDocument}");
-                writer.WriteLine($"**ModelSpace Count:** {identity.ModelSpaceCount}");
-                writer.WriteLine($"**Layout Name:** {identity.LayoutName}");
-                if (!string.IsNullOrEmpty(additionalInfo))
-                {
-                    writer.WriteLine(additionalInfo);
-                }
-                writer.WriteLine("---------------------------------------------------------");
-            }
-        }
 
         private void ExecuteRollback(PipelineContext context, Exception ex)
         {

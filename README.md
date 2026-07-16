@@ -14,18 +14,18 @@ Generate production-ready engineering drawings directly from engineering paramet
 [![GstarCAD](https://img.shields.io/badge/GstarCAD-004481?style=flat-square&logo=autocad&logoColor=white)](#)
 [![AutoLISP](https://img.shields.io/badge/AutoLISP-333333?style=flat-square&logo=gnu-bash&logoColor=white)](#)
 [![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg?style=flat-square)](#)
-[![Version](https://img.shields.io/badge/Version-1.0.3-blue.svg?style=flat-square)](#)
-[![License: MEGA EPC PVT LTD](https://img.shields.io/badge/License-MEGA_EPC_PVT_LTD-yellow.svg?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/Version-1.2.0-blue.svg?style=flat-square)](#)
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-yellow.svg?style=flat-square)](#)
 
 <br>
 
 <p align="center">
-  <img src="docs/assets/cad_automation_demo.gif" width="900" alt="CAD Automation Demo">
+  <img src="docs/Images/cad_automation_demo.gif" width="900" alt="CAD Automation Demo">
 </p>
 
 </div>
 
-## Overview
+## 📖 Overview
 
 Industrial equipment design traditionally relies on manual CAD drafting, a process that is time-consuming, prone to human error, and difficult to standardize across engineering teams. Generating accurate layouts for tube sheets and baffles requires precise geometric calculations and iterative positioning.
 
@@ -33,43 +33,19 @@ MEGA Engineering Suite addresses this engineering problem by replacing manual dr
 
 ---
 
-## Features
+## ✨ Features
 
 | Feature | Description |
 | --- | --- |
-| Parametric CAD Generation | Automatically generates drawings from engineering parameters |
-| Standardized Document Lifecycle | Immutable master templates with automated drafting copies |
-| COM Automation | Direct manipulation of CAD entities and title blocks |
-| Modular Architecture | Flat, scalable structure supporting independent modules |
-| Self-Healing Validation | Startup validations to ensure required templates exist |
+| **Parametric CAD Generation** | Automatically generates deterministic drawings directly from engineering parameters. |
+| **Immutable Template Management** | Adheres to a standard document lifecycle with master templates and isolated, automated drafting copies. |
+| **COM Automation Engine** | Direct manipulation of CAD entities, drawing attributes, and title block integrations without manual intervention. |
+| **Self-Healing Validations** | Startup checks ensure required configurations, templates, and runtime environments exist before execution. |
+| **BOM and Annotations** | Fully automates Tube Sheet Bill of Materials generation and spatial annotations dynamically. |
 
 ---
 
-## Modules
-
-### TubeSheet Module
-
-| Capability | Status |
-| --- | --- |
-| Front / Rear Tube Sheet | Complete |
-| Tube Layout & Bolt Holes | Complete |
-| Partition Plates & Side Views | Complete |
-| Dimensioning & Annotations | Complete |
-| Bonnet Flange Integration | Complete |
-| LISP Generation Engine | Complete |
-
-### Flange Module (Bonnet)
-
-| Capability | Status |
-| --- | --- |
-| Dimensional Lookups | Complete |
-| GstarCAD COM Automation | Complete |
-| Title Block Extraction & Update | Complete |
-| Isolated Template Pipeline | Complete |
-
----
-
-## Architecture
+## 🏗️ Architecture
 
 ```mermaid
 graph TD;
@@ -81,93 +57,59 @@ graph TD;
     F --> G[Production CAD Drawing];
 ```
 
----
-
-## CAD Document Lifecycle
-
-The suite adheres to a strict, standardized CAD document lifecycle to ensure templates remain uncorrupted and Administrator privileges are never required:
-
-```mermaid
-graph TD;
-    A[Master Template] -->|Copy| B[GeneratedDrawings Folder];
-    B -->|Open via COM| C[Modify Geometry & Attributes];
-    C -->|Save| D[Output Drawing];
-    D -->|Close| E[Display to User];
-```
+The system uses a state-of-the-art Pipeline architecture, separating Discovery, Validation, and Replacement phases to ensure fault-tolerance and robustness when working with COM components.
 
 ---
 
-## Technology Stack
+## 🚀 Installation & Build Instructions
 
-| Technology | Purpose |
-| --- | --- |
-| C# (.NET 10.0) | Core application, forms, and COM adapters |
-| ClosedXML | Reading parameters from Excel datasets |
-| GstarCAD COM API | Direct programmatic CAD drafting |
-| AutoLISP | Batch geometric calculations in CAD |
+### Prerequisites
+- .NET 10.0 SDK or higher
+- GstarCAD 2023 or newer installed
+- Windows 10/11
 
----
-
-## Repository Structure
-
-The suite uses a flat, highly portable architecture ensuring it runs immediately upon cloning:
-
-```text
-MEGA Engineering Suite
-│
-├── MegaEngineeringSuite      # Core Application & Modules (C#)
-│   ├── BonnetFlange          # Bonnet Flange generator & annotation engine
-│   ├── TubeSheet             # Tube Sheet automation & geometry
-│   ├── Infrastructure        # CAD Adapters, COM Sessions, & Logging
-│   └── Config                # Configuration managers & validation
-│
-├── Templates                 # Immutable CAD (.dwg) & Excel (.xlsx) templates
-│
-├── GeneratedDrawings         # Output directory for finalized DWG files
-│
-├── GeneratedLisp             # Output directory for generated LISP scripts
-│
-├── Logs                      # System diagnostics and execution logs
-│
-├── Config                    # Application configuration (Settings.json)
-│
-├── Docs                      # Engineering Standards & Deployment Guides
-│
-└── TestConsole               # Headless COM testing utility
-```
+### Build from Source
+1. Clone the repository:
+   ```cmd
+   git clone https://github.com/your-org/MegaEngineeringSuite.git
+   ```
+2. Navigate to the project directory:
+   ```cmd
+   cd MegaEngineeringSuite
+   ```
+3. Restore dependencies and build the solution:
+   ```cmd
+   dotnet restore
+   dotnet build -c Release
+   ```
+4. Run the suite:
+   ```cmd
+   dotnet run --project MegaEngineeringSuite/MegaEngineeringSuite.csproj
+   ```
 
 ---
 
-## Future Roadmap
+## 🛠️ Technology Stack
 
-| Module / Feature | Status |
-| --- | --- |
-| TubeSheet | Complete |
-| Flange / Bonnet | Complete |
-| Baffle | Planned |
-| Nozzle | Planned |
-| Pipe Support | Planned |
-| Tank | Planned |
-| BOM Generation | Planned |
-| Multi-CAD Support | Planned |
+* **Core Framework:** C# / .NET 10.0 (Windows Forms)
+* **CAD Engine Integration:** GstarCAD Type Libraries (COM Interop)
+* **Geometric Generation:** AutoLISP
+* **Data Processing:** ClosedXML (Excel Integration)
 
 ---
 
-## Documentation
+## 🗺️ Roadmap
 
-| Document | Link |
-| --- | --- |
-| CAD Lifecycle Standard | [CAD_Document_Lifecycle_Standard.md](docs/CAD_Document_Lifecycle_Standard.md) |
-| Deployment Guide | [Deployment_Guide.md](docs/Deployment_Guide.md) |
+- [x] Tube Sheet Parametric Engine
+- [x] GstarCAD COM Interactive/Automation Lifecycle
+- [x] Title Block Synchronization
+- [x] Bill of Materials (BOM) Automation
+- [ ] Inno Setup Windows Installer
+- [ ] Flange Module Expansion
+- [ ] Tank & Nozzle Design Generation
 
 ---
 
-<div align="center">
-  
-**MEGA Engineering Suite**
+## 📄 License
 
-Developed by **MEGA Engineering Projects Pvt. Ltd.**
-
-Professional CAD Automation for Process Equipment Design
-
-</div>
+This software is licensed under a **Proprietary License** by MEGA EPC PVT LTD. All Rights Reserved. See the [LICENSE](LICENSE) file for details.
