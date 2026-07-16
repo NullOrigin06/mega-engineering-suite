@@ -202,6 +202,6 @@ Proprietary License. Copyright © 2026 Parth Devs. All Rights Reserved.
 
 ## 👨‍💻 Author
 
-**Parth Devs**  
+**Parth S.Nikam**  
 *Lead Software Architect & Engineering Developer*  
 Dedicated to automating heavy industry design through advanced software engineering.
