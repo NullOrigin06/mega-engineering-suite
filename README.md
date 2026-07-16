@@ -17,7 +17,7 @@
 <br>
 
 <p align="center">
-  <img src="docs/images/banner.png" width="900" alt="Mega Engineering Suite Banner">
+  <img src="docs/Images/banner.png" width="900" alt="Mega Engineering Suite Banner">
 </p>
 
 </div>
@@ -81,19 +81,19 @@ graph TD;
 <div align="center">
   
 **Home Dashboard**  
-<img src="docs/images/home.png" width="800" alt="Home Dashboard Placeholder">
+<img src="docs/Images/home.png" width="800" alt="Home Dashboard Placeholder">
 
 **Engineering Input Form**  
-<img src="docs/images/form.png" width="800" alt="Form Placeholder">
+<img src="docs/Images/form.png" width="800" alt="Form Placeholder">
 
 **Generated Tubesheet Drawing**  
-<img src="docs/images/drawing1.png" width="800" alt="Drawing Placeholder">
+<img src="docs/Images/drawing1.png" width="800" alt="Drawing Placeholder">
 
 **Generated Baffle Drawing**  
-<img src="docs/images/drawing2.png" width="800" alt="BOM Placeholder">
+<img src="docs/Images/drawing2.png" width="800" alt="BOM Placeholder">
 
 **Setup Installer**  
-<img src="docs/images/installer.png" width="800" alt="Installer Placeholder">
+<img src="docs/Images/installer.png" width="800" alt="Installer Placeholder">
 
 </div>
 
