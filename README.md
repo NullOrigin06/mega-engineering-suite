@@ -93,7 +93,7 @@ graph TD;
 <img src="docs/Images/drawing2.png" width="800" alt="BOM Placeholder">
 
 **Setup Installer**  
-<img src="docs/Images/installer.png" width="800" alt="Installer Placeholder">
+<img src="docs/Images/Screenshot 2026-07-16 140908.png" width="800" alt="Installer Placeholder">
 
 </div>
 
