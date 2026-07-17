@@ -16,7 +16,7 @@
 
 <br>
 <p align="center">
-  <img src="docs/images/DEMONSTRATION_GIF.gif" width="1000" alt="Application Demo">
+  <img src="docs/Images/DEMONSTRATION_GIF.gif" width="1000" alt="Application Demo">
 </p>
 
 <p align="center">
