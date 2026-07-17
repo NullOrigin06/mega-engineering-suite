@@ -1,82 +1,54 @@
 {
-  "UsePipelineV2": true,
-  "EnablePipelineDiagnostics": true,
-  "CadPath": "C:\\Program Files\\Gstarsoft\\GstarCAD2026\\gcad.exe",
-  "ExcelTemplatePath": "C:\\Users\\PARTH\\source\\repos\\MegaEngineeringSuite\\Templates\\Heat Exchanger BOM Details.xlsx",
-  "DwgTemplatePath": "C:\\Users\\PARTH\\source\\repos\\MegaEngineeringSuite\\Templates\\FINAL TUBESHEET.dwg",
-  "BonnetTemplatePath": "C:\\Users\\PARTH\\source\\repos\\MegaEngineeringSuite\\Templates\\BAFFLE_Flange_template.dwg",
-  "BonnetOutputFolder": "C:\\Users\\PARTH\\source\\repos\\MegaEngineeringSuite\\GeneratedDrawings",
-  "CustomerHistory": [
-    "MEGA EPC",
-    "L\u0026T",
-    "Thermax",
-    "BHEL",
-    "Reliance",
-    "parth"
-  ],
-  "DrawingNoHistory": [
-    "25-005-FLG-EX-1405",
-    "15"
-  ],
-  "DrawingTitleHistory": [
-    "Bonnet Flange Details For",
-    "Tube Sheet Details For",
-    "Body Flange Details For",
-    "Heat Chamber Details For",
-    "Cylinder Details For",
-    "Channel Details For",
-    "Floating Head Details For"
-  ],
-  "HTAHistory": [
-    "100",
-    "200",
-    "120"
-  ],
-  "TubeODHistory": [
-    "25.4",
-    "6000",
-    "19.05",
-    "2\u0060",
-    "2"
-  ],
-  "TubeLengthHistory": [
-    "3000",
-    "3500",
-    "19.05",
-    "6000",
-    "2"
-  ],
-  "TubeTHKHistory": [
-    "1.6",
-    "4",
-    "2"
-  ],
-  "BaffleQtyHistory": [
-    "5",
-    "6",
-    "12"
-  ],
-  "NoOfPassHistory": [
-    "1",
-    "2",
-    "4",
-    "6",
-    "8"
-  ],
-  "ProjectNoHistory": [
-    "12"
-  ],
-  "RevisionHistory": [
-    "5"
-  ],
-  "DateHistory": [],
-  "PreparedByHistory": [
-    "io"
-  ],
-  "CheckedByHistory": [
-    "oi"
-  ],
-  "ApprovedByHistory": [
-    "iooi"
-  ]
+    "UsePipelineV2":  true,
+    "EnablePipelineDiagnostics":  true,
+    "CadPath":  "",
+    "ExcelTemplatePath":  "Templates\\Heat Exchanger BOM Details.xlsx",
+    "DwgTemplatePath":  "Templates\\FINAL TUBESHEET.dwg",
+    "BonnetTemplatePath":  "Templates\\BAFFLE_Flange_template.dwg",
+    "BonnetOutputFolder":  "GeneratedDrawings",
+    "CustomerHistory":  [
+
+                        ],
+    "DrawingNoHistory":  [
+
+                         ],
+    "DrawingTitleHistory":  [
+
+                            ],
+    "HTAHistory":  [
+
+                   ],
+    "TubeODHistory":  [
+
+                      ],
+    "TubeLengthHistory":  [
+
+                          ],
+    "TubeTHKHistory":  [
+
+                       ],
+    "BaffleQtyHistory":  [
+
+                         ],
+    "NoOfPassHistory":  [
+
+                        ],
+    "ProjectNoHistory":  [
+
+                         ],
+    "RevisionHistory":  [
+
+                        ],
+    "DateHistory":  [
+
+                    ],
+    "PreparedByHistory":  [
+
+                          ],
+    "CheckedByHistory":  [
+
+                         ],
+    "ApprovedByHistory":  [
+
+                          ]
 }
