@@ -200,7 +200,7 @@ Mega Engineering Suite is engineered for rigorous production environments.
 
 ## 📄 License
 
-Proprietary License. Copyright © 2026 Parth Devs. All Rights Reserved.
+Proprietary License. Copyright © 2026 Parth S.Nikam. All Rights Reserved.
 
 ---
 
