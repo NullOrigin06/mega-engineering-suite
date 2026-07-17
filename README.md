@@ -15,9 +15,13 @@
 [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-yellow.svg?style=flat-square)](#)
 
 <br>
+<p align="center">
+  <img src="docs/images/DEMONSTRATION_GIF.gif" width="1000" alt="Application Demo">
+</p>
 
 <p align="center">
-  <img src="docs/Images/banner.png" width="900" alt="Mega Engineering Suite Banner">
+  <strong>Windows Desktop CAD Automation Suite for GstarCAD</strong><br>
+  Generate Tube Sheet Drawings, BOMs, and Engineering Documentation in Seconds.
 </p>
 
 </div>
