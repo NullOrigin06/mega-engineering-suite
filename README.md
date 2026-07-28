@@ -5,9 +5,9 @@
 
 *Transforming engineering parameters into production-ready CAD drawings instantly through powerful COM automation.*
 
-**Version v1.2.0**
+**Version v1.2.1**
 
-[![Latest Release](https://img.shields.io/badge/Release-v1.2.0-blue.svg?style=flat-square)](#)
+[![Latest Release](https://img.shields.io/badge/Release-v1.2.1-blue.svg?style=flat-square)](#)
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet&logoColor=white)](#)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?style=flat-square&logo=windows&logoColor=white)](#)
 [![GstarCAD](https://img.shields.io/badge/CAD-GstarCAD-004481?style=flat-square&logo=autocad&logoColor=white)](#)
@@ -107,7 +107,7 @@ graph TD;
 
 Deploying the suite is fully automated via the provided Windows Installer.
 
-1. **Download Installer:** Obtain `MegaEngineeringSuite_Setup_v1.2.0.exe` from the latest GitHub Release.
+1. **Download Installer:** Obtain `MegaEngineeringSuite_Setup_v1.2.1.exe` from the latest GitHub Release.
 2. **Run Setup:** Execute the installer (requires Administrator privileges).
 3. **Install Dependencies:**
    - Ensure **GstarCAD** is installed and activated.
@@ -169,7 +169,7 @@ MegaEngineeringSuite/
 - [x] Placeholder Resolution Engine
 - [x] Automated BOM & Title Block
 - [x] Professional Inno Setup Installer
-- [x] Production Release (v1.2.0)
+- [x] Production Release (v1.2.1)
 
 **Upcoming:**
 - [ ] Flange Module Integration

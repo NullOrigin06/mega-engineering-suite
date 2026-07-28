@@ -135,57 +135,8 @@ namespace MegaEngineeringSuite
 
         private static string DetectCadPath()
         {
-            // 2. Windows registry install location
-            try
-            {
-                using (var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\gcad.exe"))
-                {
-                    if (key != null)
-                    {
-                        string? path = key.GetValue("") as string;
-                        if (!string.IsNullOrEmpty(path) && File.Exists(path))
-                        {
-                            return path;
-                        }
-                    }
-                }
-            }
-            catch { }
-
-            try
-            {
-                using (var key = Microsoft.Win32.Registry.ClassesRoot.OpenSubKey(@"gcad.exe\shell\open\command"))
-                {
-                    if (key != null)
-                    {
-                        string? command = key.GetValue("") as string;
-                        if (!string.IsNullOrEmpty(command))
-                        {
-                            string path = command.Split('"')[1];
-                            if (File.Exists(path)) return path;
-                        }
-                    }
-                }
-            }
-            catch { }
-
-            // 3. standard installation directories
-            string[] commonPaths = new string[]
-            {
-                @"C:\Program Files\Gstarsoft\GstarCAD2027\gcad.exe",
-                @"C:\Program Files\Gstarsoft\GstarCAD2026\gcad.exe",
-                @"C:\Program Files\Gstarsoft\GstarCAD2025\gcad.exe",
-                @"C:\Program Files\Gstarsoft\GstarCAD2024\gcad.exe",
-                @"C:\Program Files\Autodesk\AutoCAD 2024\acad.exe",
-                @"C:\Program Files\Autodesk\AutoCAD 2023\acad.exe"
-            };
-
-            foreach (string path in commonPaths)
-            {
-                if (File.Exists(path)) return path;
-            }
-
-            return "";
+            var discovered = Infrastructure.Cad.CadDiscoveryService.DiscoverInstalledCadExecutables();
+            return discovered.Count > 0 ? discovered[0].ExecutablePath : "";
         }
 
         public static void Save()

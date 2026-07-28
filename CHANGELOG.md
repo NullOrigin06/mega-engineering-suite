@@ -5,13 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
+## [1.2.1] - 2026-07-28
 ### Added
-- Standardized documentation structure (`docs/Architecture`, `docs/UserGuide`).
-- `.github` workflow templates for issues and pull requests.
-- CI/CD workflow for automated .NET builds.
-- Clean development branch `develop`.
+- Production-grade version-independent CAD Discovery Subsystem (`CadDiscoveryService`).
+- Multi-tier dynamic discovery engine (Gstarsoft vendor registry keys, App Paths, shell commands, dynamic directory scanner).
+- Native support for GstarCAD 2023, GstarCAD 2026, and future GstarCAD releases without hardcoded year numbers.
+- Auto-updating `Settings.json` persistence for discovered CAD executable paths.
+
+### Fixed
+- Fixed CAD detection failure on GstarCAD 2023 systems.
+- Fixed unquoted registry string parsing exception handling in shell open commands.
 
 ## [1.2.0] - 2026-07-15
 ### Added

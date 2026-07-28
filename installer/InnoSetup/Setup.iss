@@ -2,7 +2,7 @@
 ; Stage 14.2 - Production Installer
 
 #define MyAppName "Mega Engineering Suite"
-#define MyAppVersion "1.2.0"
+#define MyAppVersion "1.2.1"
 #define MyAppPublisher "Parth Devs"
 #define MyAppExeName "MegaEngineeringSuite.exe"
 
@@ -23,7 +23,7 @@ VersionInfoProductName={#MyAppName}
 
 ; Output Configuration
 OutputDir=..\Output
-OutputBaseFilename=MegaEngineeringSuite_Setup_v1.2.0
+OutputBaseFilename=MegaEngineeringSuite_Setup_v1.2.1
 Compression=lzma2
 SolidCompression=yes
 
