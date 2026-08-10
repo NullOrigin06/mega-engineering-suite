@@ -6,6 +6,8 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
+using MegaEngineeringSuite.Infrastructure.Logging;
+
 namespace MegaEngineeringSuite
 {
     public partial class Form3 : Form
@@ -76,6 +78,7 @@ namespace MegaEngineeringSuite
         private GeometryModel currentGeometry;
         private string lastGeneratedLispPath = string.Empty;
         private string lastGeneratedScrPath = string.Empty;
+        private static readonly System.Threading.SemaphoreSlim _generationLock = new System.Threading.SemaphoreSlim(1, 1);
 
         public Form3()
         {
@@ -373,15 +376,15 @@ namespace MegaEngineeringSuite
             TableLayoutPanel pnlButtons = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 5,
+                ColumnCount = 6,
                 RowCount = 1,
                 Padding = new Padding(0, 10, 0, 10),
                 Margin = new Padding(0)
             };
             
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 6; i++)
             {
-                pnlButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+                pnlButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.66F));
             }
 
             Font btnFont = new Font("Segoe UI Semibold", 10);
@@ -394,18 +397,22 @@ namespace MegaEngineeringSuite
             
             Button btnGenerateBodyFlange = new Button { Name = "btnGenerateBodyFlange", Text = "Generate Body Flange", Font = btnFont, Dock = DockStyle.Fill, Margin = new Padding(0, 0, 10, 0) };
             btnGenerateBodyFlange.Click += BtnGenerateBodyFlange_Click;
+
+            Button btnGenerateHeatExchanger = new Button { Name = "btnGenerateHeatExchanger", Text = "Generate Heat Exchanger", Font = btnFont, Dock = DockStyle.Fill, Margin = new Padding(0, 0, 10, 0) };
+            btnGenerateHeatExchanger.Click += BtnGenerateHeatExchanger_Click;
             
             Button btnExport = new Button { Name = "btnExport", Text = "Export Data", Font = btnFont, Dock = DockStyle.Fill, Margin = new Padding(0, 0, 10, 0) };
             btnExport.Click += BtnExport_Click;
             
-            Button btnBack = new Button { Name = "btnBack", Text = "Back", Tag = ThemeManager.DangerActionButtonTag, Font = btnFont, Dock = DockStyle.Fill, Margin = new Padding(0, 0, 0, 0) };
+            Button btnBack = new Button { Name = "btnBack", Text = "Back", Tag = ThemeManager.DangerActionButtonTag, Font = btnFont, Dock = DockStyle.Fill, Margin = new Padding(0) };
             btnBack.Click += BtnBack_Click;
 
             pnlButtons.Controls.Add(btnCalculate, 0, 0);
             pnlButtons.Controls.Add(btnGenerateTubeSheet, 1, 0);
             pnlButtons.Controls.Add(btnGenerateBodyFlange, 2, 0);
-            pnlButtons.Controls.Add(btnExport, 3, 0);
-            pnlButtons.Controls.Add(btnBack, 4, 0);
+            pnlButtons.Controls.Add(btnGenerateHeatExchanger, 3, 0);
+            pnlButtons.Controls.Add(btnExport, 4, 0);
+            pnlButtons.Controls.Add(btnBack, 5, 0);
 
             mainTable.Controls.Add(pnlButtons, 0, 2);
             mainTable.SetColumnSpan(pnlButtons, 3);
@@ -757,9 +764,10 @@ namespace MegaEngineeringSuite
             var sw = System.Diagnostics.Stopwatch.StartNew();
             try
             {
+                RunContext.GenerateNewRunId();
                 lblStatusReady.Text = "Generating...";
                 statusStrip.Refresh();
-                MegaEngineeringSuite.Infrastructure.Logging.SimpleLogger.Log("Workflow", "Tube Sheet Generation Started");
+                SimpleLogger.LogGeneration("TubeSheet", "Tube Sheet Generation Started");
                 var tempService = new TemplateDrawingService();
                 var groupedViews = tempService.GenerateTemplateViews(currentGeometry, currentData);
 
@@ -839,7 +847,7 @@ namespace MegaEngineeringSuite
             catch (Exception ex)
             {
                 Debug.WriteLine(ex);
-                MessageBox.Show("CAD launch failed. Please verify that GstarCAD is installed and try again.", "CAD Launch Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowStructuredError("Failed to generate Tube Sheet Drawing.", "GstarCAD may not be installed or is unresponsive, or the DWG template is invalid.", "Please verify that GstarCAD is installed and the template paths are correct.", "CAD-001", ex);
                 lblStatusReady.Text = "Error";
             }
         }
@@ -855,8 +863,9 @@ namespace MegaEngineeringSuite
             var sw = System.Diagnostics.Stopwatch.StartNew();
             try
             {
+                RunContext.GenerateNewRunId();
                 lblStatusReady.Text = "Generating...";
-                MegaEngineeringSuite.Infrastructure.Logging.SimpleLogger.Log("Workflow", "Body Flange Generation Started");
+                SimpleLogger.LogGeneration("BodyFlange", "Body Flange Generation Started");
                 
                 // Map the data (includes validation)
                 MegaEngineeringSuite.BonnetFlange.BonnetFlangeData mappedData = MegaEngineeringSuite.BonnetFlange.BonnetFlangeDataMapper.Map(currentData);
@@ -871,11 +880,11 @@ namespace MegaEngineeringSuite
                     return generator.Generate(mappedData, drawInfo);
                 });
 
-                MegaEngineeringSuite.Infrastructure.Logging.SimpleLogger.Log("Workflow", "Body Flange Generation Completed");
+                SimpleLogger.LogGeneration("BodyFlange", "Body Flange Generation Completed");
 
                 if (!string.IsNullOrEmpty(outputPath) && System.IO.File.Exists(outputPath))
                 {
-                    MegaEngineeringSuite.Infrastructure.Logging.SimpleLogger.Log("Workflow", "Opening Drawing");
+                    SimpleLogger.LogCad("BodyFlange", "Opening Drawing");
                     string cadExe = AppConfigManager.Current.CadPath;
                     
                     if (!string.IsNullOrEmpty(cadExe) && System.IO.File.Exists(cadExe))
@@ -886,7 +895,7 @@ namespace MegaEngineeringSuite
                     {
                         Process.Start(new ProcessStartInfo { FileName = outputPath, UseShellExecute = true });
                     }
-                    MegaEngineeringSuite.Infrastructure.Logging.SimpleLogger.Log("Workflow", "Drawing Opened");
+                    SimpleLogger.LogCad("BodyFlange", "Drawing Opened");
                     
                     sw.Stop();
                     lblStatusTime.Text = $"Time : {sw.Elapsed.TotalSeconds:F1} sec";
@@ -897,8 +906,71 @@ namespace MegaEngineeringSuite
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to generate Body Flange:\n{ex.Message}", "Generation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowStructuredError("Failed to generate Body Flange Drawing.", "The COM interface to GstarCAD failed or the DWG output path was inaccessible.", "Ensure CAD is running properly and no drawings are locked.", "GEN-001", ex);
                 lblStatusReady.Text = "Error";
+            }
+        }
+
+        private async void BtnGenerateHeatExchanger_Click(object? sender, EventArgs e)
+        {
+            if (currentData == null)
+            {
+                MessageBox.Show("Please calculate engineering data first.", "Missing Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!_generationLock.Wait(0))
+            {
+                MessageBox.Show("Drawing generation is already in progress. Please wait.", "Generation In Progress", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var btn = sender as Button;
+            var originalCursor = Cursor.Current;
+
+            try
+            {
+                RunContext.GenerateNewRunId();
+                if (btn != null) btn.Enabled = false;
+                Cursor.Current = Cursors.WaitCursor;
+
+                lblStatusReady.Text = "Generating...";
+                statusStrip.Refresh();
+                SimpleLogger.LogGeneration("HeatExchanger", "Heat Exchanger Fabrication Generation Started");
+                
+                MegaEngineeringSuite.HeatExchangerFab.HeatExchangerFabData mappedData = MegaEngineeringSuite.HeatExchangerFab.HeatExchangerFabDataMapper.Map(currentData);
+                DrawingInformation drawInfo = GetDrawingInformation();
+
+                string outputPath = await System.Threading.Tasks.Task.Run(() =>
+                {
+                    var generator = new MegaEngineeringSuite.HeatExchangerFab.HeatExchangerFabGenerator();
+                    return generator.Generate(mappedData, drawInfo);
+                });
+
+                SimpleLogger.LogGeneration("HeatExchanger", "Heat Exchanger Fabrication Generation Completed");
+
+                if (!string.IsNullOrEmpty(outputPath) && System.IO.File.Exists(outputPath))
+                {
+                    SimpleLogger.LogCad("HeatExchanger", "Drawing Generated, Activated and Visible in GstarCAD Session");
+                    
+                    sw.Stop();
+                    lblStatusTime.Text = $"Time : {sw.Elapsed.TotalSeconds:F1} sec";
+                    lblStatusCAD.Text = "CAD ✔";
+                    lblStatusGenerated.Text = "Generated : Heat Exchanger";
+                    lblStatusReady.Text = "Ready";
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowStructuredError("Failed to generate Heat Exchanger Fabrication Drawing.", "GstarCAD COM objects became unresponsive or the pipeline encountered invalid placeholders.", "Restart GstarCAD and try again. If the issue persists, review the diagnostic logs.", "GEN-002", ex);
+                lblStatusReady.Text = "Error";
+            }
+            finally
+            {
+                if (btn != null) btn.Enabled = true;
+                Cursor.Current = originalCursor;
+                _generationLock.Release();
             }
         }
 
@@ -942,12 +1014,18 @@ namespace MegaEngineeringSuite
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Failed to export data: {ex.Message}", "Export Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        ShowStructuredError("Failed to export data to Excel.", "The target file may be open in Excel or you do not have write permissions.", "Close the Excel file and try exporting again.", "EXC-001", ex);
                     }
                 }
             }
         }
 
-
+        private void ShowStructuredError(string whatHappened, string why, string whatToDo, string errorCode, Exception ex)
+        {
+            string runId = RunContext.CurrentRunId;
+            string msg = $"WHAT HAPPENED:\n{whatHappened}\n\nWHY IT MAY HAVE HAPPENED:\n{why}\n\nWHAT TO DO:\n{whatToDo}\n\nERROR CODE:\n{errorCode}\n\nRUN ID:\n{runId}";
+            MessageBox.Show(msg, "Application Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            SimpleLogger.LogError("UI", errorCode, whatHappened, ex);
+        }
     }
 }

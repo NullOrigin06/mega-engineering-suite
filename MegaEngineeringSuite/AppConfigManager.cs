@@ -13,6 +13,8 @@ namespace MegaEngineeringSuite
         public string DwgTemplatePath { get; set; } = "";
         public string BonnetTemplatePath { get; set; } = "";
         public string BonnetOutputFolder { get; set; } = "";
+        public string HeatExchangerTemplatePath { get; set; } = "";
+        public string HeatExchangerOutputFolder { get; set; } = "";
         public System.Collections.Generic.List<string> CustomerHistory { get; set; } = new System.Collections.Generic.List<string> { "MEGA EPC", "L&T", "Thermax", "BHEL", "Reliance" };
         public System.Collections.Generic.List<string> DrawingNoHistory { get; set; } = new System.Collections.Generic.List<string>();
         public System.Collections.Generic.List<string> DrawingTitleHistory { get; set; } = new System.Collections.Generic.List<string> { "Bonnet Flange Details For", "Tube Sheet Details For", "Body Flange Details For", "Heat Chamber Details For", "Cylinder Details For", "Channel Details For", "Floating Head Details For" };
@@ -35,10 +37,29 @@ namespace MegaEngineeringSuite
     public static class AppConfigManager
     {
         private static string _rootFolder = "";
+        private static string _userDataFolder = "";
         private static string _settingsPath = "";
         private static AppSettings? _current;
 
-        public static string RootFolder => _rootFolder;
+        public static string RootFolder
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_rootFolder))
+                    DetermineFolders();
+                return _rootFolder;
+            }
+        }
+
+        public static string UserDataFolder
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_userDataFolder))
+                    DetermineFolders();
+                return _userDataFolder;
+            }
+        }
 
         public static AppSettings Current
         {
@@ -50,17 +71,23 @@ namespace MegaEngineeringSuite
             }
         }
 
-        private static void DetermineRootFolder()
+        private static void DetermineFolders()
         {
             _rootFolder = AppDomain.CurrentDomain.BaseDirectory;
+            _userDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MEGA Engineering Suite");
         }
 
         private static void InitializeFolders()
         {
-            string[] folders = { "Templates", "GeneratedDrawings", "GeneratedLisp", "Logs", "Config" };
-            foreach (var folder in folders)
+            // Application directories
+            string templatesPath = Path.Combine(_rootFolder, "Templates");
+            if (!Directory.Exists(templatesPath)) Directory.CreateDirectory(templatesPath);
+
+            // User data directories
+            string[] userFolders = { "GeneratedDrawings", "GeneratedLisp", "Logs", "Config" };
+            foreach (var folder in userFolders)
             {
-                string path = Path.Combine(_rootFolder, folder);
+                string path = Path.Combine(_userDataFolder, folder);
                 if (!Directory.Exists(path))
                 {
                     Directory.CreateDirectory(path);
@@ -68,12 +95,49 @@ namespace MegaEngineeringSuite
             }
         }
 
+        public static string NormalizeResourcePath(string? path, string defaultRelative)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return Path.Combine(_rootFolder, defaultRelative);
+            }
+            if (Path.IsPathRooted(path))
+            {
+                return path;
+            }
+            return Path.GetFullPath(Path.Combine(_rootFolder, path));
+        }
+
+        public static string NormalizeUserDataPath(string? path, string defaultRelative)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return Path.Combine(_userDataFolder, defaultRelative);
+            }
+            if (Path.IsPathRooted(path))
+            {
+                return path;
+            }
+            return Path.GetFullPath(Path.Combine(_userDataFolder, path));
+        }
+
         public static void Load()
         {
-            DetermineRootFolder();
+            DetermineFolders();
             InitializeFolders();
 
-            _settingsPath = Path.Combine(_rootFolder, "Config", "Settings.json");
+            _settingsPath = Path.Combine(_userDataFolder, "Config", "Settings.json");
+            string defaultSettingsPath = Path.Combine(_rootFolder, "Config", "Settings.json");
+
+            // Seed from default installation config if missing in LocalAppData
+            if (!File.Exists(_settingsPath) && File.Exists(defaultSettingsPath))
+            {
+                try
+                {
+                    File.Copy(defaultSettingsPath, _settingsPath, false);
+                }
+                catch { }
+            }
 
             if (File.Exists(_settingsPath))
             {
@@ -94,27 +158,15 @@ namespace MegaEngineeringSuite
 
             bool settingsUpdated = false;
 
-            // Dynamically set default template paths if empty or file doesn't exist
-            if (string.IsNullOrWhiteSpace(_current.ExcelTemplatePath) || !File.Exists(_current.ExcelTemplatePath))
-            {
-                _current.ExcelTemplatePath = Path.Combine(_rootFolder, "Templates", "Heat Exchanger BOM Details.xlsx");
-                settingsUpdated = true;
-            }
-            if (string.IsNullOrWhiteSpace(_current.DwgTemplatePath) || !File.Exists(_current.DwgTemplatePath))
-            {
-                _current.DwgTemplatePath = Path.Combine(_rootFolder, "Templates", "FINAL TUBESHEET.dwg");
-                settingsUpdated = true;
-            }
-            if (string.IsNullOrWhiteSpace(_current.BonnetTemplatePath) || !File.Exists(_current.BonnetTemplatePath))
-            {
-                _current.BonnetTemplatePath = Path.Combine(_rootFolder, "Templates", "BAFFLE_Flange_template.dwg");
-                settingsUpdated = true;
-            }
-            if (string.IsNullOrEmpty(_current.BonnetOutputFolder))
-            {
-                _current.BonnetOutputFolder = Path.Combine(_rootFolder, "GeneratedDrawings");
-                settingsUpdated = true;
-            }
+            // Dynamically normalize and set default template paths (Application Resources)
+            _current.ExcelTemplatePath = NormalizeResourcePath(_current.ExcelTemplatePath, Path.Combine("Templates", "Heat Exchanger BOM Details.xlsx"));
+            _current.DwgTemplatePath = NormalizeResourcePath(_current.DwgTemplatePath, Path.Combine("Templates", "FINAL TUBESHEET.dwg"));
+            _current.BonnetTemplatePath = NormalizeResourcePath(_current.BonnetTemplatePath, Path.Combine("Templates", "BAFFLE_Flange_template.dwg"));
+            _current.HeatExchangerTemplatePath = NormalizeResourcePath(_current.HeatExchangerTemplatePath, Path.Combine("Templates", "Heat_Exchanger_Fabrication_template.dwg"));
+
+            // Dynamically normalize output folders (User Data)
+            _current.BonnetOutputFolder = NormalizeUserDataPath(_current.BonnetOutputFolder, "GeneratedDrawings");
+            _current.HeatExchangerOutputFolder = NormalizeUserDataPath(_current.HeatExchangerOutputFolder, "GeneratedDrawings");
 
             // CAD detection
             if (string.IsNullOrEmpty(_current.CadPath) || !File.Exists(_current.CadPath))

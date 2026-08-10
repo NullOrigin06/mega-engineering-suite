@@ -11,9 +11,9 @@
     <AnalysisLevel>latest</AnalysisLevel>
 
     <!-- Professional Assembly Metadata -->
-    <Version>1.2.1</Version>
-    <AssemblyVersion>1.2.1.0</AssemblyVersion>
-    <FileVersion>1.2.1.0</FileVersion>
+    <Version>1.2.2</Version>
+    <AssemblyVersion>1.2.2.0</AssemblyVersion>
+    <FileVersion>1.2.2.0</FileVersion>
     <Company>Parth Devs</Company>
     <Product>Mega Engineering Suite</Product>
     <Authors>Parth</Authors>

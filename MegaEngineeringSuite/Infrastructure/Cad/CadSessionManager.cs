@@ -49,75 +49,91 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
 
         public dynamic GetCadApplication()
         {
-            if (_cadApp != null)
+            lock (_lock)
             {
+                if (_cadApp != null)
+                {
+                    try
+                    {
+                        // Lightweight COM health check
+                        string test = _cadApp.Name;
+                        return _cadApp;
+                    }
+                    catch (Exception ex)
+                    {
+                        SimpleLogger.Log("CadSessionManager", $"Cached COM session is stale ({ex.Message}). Evicting stale RCW.");
+                        ReleaseCadApplication();
+                    }
+                }
+
+                // 1. Try to attach to existing GstarCAD instance from Running Object Table (ROT)
+                _cadApp = GetActiveCOMObject("GstarCAD.Application");
+                if (_cadApp != null)
+                {
+                    SimpleLogger.Log("CadSessionManager", "Reusing running GstarCAD instance from ROT.");
+                    return _cadApp;
+                }
+
+                // 2. Try to attach to existing AutoCAD instance from Running Object Table (ROT)
+                _cadApp = GetActiveCOMObject("AutoCAD.Application");
+                if (_cadApp != null)
+                {
+                    SimpleLogger.Log("CadSessionManager", "Reusing running AutoCAD instance from ROT.");
+                    return _cadApp;
+                }
+
+                // 3. Fallback to starting a new instance
+                SimpleLogger.Log("CadSessionManager", "No running CAD instance found in ROT. Starting a new COM instance...");
                 try
                 {
-                    // Check if it's still alive by accessing a basic property
-                    string test = _cadApp.Name;
-                    return _cadApp;
+                    Type? type = Type.GetTypeFromProgID("GstarCAD.Application");
+                    if (type != null)
+                    {
+                        _cadApp = Activator.CreateInstance(type);
+                        return _cadApp;
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // COM object died, maybe user closed CAD
-                    _cadApp = null;
+                    SimpleLogger.Log("CadSessionManager", $"Failed to start GstarCAD COM instance: {ex.Message}");
                 }
-            }
 
-            // 1. Try to attach to existing GstarCAD
-            _cadApp = GetActiveCOMObject("GstarCAD.Application");
-            if (_cadApp != null)
-            {
-                SimpleLogger.Log("CadSessionManager", "Reusing running GstarCAD instance.");
-                return _cadApp;
-            }
-
-            // 2. Try to attach to existing AutoCAD
-            _cadApp = GetActiveCOMObject("AutoCAD.Application");
-            if (_cadApp != null)
-            {
-                SimpleLogger.Log("CadSessionManager", "Reusing running AutoCAD instance.");
-                return _cadApp;
-            }
-
-            // 3. Fallback to starting a new instance
-            SimpleLogger.Log("CadSessionManager", "No running CAD instance found. Starting a new one...");
-            try
-            {
-                Type? type = Type.GetTypeFromProgID("GstarCAD.Application");
-                if (type != null)
+                try
                 {
-                    _cadApp = Activator.CreateInstance(type);
-                    return _cadApp;
+                    Type? type = Type.GetTypeFromProgID("AutoCAD.Application");
+                    if (type != null)
+                    {
+                        _cadApp = Activator.CreateInstance(type);
+                        return _cadApp;
+                    }
                 }
-            }
-            catch { }
-
-            try
-            {
-                Type? type = Type.GetTypeFromProgID("AutoCAD.Application");
-                if (type != null)
+                catch (Exception ex)
                 {
-                    _cadApp = Activator.CreateInstance(type);
-                    return _cadApp;
+                    SimpleLogger.Log("CadSessionManager", $"Failed to start AutoCAD COM instance: {ex.Message}");
                 }
-            }
-            catch { }
 
-            throw new Exception("Could not find or start any supported CAD application.");
+                throw new InvalidOperationException("Could not find or start any supported CAD application.");
+            }
         }
+
         public void ReleaseCadApplication()
         {
-            if (_cadApp != null)
+            lock (_lock)
             {
-                try
+                if (_cadApp != null)
                 {
-                    Marshal.ReleaseComObject(_cadApp);
-                }
-                catch { }
-                finally
-                {
-                    _cadApp = null;
+                    try
+                    {
+                        if (Marshal.IsComObject(_cadApp))
+                        {
+                            Marshal.FinalReleaseComObject(_cadApp);
+                        }
+                    }
+                    catch { }
+                    finally
+                    {
+                        _cadApp = null;
+                    }
                 }
             }
         }

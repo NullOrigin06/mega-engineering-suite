@@ -22,6 +22,8 @@ namespace MegaEngineeringSuite.Infrastructure.Cad
         void Save();
         void ReleaseDocumentReference();
         void CloseDrawing();
+        bool KeepDocumentOpenOnDispose { get; set; }
+        void ActivateAndShow();
         
         CadDocumentIdentity GetDocumentIdentity();
         System.Collections.Generic.List<TubeSheet.PlaceholderDescriptor> DiscoverPlaceholders(DiscoveryMode mode = DiscoveryMode.MetaLayers, System.Collections.Generic.Dictionary<string, dynamic>? entityCache = null, System.Collections.Generic.Dictionary<string, dynamic>? titleBlockCache = null);
