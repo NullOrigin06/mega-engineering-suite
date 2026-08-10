@@ -37,9 +37,10 @@ namespace COMTestApp
                 Date = DateTime.Now
             };
 
+            string projectRoot = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\.."));
             var result = new DrawingAutomationResult
             {
-                Arguments = @"C:\Users\PARTH\source\repos\MegaEngineeringSuite\GeneratedDrawings\Performance_Test.dwg"
+                Arguments = System.IO.Path.Combine(projectRoot, @"GeneratedDrawings\Performance_Test.dwg")
             };
 
             // Note: We need a real CAD session. We will start one if needed.
@@ -50,7 +51,7 @@ namespace COMTestApp
                 return;
             }
 
-            string templatePath = @"C:\Users\PARTH\source\repos\MegaEngineeringSuite\Templates\FINAL TUBESHEET.dwg";
+            string templatePath = System.IO.Path.Combine(projectRoot, @"Templates\FINAL TUBESHEET.dwg");
             var orchestrator = new MegaEngineeringSuite.TubeSheet.PipelineOrchestrator();
 
             string logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs", "StabilityReport.csv");
@@ -65,7 +66,7 @@ namespace COMTestApp
                     MegaEngineeringSuite.Infrastructure.Cad.GstarCadAdapter.ResetCounters();
                     MegaEngineeringSuite.TubeSheet.RuntimeTraceLogger.Clear();
 
-                    string testPath = $@"C:\Users\PARTH\source\repos\MegaEngineeringSuite\GeneratedDrawings\Stability_Test_{i}.dwg";
+                    string testPath = System.IO.Path.Combine(projectRoot, $@"GeneratedDrawings\Stability_Test_{i}.dwg");
                     System.IO.File.Copy(templatePath, testPath, true);
 
                     var runData = new MegaEngineeringSuite.TubeSheet.TubeSheetData
