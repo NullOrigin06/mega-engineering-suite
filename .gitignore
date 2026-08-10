@@ -16,6 +16,8 @@
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
+!docs/Release/
+!docs/Release/**
 x64/
 x86/
 [Aa][Rr][Mm]/
@@ -69,3 +71,21 @@ installer/Output/
 *.msi
 !MegaEngineeringSuite/bin/
 !TestConsole/bin/
+
+# Temporary python scratch & report artifacts
+__pycache__/
+*.pyc
+annexure_images/
+build_presentation.py
+generate_full_report.py
+patch_ppt_script.py
+patch_report_save.py
+patch_script.py
+report_helpers.py
+sip_policy_extracted.txt
+
+# Diagnostic logs and scratch files
+*AuditLog.txt
+scratch_test_*
+*.jsonl
+docs/GitHub/GITHUB_SYNCHRONIZATION_REPORT.md

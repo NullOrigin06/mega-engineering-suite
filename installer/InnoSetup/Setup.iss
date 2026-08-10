@@ -2,7 +2,7 @@
 ; Stage 14.2 - Production Installer
 
 #define MyAppName "Mega Engineering Suite"
-#define MyAppVersion "1.2.1"
+#define MyAppVersion "1.2.2"
 #define MyAppPublisher "Parth Devs"
 #define MyAppExeName "MegaEngineeringSuite.exe"
 
@@ -23,7 +23,7 @@ VersionInfoProductName={#MyAppName}
 
 ; Output Configuration
 OutputDir=..\Output
-OutputBaseFilename=MegaEngineeringSuite_Setup_v1.2.1
+OutputBaseFilename=MegaEngineeringSuite_Setup_v1.2.2
 Compression=lzma2
 SolidCompression=yes
 
@@ -43,18 +43,16 @@ RestartApplications=no
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-; 1. Package the Config file separately to preserve user settings on upgrade
-Source: "..\Output\publish\Config\Settings.json"; DestDir: "{app}\Config"; Flags: onlyifdoesntexist uninsneveruninstall
+; 1. Package the Default Config file so the application can seed the user's LocalAppData on first launch
+Source: "..\Output\publish\Config\Settings.json"; DestDir: "{app}\Config"; Flags: ignoreversion
 
 ; 2. Package all other files, strictly excluding generated runtime folders and development artifacts
-Source: "..\Output\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "Config\Settings.json, GeneratedDrawings\*, GeneratedLisp\*, Logs\*, *.bak, *.pdb, *.xml, *.tmp, *.log, desktop.ini, .DS_Store"
+Source: "..\Output\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "Config\Settings.json, GeneratedDrawings\*, GeneratedLisp\*, Logs\*, *.bak, *.pdb, *.xml, *.tmp, *.log, desktop.ini, .DS_Store, TestConsole*, *.jsonl"
 
 [Dirs]
-; Create dynamic folders required by the application explicitly, even if empty
-Name: "{app}\GeneratedDrawings"; Permissions: users-modify
-Name: "{app}\GeneratedLisp"; Permissions: users-modify
-Name: "{app}\Logs"; Permissions: users-modify
-Name: "{app}\Config"; Permissions: users-modify
+; Static application directories
+Name: "{app}\Templates"
+Name: "{app}\Config"
 
 [Icons]
 ; Start Menu Shortcut
