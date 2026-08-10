@@ -1,0 +1,26 @@
+name: Installer Bug
+description: Report a problem during installation, upgrading, or uninstallation
+title: "[INSTALL] "
+labels: ["installer"]
+body:
+  - type: input
+    id: os_version
+    attributes:
+      label: Operating System
+      description: e.g. Windows 11 22H2
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: What happened during the install?
+    validations:
+      required: true
+  - type: textarea
+    id: error_message
+    attributes:
+      label: Error Message / Screenshots
+      description: Provide the exact error message from the installer.
+    validations:
+      required: true

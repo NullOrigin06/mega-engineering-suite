@@ -1,31 +1,20 @@
 ## Description
 
-Please include a summary of the change and which issue is fixed. Please also include relevant motivation and context.
+Describe your changes in detail.
 
-Fixes # (issue)
+## Related Issue
 
-## Type of change
+Fixes #
 
-Please delete options that are not relevant.
-
+## Type of Change
 - [ ] Bug fix (non-breaking change which fixes an issue)
 - [ ] New feature (non-breaking change which adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] This change requires a documentation update
+- [ ] Documentation update
+- [ ] Installer/Deployment configuration
 
-## How Has This Been Tested?
-
-Please describe the tests that you ran to verify your changes. Provide instructions so we can reproduce. Please also list any relevant details for your test configuration.
-
-- [ ] Interactive Mode Test
-- [ ] Automation Mode Test (Batch Generation)
-- [ ] Title Block Replacement Test
-
-## Checklist:
-
-- [ ] My code follows the style guidelines of this project
-- [ ] I have performed a self-review of my own code
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] Any dependent changes have been merged and published in downstream modules
+## Verification
+- [ ] The `MegaEngineeringSuite.slnx` builds in Release configuration with 0 warnings.
+- [ ] Added or updated regression tests in `Docs/Testing/ERROR_REGRESSION_MATRIX.md`.
+- [ ] Checked for hardcoded development paths (e.g., `C:\Users\PARTH`).
+- [ ] All new exceptions use structured error handling and `SimpleLogger`.

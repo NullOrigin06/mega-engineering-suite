@@ -1,0 +1,33 @@
+name: CAD Generation Bug
+description: Report a failure in generating or opening DWG drawings in GstarCAD
+title: "[CAD] "
+labels: ["cad-generation"]
+body:
+  - type: input
+    id: cad_version
+    attributes:
+      label: CAD Version
+      description: e.g. GstarCAD 2026 Professional
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Which module was generated? Include inputs if relevant.
+    validations:
+      required: true
+  - type: input
+    id: runid
+    attributes:
+      label: Run ID / Error Code
+      description: Provide the RUN ID and ERROR CODE from the error dialog.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Logs
+      description: Paste the content from %LOCALAPPDATA%\MEGA Engineering Suite\Logs\Errors
+    validations:
+      required: true

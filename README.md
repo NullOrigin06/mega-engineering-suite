@@ -5,9 +5,9 @@
 
 *Transforming engineering parameters into production-ready CAD drawings instantly through powerful COM automation.*
 
-**Version v1.2.1**
+**Version v1.2.2**
 
-[![Latest Release](https://img.shields.io/badge/Release-v1.2.1-blue.svg?style=flat-square)](#)
+[![Latest Release](https://img.shields.io/badge/Release-v1.2.2-blue.svg?style=flat-square)](#)
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet&logoColor=white)](#)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?style=flat-square&logo=windows&logoColor=white)](#)
 [![GstarCAD](https://img.shields.io/badge/CAD-GstarCAD-004481?style=flat-square&logo=autocad&logoColor=white)](#)
@@ -107,7 +107,7 @@ graph TD;
 
 Deploying the suite is fully automated via the provided Windows Installer.
 
-1. **Download Installer:** Obtain `MegaEngineeringSuite_Setup_v1.2.1.exe` from the latest GitHub Release.
+1. **Download Installer:** Obtain `MegaEngineeringSuite_Setup_v1.2.2.exe` from the latest GitHub Release.
 2. **Run Setup:** Execute the installer (requires Administrator privileges).
 3. **Install Dependencies:**
    - Ensure **GstarCAD** is installed and activated.
@@ -169,7 +169,8 @@ MegaEngineeringSuite/
 - [x] Placeholder Resolution Engine
 - [x] Automated BOM & Title Block
 - [x] Professional Inno Setup Installer
-- [x] Production Release (v1.2.1)
+- [x] Production Release (v1.2.2)
+- [x] Master Diagnostics & Correlation ID Framework
 
 **Upcoming:**
 - [ ] Flange Module Integration
@@ -187,6 +188,18 @@ Mega Engineering Suite is engineered for rigorous production environments.
 - **Optimized COM Communication:** Reduces cross-process call overhead, ensuring CAD geometry is generated nearly instantaneously.
 - **Interactive Drawing Mode:** Maintains the active COM connection rather than generating flat files, allowing immediate visual inspection by the engineer.
 - **Stable Production Architecture:** Hardened against missing resources, locked files, and COM timeout faults, ensuring zero downtime.
+
+---
+
+## 🚑 Troubleshooting & Error Codes
+
+If you encounter issues during CAD generation or installation, the application will provide a structured error dialog containing a specific **Error Code** and **Run ID**.
+
+- [**Master Error Catalog**](Docs/Errors/ERROR_CATALOG.md) - Explanations for all Error Codes (e.g. `CAD-001`).
+- [**CAD COM Diagnostics**](Docs/Troubleshooting/CAD_COM_TROUBLESHOOTING.md) - Help for CAD connectivity issues.
+- [**Placeholder Replacement Help**](Docs/Troubleshooting/PLACEHOLDER_REPLACEMENT_TROUBLESHOOTING.md) - Help for template text issues.
+
+Please include your **Run ID** when filing bug reports on GitHub.
 
 ---
 
