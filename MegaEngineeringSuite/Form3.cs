@@ -24,7 +24,6 @@ namespace MegaEngineeringSuite
         private ComboBox cmbBaffleQty;
 
         // Calculated Values
-        private TextBox txtTubeQty;
         private TextBox txtShellID;
         // Drawing Information
         private ComboBox cmbCustomerName;
@@ -51,6 +50,7 @@ namespace MegaEngineeringSuite
         private static readonly string[] EngineeringPropertyNames =
         {
             "Shell I.D.",
+            "Tube Qty",
             "Tube Sheet Finish THK",
             "Body Flange Finish THK",
             "Partition Plate THK",
@@ -295,15 +295,10 @@ namespace MegaEngineeringSuite
             pnlSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
             pnlSummary.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
 
-            Label lblTubeQty = new Label { Text = "Tube Qty", Font = labelFont, AutoSize = true, Margin = new Padding(3, 5, 3, 0) };
-            txtTubeQty = new TextBox { Font = inputFont, ReadOnly = true, BackColor = Color.WhiteSmoke, Anchor = AnchorStyles.Left | AnchorStyles.Right, Margin = new Padding(3, 5, 3, 5) };
-            pnlSummary.Controls.Add(lblTubeQty, 0, 0);
-            pnlSummary.Controls.Add(txtTubeQty, 1, 0);
-
-            Label lblShellID = new Label { Text = "Shell ID", Font = labelFont, AutoSize = true, Margin = new Padding(3, 5, 3, 0) };
+            Label lblShellID = new Label { Text = "Calculated Shell ID", Font = labelFont, AutoSize = true, Margin = new Padding(3, 5, 3, 0) };
             txtShellID = new TextBox { Font = inputFont, ReadOnly = true, BackColor = Color.WhiteSmoke, Anchor = AnchorStyles.Left | AnchorStyles.Right, Margin = new Padding(3, 5, 3, 5) };
-            pnlSummary.Controls.Add(lblShellID, 0, 1);
-            pnlSummary.Controls.Add(txtShellID, 1, 1);
+            pnlSummary.Controls.Add(lblShellID, 0, 0);
+            pnlSummary.Controls.Add(txtShellID, 1, 0);
 
             grpSummary.Controls.Add(pnlSummary);
             centerLayout.Controls.Add(grpSummary, 0, 1);
@@ -613,8 +608,6 @@ namespace MegaEngineeringSuite
                 int tubesPerPass = (int)Math.Ceiling(rawTubeQty / noOfPass);
                 int tubeQty = tubesPerPass * noOfPass;
 
-                txtTubeQty.Text = tubeQty.ToString();
-
                 // Formula 2: Shell ID
                 double shellIdRaw = ((Math.Sqrt(tubeQty) + 1.25 * Math.Sqrt(noOfPass)) * 1.25 * 1.05 * tubeOD + 25);
                 int shellId = (int)(Math.Ceiling(shellIdRaw / 10.0) * 10);
@@ -626,6 +619,7 @@ namespace MegaEngineeringSuite
                 
                 // Assign User Inputs to the Engineering Data Model
                 currentData.TubeOD = tubeOD;
+                currentData.ThermalCalculatedTubeQty = tubeQty;
                 currentData.TubeQty = tubeQty;
                 currentData.NoOfPass = noOfPass;
                 currentData.HTA = hta;
@@ -776,6 +770,41 @@ namespace MegaEngineeringSuite
                     }
                 }
             }
+            else if (name == "Tube Qty")
+            {
+                if (int.TryParse(val, out int newTubeQty) && newTubeQty > 0)
+                {
+                    if (currentData != null)
+                    {
+                        currentData.TubeQty = newTubeQty;
+                        _activeOverrides.Add("Tube Qty");
+                        try
+                        {
+                            currentGeometry = geometryService.CalculateGeometry(currentData);
+                            lblStatusReady.Text = $"Tube Qty updated to {newTubeQty}";
+                        }
+                        catch (InvalidOperationException geomEx)
+                        {
+                            currentGeometry = null;
+                            lblStatusReady.Text = $"Tube Qty updated to {newTubeQty} (Capacity Warning)";
+                            MessageBox.Show(
+                                $"Tube quantity updated to {newTubeQty}.\n\n" +
+                                $"{geomEx.Message}\n\n" +
+                                $"Note: 2D Tube Sheet drill pattern generation requires a compatible layout.",
+                                "Tube Quantity Notice",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Information);
+                        }
+                    }
+                }
+                else
+                {
+                    if (currentData != null)
+                    {
+                        row.Cells["Value"].Value = currentData.TubeQty.ToString();
+                    }
+                }
+            }
             else
             {
                 if (currentData != null)
@@ -824,6 +853,24 @@ namespace MegaEngineeringSuite
             if (currentData == null)
             {
                 currentData = new EngineeringDataModel();
+            }
+
+            // Resolve Tube Qty for the new Shell ID
+            var layoutService = new TubeLayoutService();
+            double tubeOd = currentData.TubeOD > 0 ? currentData.TubeOD : 19.05;
+            double partitionThk = newProfile.PartitionPlateTHK > 0 ? newProfile.PartitionPlateTHK : 8.0;
+            int passes = currentData.NoOfPass > 0 ? currentData.NoOfPass : 2;
+
+            var tubes = layoutService.GenerateLayout((float)(newShellId / 2.0), (float)tubeOd, 10000, (float)partitionThk, passes);
+            int capacity = tubes.Count;
+
+            if (currentData.ThermalCalculatedTubeQty > 0 && currentData.ThermalCalculatedTubeQty <= capacity)
+            {
+                currentData.TubeQty = currentData.ThermalCalculatedTubeQty;
+            }
+            else
+            {
+                currentData.TubeQty = capacity;
             }
 
             currentData.ShellID = newProfile.ShellID;
@@ -944,6 +991,9 @@ namespace MegaEngineeringSuite
                             currentData.ShellID = sId;
                             txtShellID.Text = sId.ToString();
                         }
+                        break;
+                    case "Tube Qty":
+                        if (int.TryParse(val, out int tq) && tq > 0) currentData.TubeQty = tq;
                         break;
                     case "Tube Sheet Finish THK":
                         if (double.TryParse(val, out double tsfThk) && tsfThk > 0) currentData.TubeSheetFinishTHK = tsfThk;

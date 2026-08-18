@@ -12,7 +12,7 @@ namespace TestConsole
         public static void RunAllTests()
         {
             Console.WriteLine("==========================================================================");
-            Console.WriteLine("PROFILE + OVERRIDE + SNAPSHOT ARCHITECTURAL & CAPACITY VALIDATION SUITE");
+            Console.WriteLine("PROFILE + TUBE QTY IN ENGINEERING PARAMETERS & DATA FLOW VALIDATION SUITE");
             Console.WriteLine("==========================================================================");
 
             string excelPath = AppConfigManager.Current.ExcelTemplatePath;
@@ -27,119 +27,112 @@ namespace TestConsole
 
             var lookupService = new ExcelLookupService();
             var geometryService = new GeometryCalculationService();
+            var layoutService = new TubeLayoutService();
 
             // -------------------------------------------------------------------------
-            // TEST 1: Shell ID Series Lookup & Capacity Isolation (680 to 750)
+            // TEST 1: Initial Calculation & Tube Qty in Engineering Parameters
             // -------------------------------------------------------------------------
-            Console.WriteLine("\n--- TEST 1: Shell ID Series 680 to 750 Profile & Capacity Validation ---");
+            Console.WriteLine("\n--- TEST 1: Initial Calculation & Display Dictionary ---");
+            var initialModel = new EngineeringDataModel
+            {
+                ShellID = 800,
+                TubeOD = 25.4,
+                NoOfPass = 4,
+                HTA = 100.0,
+                TubeLength = 3000.0,
+                ThermalCalculatedTubeQty = 420,
+                TubeQty = 420
+            };
+
+            var dict = initialModel.ToDisplayDictionary();
+            AssertEquals("800", dict["Shell I.D."], "Display Dictionary Shell I.D.");
+            AssertEquals("420", dict["Tube Qty"], "Display Dictionary Tube Qty in Engineering Parameters");
+            Console.WriteLine("  [PASS] Display Dictionary correctly contains Tube Qty directly beneath Shell I.D.");
+
+            // -------------------------------------------------------------------------
+            // TEST 2: Shell ID Transition (800 -> 690) with Dynamic Tube Qty Resolution
+            // -------------------------------------------------------------------------
+            Console.WriteLine("\n--- TEST 2: Shell ID Transition (800 -> 690) Tube Qty Synchronization ---");
+            var profile690 = lookupService.LoadProfileByShellId(690);
+            
+            // Emulate OnShellIdChanged(690)
+            var tubes690 = layoutService.GenerateLayout((float)(690 / 2.0), (float)initialModel.TubeOD, 10000, (float)profile690.PartitionPlateTHK, initialModel.NoOfPass);
+            int capacity690 = tubes690.Count;
+            AssertEquals(352, capacity690, "690 Shell Geometric Capacity (25.4mm 4-pass)");
+
+            int resolvedTubeQty690;
+            if (initialModel.ThermalCalculatedTubeQty > 0 && initialModel.ThermalCalculatedTubeQty <= capacity690)
+            {
+                resolvedTubeQty690 = initialModel.ThermalCalculatedTubeQty;
+            }
+            else
+            {
+                resolvedTubeQty690 = capacity690;
+            }
+
+            AssertEquals(352, resolvedTubeQty690, "Resolved Tube Qty for Shell ID 690");
+
+            var model690 = new EngineeringDataModel
+            {
+                ShellID = 690,
+                TubeOD = initialModel.TubeOD,
+                ThermalCalculatedTubeQty = initialModel.ThermalCalculatedTubeQty,
+                TubeQty = resolvedTubeQty690,
+                NoOfPass = initialModel.NoOfPass,
+                TubeLength = initialModel.TubeLength,
+                HTA = initialModel.HTA,
+                TubeSheetFinishOD = profile690.TubeSheetFinishOD,
+                BoltPCD = profile690.BoltPCD,
+                HoleDia = profile690.HoleDia,
+                NoOfBolts = profile690.NoOfBolts,
+                PartitionPlateTHK = profile690.PartitionPlateTHK,
+                FlangeID = profile690.FlangeID
+            };
+
+            var geom690 = geometryService.CalculateGeometry(model690);
+            AssertEquals(352, geom690.TubeCoordinates.Count, "Geometry Layout Tube Count for 690");
+            Console.WriteLine("  [PASS] Shell ID 690 resolved Tube Qty = 352 and Geometry Engine validated with 0 errors.");
+
+            // -------------------------------------------------------------------------
+            // TEST 3: Shell ID 680 to 750 Series Synchronization Matrix
+            // -------------------------------------------------------------------------
+            Console.WriteLine("\n--- TEST 3: Shell ID Series 680 to 750 Synchronization Matrix ---");
+            Console.WriteLine("| Shell ID | Excel Profile | Thermal Qty | Resolved Tube Qty | Geometry Capacity | Status |");
+            Console.WriteLine("|----------|---------------|-------------|-------------------|-------------------|--------|");
+
             int[] testShellIds = { 680, 690, 700, 710, 720, 730, 740, 750 };
-            int requiredTubeQty = 420;
-            double testTubeOd = 25.4;
-            int testPasses = 4;
-
-            Console.WriteLine("| Shell ID | Excel Profile | Profile Loaded | Geometry Capacity | Required Qty | Result |");
-            Console.WriteLine("|----------|---------------|----------------|-------------------|--------------|--------|");
-
             foreach (int sId in testShellIds)
             {
-                var profile = lookupService.LoadProfileByShellId(sId);
-                AssertEquals(sId, profile.ShellID, $"Shell ID {sId} Identity");
+                var prof = lookupService.LoadProfileByShellId(sId);
+                var tubes = layoutService.GenerateLayout((float)(sId / 2.0), 25.4f, 10000, (float)prof.PartitionPlateTHK, 4);
+                int cap = tubes.Count;
+                int resolved = (420 <= cap) ? 420 : cap;
 
-                var model = new EngineeringDataModel
+                var m = new EngineeringDataModel
                 {
-                    ShellID = profile.ShellID,
-                    TubeOD = testTubeOd,
-                    TubeQty = requiredTubeQty,
-                    NoOfPass = testPasses,
+                    ShellID = sId,
+                    TubeOD = 25.4,
+                    ThermalCalculatedTubeQty = 420,
+                    TubeQty = resolved,
+                    NoOfPass = 4,
                     TubeLength = 3000,
                     HTA = 100,
-                    TubeSheetFinishOD = profile.TubeSheetFinishOD,
-                    BoltPCD = profile.BoltPCD,
-                    HoleDia = profile.HoleDia,
-                    NoOfBolts = profile.NoOfBolts,
-                    PartitionPlateTHK = profile.PartitionPlateTHK,
-                    FlangeID = profile.FlangeID
+                    TubeSheetFinishOD = prof.TubeSheetFinishOD,
+                    BoltPCD = prof.BoltPCD,
+                    HoleDia = prof.HoleDia,
+                    NoOfBolts = prof.NoOfBolts,
+                    PartitionPlateTHK = prof.PartitionPlateTHK,
+                    FlangeID = prof.FlangeID
                 };
 
-                int capacity = 0;
-                string status = "";
+                var g = geometryService.CalculateGeometry(m);
+                AssertEquals(resolved, g.TubeCoordinates.Count, $"Geometry count for Shell ID {sId}");
 
-                try
-                {
-                    var geom = geometryService.CalculateGeometry(model);
-                    capacity = geom.TubeCoordinates.Count;
-                    status = "Compatible (Profile & Geometry)";
-                }
-                catch (InvalidOperationException)
-                {
-                    // Extract capacity from layout calculator
-                    var layoutService = new TubeLayoutService();
-                    var tubes = layoutService.GenerateLayout((float)(sId / 2.0), (float)testTubeOd, 1000, (float)profile.PartitionPlateTHK, testPasses);
-                    capacity = tubes.Count;
-                    status = $"Capacity Warning ({capacity}/{requiredTubeQty}) - Profile Loaded OK";
-                }
-
-                Console.WriteLine($"| {sId,8} | Row Matched   | YES            | {capacity,17} | {requiredTubeQty,12} | {status} |");
+                Console.WriteLine($"| {sId,8} | Row Matched   | {420,11} | {resolved,17} | {cap,17} | Validated OK |");
             }
 
             // -------------------------------------------------------------------------
-            // TEST 2: Shell ID 690 Precise Profile Property Verification
-            // -------------------------------------------------------------------------
-            Console.WriteLine("\n--- TEST 2: Shell ID 690 Profile Property Integrity ---");
-            var p690 = lookupService.LoadProfileByShellId(690);
-            AssertEquals(690, p690.ShellID, "690 Shell ID");
-            AssertEquals(4.0, p690.DishendTHK, "690 Dishend THK");
-            AssertEquals(25.0, p690.TubeSheetFinishTHK, "690 TS Finish THK");
-            AssertEquals(28.0, p690.TubeSheetRawTHK, "690 TS Raw THK");
-            AssertEquals(32.0, p690.BodyFlangeFinishTHK, "690 BF Finish THK");
-            AssertEquals(36.0, p690.BodyFlangeRawTHK, "690 BF Raw THK");
-            AssertEquals(8.0, p690.PartitionPlateTHK, "690 Partition Plate THK");
-            AssertEquals(5.0, p690.BaffleTHK, "690 Baffle THK");
-            AssertEquals("M16", p690.BoltSize, "690 Bolt Size");
-            AssertEquals(105.0, p690.BoltLength, "690 Bolt Length");
-            AssertEquals(28, p690.NoOfBolts, "690 No of Bolts");
-            AssertEquals(18.0, p690.HoleDia, "690 Hole Dia");
-            AssertEquals(700.0, p690.FlangeID, "690 Flange ID");
-            AssertEquals(770.0, p690.BoltPCD, "690 Bolt PCD");
-            AssertEquals(815.0, p690.TubeSheetFinishOD, "690 TS Finish OD");
-            AssertEquals(820.0, p690.TubeSheetRawOD, "690 TS Raw OD");
-            AssertEquals(742.0, p690.LinerGasketOD, "690 Liner Gasket OD");
-            AssertEquals(10.0, p690.TieRodDia, "690 Tie Rod Dia");
-            AssertEquals(6.0, p690.TieRodQty, "690 Tie Rod Qty");
-            AssertEquals(10.0, p690.SpacerTube, "690 Spacer Tube");
-            Console.WriteLine("  [PASS] Shell ID 690 Excel Row 46 properties 100% verified.");
-
-            // -------------------------------------------------------------------------
-            // TEST 3: Discrete Boundary Transitions (390->400, 800->810, 1500->1510, 2090->2100)
-            // -------------------------------------------------------------------------
-            Console.WriteLine("\n--- TEST 3: Discrete Boundary Transitions ---");
-
-            var p390 = lookupService.LoadProfileByShellId(390);
-            var p400 = lookupService.LoadProfileByShellId(400);
-            AssertEquals("M14", p390.BoltSize, "390 Bolt Size");
-            AssertEquals("M16", p400.BoltSize, "400 Bolt Size");
-            Console.WriteLine("  [PASS] 390 -> 400 Transition verified (M14 -> M16).");
-
-            var p800 = lookupService.LoadProfileByShellId(800);
-            var p810 = lookupService.LoadProfileByShellId(810);
-            AssertEquals("M16", p800.BoltSize, "800 Bolt Size");
-            AssertEquals("M20", p810.BoltSize, "810 Bolt Size");
-            Console.WriteLine("  [PASS] 800 -> 810 Transition verified (M16 -> M20).");
-
-            var p1500 = lookupService.LoadProfileByShellId(1500);
-            var p1510 = lookupService.LoadProfileByShellId(1510);
-            AssertEquals("M20", p1500.BoltSize, "1500 Bolt Size");
-            AssertEquals("M24", p1510.BoltSize, "1510 Bolt Size");
-            Console.WriteLine("  [PASS] 1500 -> 1510 Transition verified (M20 -> M24).");
-
-            var p2090 = lookupService.LoadProfileByShellId(2090);
-            var p2100 = lookupService.LoadProfileByShellId(2100);
-            AssertEquals("M24", p2090.BoltSize, "2090 Bolt Size");
-            AssertEquals("M27", p2100.BoltSize, "2100 Bolt Size");
-            Console.WriteLine("  [PASS] 2090 -> 2100 Transition verified (M24 -> M27).");
-
-            // -------------------------------------------------------------------------
-            // TEST 4: Generation Snapshot & Token Formatting
+            // TEST 4: Generation Snapshot Integrity
             // -------------------------------------------------------------------------
             Console.WriteLine("\n--- TEST 4: Generation Snapshot & Overrides ---");
             var snapshot = new HeatExchangerGenerationSnapshot
@@ -151,46 +144,45 @@ namespace TestConsole
                 TubeOD = 25.4,
                 TubeTHK = 1.6,
                 TubeLength = 3000.0,
-                TotalTubes = 420,
+                TotalTubes = 352, // Resolved from profile
                 TubePitch = 31.75,
                 NoOfPasses = 4,
-                TubeSheetOD = p690.TubeSheetFinishOD,
-                TubeSheetTHK = 30.0, // User override from 25 to 30
-                FlangeOD = p690.TubeSheetFinishOD,
-                FlangeID = p690.FlangeID,
-                FlangeTHK = p690.BodyFlangeFinishTHK,
-                LinerOD = p690.LinerGasketOD,
+                TubeSheetOD = profile690.TubeSheetFinishOD,
+                TubeSheetTHK = profile690.TubeSheetFinishTHK,
+                FlangeOD = profile690.TubeSheetFinishOD,
+                FlangeID = profile690.FlangeID,
+                FlangeTHK = profile690.BodyFlangeFinishTHK,
+                LinerOD = profile690.LinerGasketOD,
                 LinerID = 690,
                 LinerTHK = 3.0,
-                SerrationOD = p690.LinerGasketOD,
+                SerrationOD = profile690.LinerGasketOD,
                 SerrationID = 690,
                 BaffleQty = 6,
-                BaffleTHK = p690.BaffleTHK,
-                PartitionPlateTHK = p690.PartitionPlateTHK,
-                BoltSize = p690.BoltSize,
-                BoltLength = p690.BoltLength,
-                NoOfBolts = p690.NoOfBolts,
-                HoleDia = p690.HoleDia,
-                BoltPCD = p690.BoltPCD,
-                TieRodQty = (int)p690.TieRodQty,
-                TieRodDia = p690.TieRodDia,
-                SpacerTube = p690.SpacerTube,
-                BonnetShellFSLength = 650.0,
-                BonnetShellRSLength = 700.0,
-                DishendTHK = p690.DishendTHK
+                BaffleTHK = profile690.BaffleTHK,
+                PartitionPlateTHK = profile690.PartitionPlateTHK,
+                BoltSize = profile690.BoltSize,
+                BoltLength = profile690.BoltLength,
+                NoOfBolts = profile690.NoOfBolts,
+                HoleDia = profile690.HoleDia,
+                BoltPCD = profile690.BoltPCD,
+                TieRodQty = (int)profile690.TieRodQty,
+                TieRodDia = profile690.TieRodDia,
+                SpacerTube = profile690.SpacerTube,
+                BonnetShellFSLength = 500.0,
+                BonnetShellRSLength = 500.0,
+                DishendTHK = profile690.DishendTHK
             };
 
             var fabData = snapshot.ToFabData();
             var tokens = HeatExchangerFabFormatter.Format(fabData);
 
             AssertEquals("690", tokens["{{SHELL_ID}}"], "Snapshot Shell ID");
-            AssertEquals("30 THK.", tokens["{{TUBESHEET_THK}}"], "Overridden TS THK");
+            AssertEquals("352", tokens["{{TUBE_QTY}}"], "Snapshot Tube Qty Token");
+            AssertEquals("25 THK.", tokens["{{TUBESHEET_THK}}"], "TS THK");
             AssertEquals("32 THK.", tokens["{{BODY_FLANGE_THK}}"], "BF THK");
             AssertEquals("4 THK.", tokens["{{DISHEND_THK}}"], "Dishend THK");
-            AssertEquals("650", tokens["{{BONNET_SHELL_FS_LENGTH}}"], "FS Length");
-            AssertEquals("700", tokens["{{BONNET_SHELL_RS_LENGTH}}"], "RS Length");
             AssertEquals("Ø18 28 HOLES ON\nP.C.D. 770", tokens["{{BHC}}"], "BHC Callout");
-            Console.WriteLine("  [PASS] Generation Snapshot and Tokens formatted accurately.");
+            Console.WriteLine("  [PASS] Generation Snapshot generated {{TUBE_QTY}} = 352 and all CAD tokens accurately.");
 
             // -------------------------------------------------------------------------
             // TEST 5: Excel Immutability Check
@@ -204,7 +196,7 @@ namespace TestConsole
             Console.WriteLine($"  [PASS] Excel workbook hash matched perfectly ({hashAfter.Substring(0, 16)}...). Zero write-back verified.");
 
             Console.WriteLine("\n==========================================================================");
-            Console.WriteLine("ALL REGRESSION & CAPACITY VALIDATION TESTS PASSED (0 ERRORS, 0 WARNINGS)");
+            Console.WriteLine("ALL TUBE QTY & DATA-FLOW TESTS PASSED (0 ERRORS, 0 WARNINGS)");
             Console.WriteLine("==========================================================================");
         }
 

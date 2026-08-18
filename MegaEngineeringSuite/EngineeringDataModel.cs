@@ -9,6 +9,7 @@ namespace MegaEngineeringSuite
         // User Inputs
         public double TubeOD { get; set; }
         public int TubeQty { get; set; }
+        public int ThermalCalculatedTubeQty { get; set; }
         public int NoOfPass { get; set; }
         public double HTA { get; set; }
         public double TubeLength { get; set; }
@@ -60,6 +61,7 @@ namespace MegaEngineeringSuite
             return new Dictionary<string, string>
             {
                 { "Shell I.D.", ShellID.ToString() },
+                { "Tube Qty", TubeQty.ToString() },
                 { "Tube Sheet Finish THK", TubeSheetFinishTHK.ToString() },
                 { "Tube Sheet Raw THK", TubeSheetRawTHK.ToString() },
                 { "Body Flange Finish THK", BodyFlangeFinishTHK.ToString() },
