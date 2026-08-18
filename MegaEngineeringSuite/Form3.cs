@@ -761,9 +761,21 @@ namespace MegaEngineeringSuite
                 return;
             }
 
+            if (!_generationLock.Wait(0))
+            {
+                MessageBox.Show("Drawing generation is already in progress. Please wait.", "Generation In Progress", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
             var sw = System.Diagnostics.Stopwatch.StartNew();
+            var btn = sender as Button;
+            var originalCursor = Cursor.Current;
+
             try
             {
+                if (btn != null) btn.Enabled = false;
+                Cursor.Current = Cursors.WaitCursor;
+
                 RunContext.GenerateNewRunId();
                 lblStatusReady.Text = "Generating...";
                 statusStrip.Refresh();
@@ -850,6 +862,12 @@ namespace MegaEngineeringSuite
                 ShowStructuredError("Failed to generate Tube Sheet Drawing.", "GstarCAD may not be installed or is unresponsive, or the DWG template is invalid.", "Please verify that GstarCAD is installed and the template paths are correct.", "CAD-001", ex);
                 lblStatusReady.Text = "Error";
             }
+            finally
+            {
+                if (btn != null) btn.Enabled = true;
+                Cursor.Current = originalCursor;
+                _generationLock.Release();
+            }
         }
 
         private async void BtnGenerateBodyFlange_Click(object? sender, EventArgs e)
@@ -860,9 +878,21 @@ namespace MegaEngineeringSuite
                 return;
             }
 
+            if (!_generationLock.Wait(0))
+            {
+                MessageBox.Show("Drawing generation is already in progress. Please wait.", "Generation In Progress", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
             var sw = System.Diagnostics.Stopwatch.StartNew();
+            var btn = sender as Button;
+            var originalCursor = Cursor.Current;
+
             try
             {
+                if (btn != null) btn.Enabled = false;
+                Cursor.Current = Cursors.WaitCursor;
+
                 RunContext.GenerateNewRunId();
                 lblStatusReady.Text = "Generating...";
                 SimpleLogger.LogGeneration("BodyFlange", "Body Flange Generation Started");
@@ -908,6 +938,12 @@ namespace MegaEngineeringSuite
             {
                 ShowStructuredError("Failed to generate Body Flange Drawing.", "The COM interface to GstarCAD failed or the DWG output path was inaccessible.", "Ensure CAD is running properly and no drawings are locked.", "GEN-001", ex);
                 lblStatusReady.Text = "Error";
+            }
+            finally
+            {
+                if (btn != null) btn.Enabled = true;
+                Cursor.Current = originalCursor;
+                _generationLock.Release();
             }
         }
 
