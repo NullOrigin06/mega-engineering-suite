@@ -171,7 +171,7 @@ MegaEngineeringSuite/
 - [x] Professional Inno Setup Installer
 - [x] Production Release (v1.2.2)
 - [x] Master Diagnostics & Correlation ID Framework
-- [x] [Full Chronological Development Timeline](docs/DEVELOPMENT_TIMELINE.md)
+- [x] [Full Chronological Development Timeline](docs/Development/DEVELOPMENT_TIMELINE.md)
 
 **Upcoming:**
 - [ ] Flange Module Integration
@@ -204,11 +204,17 @@ Please include your **Run ID** when filing bug reports on GitHub.
 
 ---
 
-## 🛡️ Repository Quality
+## 🛡️ Repository Quality & Documentation
 
 > [!IMPORTANT]  
-> **Production Certified**  
+> **Production Certified (v1.2.2)**  
 > This repository is fully stabilized and version-controlled. It features a clean, pipeline-driven architecture and is bundled with a highly secure, automated deployment installer.
+
+- 📖 [**Chronological Development Timeline**](docs/Development/DEVELOPMENT_TIMELINE.md)
+- 🧪 [**Regression Test Status Matrix**](docs/Testing/REGRESSION_TEST_STATUS.md)
+- ⚠️ [**Known Limitations & Environment Requirements**](docs/Development/KNOWN_LIMITATIONS.md)
+- 🔧 [**Technical Debt & Refactoring Backlog**](docs/Development/TECHNICAL_DEBT.md)
+- 📝 [**Release Notes (v1.2.2)**](docs/Release/RELEASE_NOTES.md)
 
 ---
 
