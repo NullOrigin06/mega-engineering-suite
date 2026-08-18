@@ -76,6 +76,8 @@ namespace MegaEngineeringSuite
         private GeometryCalculationService geometryService;
         private EngineeringDataModel currentData;
         private GeometryModel currentGeometry;
+        private MegaEngineeringSuite.HeatExchangerFab.HeatExchangerEngineeringProfile? _currentProfile;
+        private readonly HashSet<string> _activeOverrides = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private string lastGeneratedLispPath = string.Empty;
         private string lastGeneratedScrPath = string.Empty;
         private static readonly System.Threading.SemaphoreSlim _generationLock = new System.Threading.SemaphoreSlim(1, 1);
@@ -346,8 +348,8 @@ namespace MegaEngineeringSuite
 
             PopulateEmptyEngineeringProperties();
 
-            dgvProperties.CellEndEdit += (s, e) => SyncUiToDataModel();
-            dgvExtras.CellEndEdit += (s, e) => SyncUiToDataModel();
+            dgvProperties.CellEndEdit += DgvProperties_CellEndEdit;
+            if (dgvExtras != null) dgvExtras.CellEndEdit += DgvExtras_CellEndEdit;
 
             mainTable.Controls.Add(rightLayout, 2, 1);
 
@@ -748,6 +750,142 @@ namespace MegaEngineeringSuite
             return dgv;
         }
 
+        private void DgvProperties_CellEndEdit(object? sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.RowIndex >= dgvProperties.Rows.Count) return;
+            var row = dgvProperties.Rows[e.RowIndex];
+            string? name = row.Cells["Parameter"]?.Value?.ToString();
+            string? val = row.Cells["Value"]?.Value?.ToString()?.Trim();
+            if (string.IsNullOrEmpty(name)) return;
+
+            if (name == "Shell I.D.")
+            {
+                if (int.TryParse(val, out int newShellId) && newShellId > 0)
+                {
+                    if (currentData != null && currentData.ShellID == newShellId)
+                    {
+                        return;
+                    }
+                    OnShellIdChanged(newShellId);
+                }
+                else
+                {
+                    if (currentData != null)
+                    {
+                        row.Cells["Value"].Value = currentData.ShellID.ToString();
+                    }
+                }
+            }
+            else
+            {
+                if (currentData != null)
+                {
+                    _activeOverrides.Add(name);
+                    SyncUiToDataModel();
+                }
+            }
+        }
+
+        private void DgvExtras_CellEndEdit(object? sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || dgvExtras == null || e.RowIndex >= dgvExtras.Rows.Count) return;
+            var row = dgvExtras.Rows[e.RowIndex];
+            string? name = row.Cells["Parameter"]?.Value?.ToString();
+            if (!string.IsNullOrEmpty(name))
+            {
+                _activeOverrides.Add(name);
+                SyncUiToDataModel();
+            }
+        }
+
+        private void OnShellIdChanged(int newShellId)
+        {
+            int oldShellId = currentData != null ? currentData.ShellID : 0;
+            try
+            {
+                var newProfile = lookupService.LoadProfileByShellId(newShellId);
+                _currentProfile = newProfile;
+
+                if (currentData == null)
+                {
+                    currentData = new EngineeringDataModel();
+                }
+
+                // Update currentData with the complete coherent new profile
+                currentData.ShellID = newProfile.ShellID;
+                currentData.ShellBonnetTHK = newProfile.ShellBonnetTHK;
+                currentData.LinerAfterMachining = newProfile.LinerAfterMachining;
+                currentData.DishendTHK = newProfile.DishendTHK;
+                currentData.TubeSheetFinishTHK = newProfile.TubeSheetFinishTHK;
+                currentData.TubeSheetRawTHK = newProfile.TubeSheetRawTHK;
+                currentData.BodyFlangeFinishTHK = newProfile.BodyFlangeFinishTHK;
+                currentData.BodyFlangeRawTHK = newProfile.BodyFlangeRawTHK;
+                currentData.PartitionPlateTHK = newProfile.PartitionPlateTHK;
+                currentData.BaffleTHK = newProfile.BaffleTHK;
+                currentData.BoltSize = newProfile.BoltSize;
+                currentData.BoltLength = newProfile.BoltLength;
+                currentData.NoOfBolts = newProfile.NoOfBolts;
+                currentData.HoleDia = newProfile.HoleDia;
+                currentData.FlangeID = newProfile.FlangeID;
+                currentData.BoltPCD = newProfile.BoltPCD;
+                currentData.TubeSheetFinishOD = newProfile.TubeSheetFinishOD;
+                currentData.TubeSheetRawOD = newProfile.TubeSheetRawOD;
+                currentData.LinerGasketOD = newProfile.LinerGasketOD;
+                currentData.TieRodDia = newProfile.TieRodDia;
+                currentData.TieRodQty = newProfile.TieRodQty;
+                currentData.SpacerTube = newProfile.SpacerTube;
+
+                // Clear previous profile overrides as specified
+                _activeOverrides.Clear();
+
+                // Recalculate geometry
+                currentGeometry = geometryService.CalculateGeometry(currentData);
+
+                // Update UI fields
+                txtShellID.Text = newShellId.ToString();
+                PopulateGrid(currentData);
+
+                // Diagnostic Telemetry Log
+                SimpleLogger.Log("PROFILE-RESOLUTION",
+                    $"Run ID: {RunContext.CurrentRunId}\n" +
+                    $"Old Shell ID: {oldShellId} -> New Shell ID: {newShellId}\n" +
+                    $"Loaded Parameters:\n" +
+                    $"  TubeSheetFinishTHK: {newProfile.TubeSheetFinishTHK}\n" +
+                    $"  BodyFlangeFinishTHK: {newProfile.BodyFlangeFinishTHK}\n" +
+                    $"  PartitionPlateTHK: {newProfile.PartitionPlateTHK}\n" +
+                    $"  BaffleTHK: {newProfile.BaffleTHK}\n" +
+                    $"  BoltSize: {newProfile.BoltSize}\n" +
+                    $"  BoltLength: {newProfile.BoltLength}\n" +
+                    $"  NoOfBolts: {newProfile.NoOfBolts}\n" +
+                    $"  HoleDia: {newProfile.HoleDia}\n" +
+                    $"  FlangeID: {newProfile.FlangeID}\n" +
+                    $"  BoltPCD: {newProfile.BoltPCD}\n" +
+                    $"  TubeSheetFinishOD: {newProfile.TubeSheetFinishOD}\n" +
+                    $"  TubeSheetRawOD: {newProfile.TubeSheetRawOD}\n" +
+                    $"  LinerGasketOD: {newProfile.LinerGasketOD}\n" +
+                    $"  TieRodDia: {newProfile.TieRodDia}\n" +
+                    $"  TieRodQty: {newProfile.TieRodQty}\n" +
+                    $"  SpacerTube: {newProfile.SpacerTube}\n" +
+                    $"  DishendTHK: {newProfile.DishendTHK}\n" +
+                    $"Preserved Extras:\n" +
+                    $"  BonnetShellFSLength: {currentData.BonnetShellFSLength}\n" +
+                    $"  BonnetShellRSLength: {currentData.BonnetShellRSLength}\n" +
+                    $"Overrides Cleared: [All]\n" +
+                    $"Active Overrides: [None]");
+
+                lblStatusReady.Text = $"Profile: Shell ID {newShellId} Refreshed";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Shell ID {newShellId} was not found in the engineering standards dataset.\n{ex.Message}", "Profile Lookup Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                if (currentData != null)
+                {
+                    PopulateGrid(currentData);
+                    txtShellID.Text = oldShellId.ToString();
+                }
+            }
+        }
+
         private void SyncUiToDataModel()
         {
             if (currentData == null) return;
@@ -1131,7 +1269,53 @@ namespace MegaEngineeringSuite
                 statusStrip.Refresh();
                 SimpleLogger.LogGeneration("HeatExchanger", "Heat Exchanger Fabrication Generation Started");
                 
-                MegaEngineeringSuite.HeatExchangerFab.HeatExchangerFabData mappedData = MegaEngineeringSuite.HeatExchangerFab.HeatExchangerFabDataMapper.Map(currentData);
+                MegaEngineeringSuite.HeatExchangerFab.HeatExchangerGenerationSnapshot snapshot = new MegaEngineeringSuite.HeatExchangerFab.HeatExchangerGenerationSnapshot
+                {
+                    RunId = RunContext.CurrentRunId,
+                    ShellID = currentData.ShellID,
+                    ShellTHK = currentData.ShellBonnetTHK > 0 ? currentData.ShellBonnetTHK : 5.0,
+                    ShellLength = currentData.TubeLength,
+                    TubeOD = currentData.TubeOD,
+                    TubeTHK = currentData.TubeTHK,
+                    TubeLength = currentData.TubeLength,
+                    TotalTubes = currentData.TubeQty,
+                    TubePitch = 1.25 * currentData.TubeOD,
+                    PitchType = "30° Triangular",
+                    NoOfPasses = currentData.NoOfPass,
+                    TubeSheetOD = currentData.TubeSheetFinishOD,
+                    TubeSheetTHK = currentData.TubeSheetFinishTHK,
+                    TubeSheetRawOD = currentData.TubeSheetRawOD,
+                    TubeSheetRawTHK = currentData.TubeSheetRawTHK,
+                    FlangeOD = currentData.TubeSheetFinishOD,
+                    FlangeID = currentData.FlangeID,
+                    FlangeTHK = currentData.BodyFlangeFinishTHK,
+                    BodyFlangeRawTHK = currentData.BodyFlangeRawTHK,
+                    LinerOD = currentData.LinerGasketOD,
+                    LinerID = currentData.ShellID,
+                    LinerTHK = currentData.LinerAfterMachining > 0 ? currentData.LinerAfterMachining : 3.0,
+                    SerrationOD = currentData.LinerGasketOD,
+                    SerrationID = currentData.ShellID,
+                    BaffleQty = (int)currentData.BaffleQty,
+                    BaffleTHK = currentData.BaffleTHK,
+                    PartitionPlateTHK = currentData.PartitionPlateTHK,
+                    BoltSize = currentData.BoltSize,
+                    BoltLength = currentData.BoltLength,
+                    NoOfBolts = currentData.NoOfBolts,
+                    HoleDia = currentData.HoleDia,
+                    BoltPCD = currentData.BoltPCD,
+                    TieRodQty = (int)currentData.TieRodQty,
+                    TieRodDia = currentData.TieRodDia,
+                    SpacerTube = currentData.SpacerTube,
+                    BonnetShellFSLength = currentData.BonnetShellFSLength,
+                    BonnetShellRSLength = currentData.BonnetShellRSLength,
+                    DishendTHK = currentData.DishendTHK
+                };
+
+                SimpleLogger.Log("GENERATION-SNAPSHOT",
+                    $"Run ID: {snapshot.RunId}\n" +
+                    $"Snapshot Values: ShellID={snapshot.ShellID}, TS_FinishTHK={snapshot.TubeSheetTHK}, BF_FinishTHK={snapshot.FlangeTHK}, DishendTHK={snapshot.DishendTHK}, FS_Len={snapshot.BonnetShellFSLength}, RS_Len={snapshot.BonnetShellRSLength}, OverridesCount={_activeOverrides.Count}");
+
+                MegaEngineeringSuite.HeatExchangerFab.HeatExchangerFabData mappedData = snapshot.ToFabData();
                 DrawingInformation drawInfo = GetDrawingInformation();
 
                 string outputPath = await System.Threading.Tasks.Task.Run(() =>

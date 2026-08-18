@@ -12,8 +12,11 @@ namespace MegaEngineeringSuite
         public int NoOfPass { get; set; }
         public double HTA { get; set; }
         public double TubeLength { get; set; }
-        public int BaffleQty { get; set; }
+        public int BaffleQty { get; set; } = 5;
         public string Material { get; set; } = "SS304 / Carbon Steel";
+        public double TubeTHK { get; set; } = 1.6;
+        public double ShellBonnetTHK { get; set; } = 5.0;
+        public double LinerAfterMachining { get; set; } = 3.0;
 
         // Lookup Properties
         public int ShellID { get; set; }

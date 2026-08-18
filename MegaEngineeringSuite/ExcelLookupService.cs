@@ -81,6 +81,72 @@ namespace MegaEngineeringSuite
             }
         }
 
+        /// <summary>
+        /// Reads the Excel file and retrieves the complete raw engineering profile for the given Shell ID.
+        /// </summary>
+        public MegaEngineeringSuite.HeatExchangerFab.HeatExchangerEngineeringProfile LoadProfileByShellId(int shellId)
+        {
+            string excelFilePath = AppConfigManager.Current.ExcelTemplatePath;
+
+            if (!File.Exists(excelFilePath))
+            {
+                throw new FileNotFoundException($"The required engineering data file was not found at {excelFilePath}");
+            }
+
+            using (var workbook = new XLWorkbook(excelFilePath))
+            {
+                var ws = workbook.Worksheet(sheetName);
+                if (ws == null)
+                {
+                    throw new Exception($"Sheet '{sheetName}' not found in the Excel file.");
+                }
+
+                var rows = ws.RowsUsed();
+                
+                foreach (var row in rows)
+                {
+                    if (row.RowNumber() < 3) continue;
+
+                    var cellShellId = row.Cell(3).Value;
+                    if (cellShellId.IsNumber && (int)cellShellId.GetNumber() == shellId)
+                    {
+                        var profile = new MegaEngineeringSuite.HeatExchangerFab.HeatExchangerEngineeringProfile
+                        {
+                            ShellID = shellId,
+                            ShellBonnetTHK = GetDoubleValue(row, 4),
+                            LinerAfterMachining = GetDoubleValue(row, 5),
+                            DishendTHK = GetDoubleValue(row, 6),
+                            TubeSheetFinishTHK = GetDoubleValue(row, 7),
+                            TubeSheetRawTHK = GetDoubleValue(row, 8),
+                            BodyFlangeFinishTHK = GetDoubleValue(row, 9),
+                            BodyFlangeRawTHK = GetDoubleValue(row, 10),
+                            PartitionPlateTHK = GetDoubleValue(row, 11),
+                            BaffleTHK = GetDoubleValue(row, 12),
+                            BoltSize = row.Cell(13).GetString(),
+                            BoltLength = GetDoubleValue(row, 14),
+                            NoOfBolts = (int)GetDoubleValue(row, 15),
+                            HoleDia = GetDoubleValue(row, 16),
+                            FlangeID = GetDoubleValue(row, 17),
+                            BoltPCD = GetDoubleValue(row, 18),
+                            TubeSheetFinishOD = GetDoubleValue(row, 19),
+                            TubeSheetRawOD = GetDoubleValue(row, 20),
+                            LinerGasketOD = GetDoubleValue(row, 21),
+                            TieRodDia = GetDoubleValue(row, 22),
+                            TieRodQty = (int)GetDoubleValue(row, 23),
+                            SpacerTube = GetDoubleValue(row, 24)
+                        };
+
+                        MegaEngineeringSuite.Infrastructure.Logging.SimpleLogger.Log("ExcelLookup", 
+                            $"Loaded Profile for ShellID={shellId} from Excel Row={row.RowNumber()}");
+
+                        return profile;
+                    }
+                }
+
+                throw new Exception($"Shell ID {shellId} was not found in the '{sheetName}' sheet.");
+            }
+        }
+
         private double GetDoubleValue(IXLRow row, int column)
         {
             var cell = row.Cell(column);

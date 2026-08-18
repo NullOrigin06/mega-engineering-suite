@@ -1,0 +1,25 @@
+Parameter,ExcelColumn,CSharpProperty,VisibleInUI,UsedByGenerator,LookupKey,DependsOn,DependencyType,RefreshOnShellIdChange,UserEditable,ExcelReadOnly,Pattern,ChangePoints,Confidence,Notes
+Shell I.D.,Col 3,ShellID,YES,YES,PRIMARY_KEY,None,PRIMARY_LOOKUP,NO (Is Key),YES,YES,Unique Monotonic Integer (168-2500),Every Row (225 unique),High,Primary lookup key for all engineering properties in Excel.
+Shell Bonnet THK,Col 4,-,NO,NO,NO,Shell I.D.,STEPPED_GROUP,YES,NO,YES,Stepped Plate Gauges (3-10mm),168->580->730->1000->1510->2010,High,Standard sheet/plate nominal thickness.
+Liner (After m/c),Col 5,-,NO,NO,NO,Shell I.D.,STEPPED_GROUP,YES,NO,YES,Stepped Binary (3mm/4mm),Threshold at Shell ID 1000,High,Machined liner thickness.
+Dishend Thk,Col 6,DishendTHK,YES (Extras),YES,NO,Shell I.D.,STEPPED_GROUP,YES,YES,YES,Stepped Plate Gauges (3-10mm),168->273->730->1000->1510->2010,High,Loaded from Excel Col 6 initially; user editable in Extras.
+Tube Sheet Finish Thk,Col 7,TubeSheetFinishTHK,YES,YES,NO,Shell I.D.,STEPPED_GROUP,YES,YES,YES,Stepped Plate Gauges (19-55mm),15 Discrete Change Points,High,Core fabrication dimension.
+Tube Sheet Raw Thk,Col 8,TubeSheetRawTHK,NO (Hidden),NO,NO,Tube Sheet Finish Thk,DERIVED_OFFSET,YES,NO,YES,Finish + 3mm or 4mm,Only populated for Shell ID <= 1290,High,Raw plate blank thickness before machining (121 blanks >1290).
+Body Flange Finish Thk,Col 9,BodyFlangeFinishTHK,YES,YES,NO,Shell I.D.,STEPPED_GROUP,YES,YES,YES,Stepped Plate Gauges (22-75mm),14 Discrete Change Points,High,Flange machining thickness.
+Body Flange Raw Thk,Col 10,BodyFlangeRawTHK,NO (Hidden),NO,NO,Body Flange Finish Thk,DERIVED_OFFSET,YES,NO,YES,Finish + 3mm to 5mm,Only populated for Shell ID <= 1290,High,Raw forging/plate blank thickness (121 blanks >1290).
+Pass Partition Plate Thk,Col 11,PartitionPlateTHK,YES,NO,NO,Shell I.D.,STEPPED_GROUP,YES,YES,YES,Stepped Values (4mm/8mm/12mm),Thresholds at 610 and 1510,High,Internal pass divider thickness.
+Baffle Thk,Col 12,BaffleTHK,YES,YES,NO,Shell I.D.,STEPPED_GROUP,YES,YES,YES,Stepped Plate Gauges (3-10mm),168->590->710->970->1510,High,Transverse baffle plate thickness.
+Bolt Size,Col 13,BoltSize,YES,NO,NO,Shell I.D.,STEPPED_GROUP,YES,YES,YES,Metric Standard (M14/M16/M20/M24/M27),168->400->810->1510->2100,High,Fastener nominal thread size.
+Bolt Length,Col 14,BoltLength,YES,NO,NO,Flange Thk + TS Thk,COMPLEX_SUM_OFFSET,YES,YES,YES,Stepped Standard Lengths (89-192mm),19 Discrete Change Points,High,Proportional to Flange THK + TS Finish THK + standard thread engagement.
+No Of Bolts,Col 15,NoOfBolts,YES,YES,NO,Shell ID & Bolt Size,STEPPED_PRESSURE_RATING,YES,YES,YES,Discrete Multiples of 4 (12-60),19 Discrete Change Points,High,Drops at Bolt Size change points due to higher per-bolt tensile rating.
+Hole Dia.,Col 16,HoleDia,NO (Hidden),YES,NO,Bolt Size,DIRECT_DETERMINISTIC_MAP,YES,NO,YES,Direct 1-to-1 Map with Bolt Size,Tied 100% to Bolt Size,High,M14->16 | M16->18 | M20->22 | M24->27 | M27->30.
+Flange I.D.,Col 17,FlangeID,YES,YES,NO,Shell I.D.,CONTINUOUS_LOOKUP,YES,YES,YES,Continuous Monotonic (170-2522mm),Offset +2mm to +22mm from Shell ID,High,Machined inside diameter of body flange.
+Bolt P.C.D.,Col 18,BoltPCD,NO (Hidden),YES,NO,Shell ID & Flange ID,CONTINUOUS_LOOKUP,YES,NO,YES,Continuous Monotonic (230-2625mm),Every Row (224 unique),High,Pitch circle diameter of bolting ring.
+Tube Sheet Finish O.D.,Col 19,TubeSheetFinishOD,YES,YES,NO,Shell ID & PCD,CONTINUOUS_LOOKUP,YES,YES,YES,Continuous Monotonic (275-2685mm),Every Row (225 unique),High,Finished outer diameter of tube sheet and mating flange.
+Tube Sheet Raw O.D.,Col 20,TubeSheetRawOD,NO (Hidden),NO,NO,Tube Sheet Finish O.D.,EXACT_MATHEMATICAL_OFFSET,YES,NO,YES,Finish OD + 5.0mm (Exact),Constant +5mm on all 225 rows,High,Burn/machining allowance on tube sheet blank.
+Liner / Gasket O.D.,Col 21,LinerGasketOD,NO (Hidden),YES,NO,Shell ID & Flange ID,CONTINUOUS_LOOKUP,YES,NO,YES,Continuous Monotonic (205-2585mm),Every Row (225 unique),High,Outer boundary of gasket sealing face.
+Tie rod Dia.,Col 22,TieRodDia,NO (Hidden),YES,NO,Shell I.D.,STEPPED_GROUP,YES,NO,YES,Stepped Sizes (8/10/12/14/16mm),168->410->710->1260->1550,High,Tie rod bar stock diameter.
+Tie rod Qty.,Col 23,TieRodQty,YES,YES,NO,Shell I.D.,STEPPED_GROUP,YES,YES,YES,Stepped Even Integers (4/6/8/10/12),168->410->850->1250->1510,High,Number of tie rods securing baffle bundle.
+Spacer Tube,Col 24,SpacerTube,NO (Hidden),NO,NO,Shell I.D.,STEPPED_GROUP,YES,NO,YES,Stepped Binary (10mm/15mm),Threshold at Shell ID 1550,High,Baffle spacing sleeve pipe size.
+Bonnet Shell FS Length,-,BonnetShellFSLength,YES (Extras),YES,NO,User Input,USER_DEFINED,NO,YES,N/A,User Input (Default 500mm),N/A,High,Front-side bonnet barrel fabrication length (Not in Excel).
+Bonnet Shell RS Length,-,BonnetShellRSLength,YES (Extras),YES,NO,User Input,USER_DEFINED,NO,YES,N/A,User Input (Default 500mm),N/A,High,Rear-side bonnet barrel fabrication length (Not in Excel).
