@@ -58,6 +58,10 @@ namespace MegaEngineeringSuite.HeatExchangerFab
             map["{{TIEROD_QTY}}"] = data.TieRodQty.ToString("D2");
             map["{{TIEROD_DIA}}"] = $"Ø{FormatValue(data.TieRodDia)}";
 
+            map["{{DISHEND_THK}}"] = $"{FormatValue(data.DishendTHK)} THK.";
+            map["{{BONNET_SHELL_FS_LENGTH}}"] = FormatValue(data.BonnetShellFSLength);
+            map["{{BONNET_SHELL_RS_LENGTH}}"] = FormatValue(data.BonnetShellRSLength);
+
             map["{{MOC_SHELL}}"] = data.ShellMaterial ?? "SA 240 Gr 304";
             map["{{MOC_TUBE}}"] = data.TubeMaterial ?? "SA 249 TP304";
             map["{{MOC_TUBESHEET}}"] = data.TubeSheetMaterial ?? "SA 240 Gr 304";

@@ -44,6 +44,11 @@ namespace MegaEngineeringSuite
         public double TubeHoleGrooveDepth { get; set; } = 0.4;
         public double TubeHoleChamfer { get; set; } = 1.0;
 
+        // Extras Properties
+        public double BonnetShellFSLength { get; set; }
+        public double BonnetShellRSLength { get; set; }
+        public double DishendTHK { get; set; }
+
         /// <summary>
         /// Converts the strongly typed properties into a dictionary for easy display in a DataGridView.
         /// </summary>
@@ -69,7 +74,10 @@ namespace MegaEngineeringSuite
                 { "Liner / Gasket O.D.", LinerGasketOD.ToString() },
                 { "Tie Rod Dia.", TieRodDia.ToString() },
                 { "Tie Rod Qty.", TieRodQty.ToString() },
-                { "Spacer Tube", SpacerTube.ToString() }
+                { "Spacer Tube", SpacerTube.ToString() },
+                { "Bonnet Shell FS Length", BonnetShellFSLength.ToString() },
+                { "Bonnet Shell RS Length", BonnetShellRSLength.ToString() },
+                { "Dishend THK", DishendTHK.ToString() }
             };
         }
     }

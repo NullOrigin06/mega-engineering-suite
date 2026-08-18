@@ -38,6 +38,7 @@ namespace MegaEngineeringSuite
         private ComboBox cmbApprovedBy;
 
         private DataGridView dgvProperties;
+        private DataGridView dgvExtras;
         private Label lblValidationStatus;
         private StatusStrip statusStrip;
         private ToolStripStatusLabel lblStatusReady;
@@ -51,23 +52,22 @@ namespace MegaEngineeringSuite
         {
             "Shell I.D.",
             "Tube Sheet Finish THK",
-            "Tube Sheet Raw THK",
             "Body Flange Finish THK",
-            "Body Flange Raw THK",
             "Partition Plate THK",
             "Baffle THK",
             "Bolt Size",
             "Bolt Length",
             "No Of Bolts",
-            "Hole Dia.",
             "Flange I.D.",
-            "Bolt P.C.D.",
             "Tube Sheet Finish O.D.",
-            "Tube Sheet Raw O.D.",
-            "Liner / Gasket O.D.",
-            "Tie Rod Dia.",
-            "Tie Rod Qty.",
-            "Spacer Tube"
+            "Tie Rod Qty."
+        };
+
+        private static readonly string[] ExtrasPropertyNames =
+        {
+            "Bonnet Shell FS Length",
+            "Bonnet Shell RS Length",
+            "Dishend THK"
         };
 
         // Services
@@ -308,69 +308,48 @@ namespace MegaEngineeringSuite
 
             mainTable.Controls.Add(centerLayout, 1, 1);
 
-            // 4. RIGHT PANEL: ENGINEERING DATA
+            // 4. RIGHT PANEL: ENGINEERING DATA & EXTRAS
+            TableLayoutPanel rightLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 2,
+                Margin = new Padding(10, 0, 0, 0)
+            };
+            rightLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 65F));
+            rightLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 35F));
+
             GroupBox grpData = new GroupBox
             {
                 Text = "ENGINEERING PARAMETERS",
                 Font = sectionFont,
                 Dock = DockStyle.Fill,
-                Margin = new Padding(10, 0, 0, 0),
-                Padding = new Padding(15)
+                Padding = new Padding(10)
             };
 
-            dgvProperties = new DataGridView
+            dgvProperties = CreateStyledDataGridView();
+            grpData.Controls.Add(dgvProperties);
+            rightLayout.Controls.Add(grpData, 0, 0);
+
+            GroupBox grpExtras = new GroupBox
             {
+                Text = "EXTRAS",
+                Font = sectionFont,
                 Dock = DockStyle.Fill,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                AllowUserToAddRows = false,
-                AllowUserToDeleteRows = false,
-                AllowUserToResizeColumns = false,
-                AllowUserToResizeRows = false,
-                ReadOnly = true,
-                RowHeadersVisible = false,
-                BackgroundColor = Color.FromArgb(240, 244, 248),
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                MultiSelect = false,
-                Font = new Font("Segoe UI", 10F, FontStyle.Regular),
-                EnableHeadersVisualStyles = false,
-                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize,
-                RowTemplate = { Height = 35 },
-                AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCellsExceptHeaders,
-                BorderStyle = BorderStyle.FixedSingle,
-                CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
-                GridColor = Color.LightGray,
-                Margin = new Padding(0)
+                Padding = new Padding(10),
+                Margin = new Padding(0, 5, 0, 0)
             };
-            
-            dgvProperties.DefaultCellStyle.WrapMode = DataGridViewTriState.False;
-            dgvProperties.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dgvProperties.DefaultCellStyle.Padding = new Padding(5, 4, 5, 4);
-            dgvProperties.DefaultCellStyle.SelectionBackColor = Color.White;
-            dgvProperties.DefaultCellStyle.SelectionForeColor = Color.Black;
-            
-            dgvProperties.AlternatingRowsDefaultCellStyle.BackColor = Color.WhiteSmoke;
-            dgvProperties.AlternatingRowsDefaultCellStyle.SelectionBackColor = Color.WhiteSmoke;
-            dgvProperties.AlternatingRowsDefaultCellStyle.SelectionForeColor = Color.Black;
-            
-            dgvProperties.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(20, 40, 80);
-            dgvProperties.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
-            dgvProperties.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI Semibold", 10F);
-            dgvProperties.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dgvProperties.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.False;
-            dgvProperties.ColumnHeadersDefaultCellStyle.Padding = new Padding(8, 4, 8, 4);
-            
-            DataGridViewTextBoxColumn parameterColumn = new DataGridViewTextBoxColumn { Name = "Parameter", HeaderText = "Parameter Name", FillWeight = 65F };
-            parameterColumn.DefaultCellStyle.Font = new Font("Segoe UI Semibold", 10F);
-            parameterColumn.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            DataGridViewTextBoxColumn valueColumn = new DataGridViewTextBoxColumn { Name = "Value", HeaderText = "Value", FillWeight = 35F };
-            valueColumn.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            
-            dgvProperties.Columns.Add(parameterColumn);
-            dgvProperties.Columns.Add(valueColumn);
+
+            dgvExtras = CreateStyledDataGridView();
+            grpExtras.Controls.Add(dgvExtras);
+            rightLayout.Controls.Add(grpExtras, 0, 1);
+
             PopulateEmptyEngineeringProperties();
 
-            grpData.Controls.Add(dgvProperties);
-            mainTable.Controls.Add(grpData, 2, 1);
+            dgvProperties.CellEndEdit += (s, e) => SyncUiToDataModel();
+            dgvExtras.CellEndEdit += (s, e) => SyncUiToDataModel();
+
+            mainTable.Controls.Add(rightLayout, 2, 1);
 
             // 5. BOTTOM PANEL: BUTTONS
             TableLayoutPanel pnlButtons = new TableLayoutPanel
@@ -699,6 +678,157 @@ namespace MegaEngineeringSuite
             }
         }
 
+        private static DataGridView CreateStyledDataGridView()
+        {
+            var dgv = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                AllowUserToResizeColumns = false,
+                AllowUserToResizeRows = false,
+                ReadOnly = false,
+                RowHeadersVisible = false,
+                BackgroundColor = Color.FromArgb(240, 244, 248),
+                SelectionMode = DataGridViewSelectionMode.CellSelect,
+                MultiSelect = false,
+                Font = new Font("Segoe UI", 10F, FontStyle.Regular),
+                EnableHeadersVisualStyles = false,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize,
+                RowTemplate = { Height = 32 },
+                AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCellsExceptHeaders,
+                BorderStyle = BorderStyle.FixedSingle,
+                CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
+                GridColor = Color.LightGray,
+                EditMode = DataGridViewEditMode.EditOnEnter,
+                Margin = new Padding(0)
+            };
+
+            dgv.DefaultCellStyle.WrapMode = DataGridViewTriState.False;
+            dgv.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dgv.DefaultCellStyle.Padding = new Padding(5, 3, 5, 3);
+            dgv.DefaultCellStyle.SelectionBackColor = Color.FromArgb(220, 235, 252);
+            dgv.DefaultCellStyle.SelectionForeColor = Color.Black;
+
+            dgv.AlternatingRowsDefaultCellStyle.BackColor = Color.WhiteSmoke;
+            dgv.AlternatingRowsDefaultCellStyle.SelectionBackColor = Color.FromArgb(220, 235, 252);
+            dgv.AlternatingRowsDefaultCellStyle.SelectionForeColor = Color.Black;
+
+            dgv.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(20, 40, 80);
+            dgv.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            dgv.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI Semibold", 10F);
+            dgv.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dgv.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.False;
+            dgv.ColumnHeadersDefaultCellStyle.Padding = new Padding(8, 4, 8, 4);
+
+            var parameterColumn = new DataGridViewTextBoxColumn
+            {
+                Name = "Parameter",
+                HeaderText = "Parameter Name",
+                FillWeight = 65F,
+                ReadOnly = true
+            };
+            parameterColumn.DefaultCellStyle.Font = new Font("Segoe UI Semibold", 10F);
+            parameterColumn.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
+
+            var valueColumn = new DataGridViewTextBoxColumn
+            {
+                Name = "Value",
+                HeaderText = "Value",
+                FillWeight = 35F,
+                ReadOnly = false
+            };
+            valueColumn.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            valueColumn.DefaultCellStyle.BackColor = Color.White;
+
+            dgv.Columns.Add(parameterColumn);
+            dgv.Columns.Add(valueColumn);
+
+            return dgv;
+        }
+
+        private void SyncUiToDataModel()
+        {
+            if (currentData == null) return;
+
+            if (dgvProperties.IsCurrentCellInEditMode) dgvProperties.EndEdit();
+            if (dgvExtras != null && dgvExtras.IsCurrentCellInEditMode) dgvExtras.EndEdit();
+
+            foreach (DataGridViewRow row in dgvProperties.Rows)
+            {
+                if (row.IsNewRow) continue;
+                string? name = row.Cells["Parameter"]?.Value?.ToString();
+                string? val = row.Cells["Value"]?.Value?.ToString()?.Trim();
+                if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(val)) continue;
+
+                switch (name)
+                {
+                    case "Shell I.D.":
+                        if (int.TryParse(val, out int sId) && sId > 0)
+                        {
+                            currentData.ShellID = sId;
+                            txtShellID.Text = sId.ToString();
+                        }
+                        break;
+                    case "Tube Sheet Finish THK":
+                        if (double.TryParse(val, out double tsfThk) && tsfThk > 0) currentData.TubeSheetFinishTHK = tsfThk;
+                        break;
+                    case "Body Flange Finish THK":
+                        if (double.TryParse(val, out double bffThk) && bffThk > 0) currentData.BodyFlangeFinishTHK = bffThk;
+                        break;
+                    case "Partition Plate THK":
+                        if (double.TryParse(val, out double ppThk) && ppThk > 0) currentData.PartitionPlateTHK = ppThk;
+                        break;
+                    case "Baffle THK":
+                        if (double.TryParse(val, out double bThk) && bThk > 0) currentData.BaffleTHK = bThk;
+                        break;
+                    case "Bolt Size":
+                        currentData.BoltSize = val;
+                        break;
+                    case "Bolt Length":
+                        if (double.TryParse(val, out double bLen) && bLen > 0) currentData.BoltLength = bLen;
+                        break;
+                    case "No Of Bolts":
+                        if (int.TryParse(val, out int numBolts) && numBolts > 0) currentData.NoOfBolts = numBolts;
+                        break;
+                    case "Flange I.D.":
+                        if (double.TryParse(val, out double fId) && fId > 0) currentData.FlangeID = fId;
+                        break;
+                    case "Tube Sheet Finish O.D.":
+                        if (double.TryParse(val, out double tsfOd) && tsfOd > 0) currentData.TubeSheetFinishOD = tsfOd;
+                        break;
+                    case "Tie Rod Qty.":
+                        if (double.TryParse(val, out double trQty) && trQty > 0) currentData.TieRodQty = trQty;
+                        break;
+                }
+            }
+
+            if (dgvExtras != null)
+            {
+                foreach (DataGridViewRow row in dgvExtras.Rows)
+                {
+                    if (row.IsNewRow) continue;
+                    string? name = row.Cells["Parameter"]?.Value?.ToString();
+                    string? val = row.Cells["Value"]?.Value?.ToString()?.Trim();
+                    if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(val)) continue;
+
+                    switch (name)
+                    {
+                        case "Bonnet Shell FS Length":
+                            if (double.TryParse(val, out double fsLen)) currentData.BonnetShellFSLength = fsLen;
+                            break;
+                        case "Bonnet Shell RS Length":
+                            if (double.TryParse(val, out double rsLen)) currentData.BonnetShellRSLength = rsLen;
+                            break;
+                        case "Dishend THK":
+                            if (double.TryParse(val, out double dThk) && dThk > 0) currentData.DishendTHK = dThk;
+                            break;
+                    }
+                }
+            }
+        }
+
         private void PopulateGrid(EngineeringDataModel data)
         {
             dgvProperties.Rows.Clear();
@@ -707,6 +837,14 @@ namespace MegaEngineeringSuite
             {
                 dict.TryGetValue(parameterName, out string? value);
                 dgvProperties.Rows.Add(parameterName, value ?? string.Empty);
+            }
+
+            if (dgvExtras != null)
+            {
+                dgvExtras.Rows.Clear();
+                dgvExtras.Rows.Add("Bonnet Shell FS Length", data.BonnetShellFSLength > 0 ? data.BonnetShellFSLength.ToString() : "500");
+                dgvExtras.Rows.Add("Bonnet Shell RS Length", data.BonnetShellRSLength > 0 ? data.BonnetShellRSLength.ToString() : "500");
+                dgvExtras.Rows.Add("Dishend THK", data.DishendTHK > 0 ? data.DishendTHK.ToString() : "5");
             }
 
             ClearPropertiesSelection();
@@ -720,6 +858,15 @@ namespace MegaEngineeringSuite
                 dgvProperties.Rows.Add(parameterName, string.Empty);
             }
 
+            if (dgvExtras != null)
+            {
+                dgvExtras.Rows.Clear();
+                foreach (string parameterName in ExtrasPropertyNames)
+                {
+                    dgvExtras.Rows.Add(parameterName, string.Empty);
+                }
+            }
+
             ClearPropertiesSelection();
         }
 
@@ -727,6 +874,11 @@ namespace MegaEngineeringSuite
         {
             dgvProperties.ClearSelection();
             dgvProperties.CurrentCell = null;
+            if (dgvExtras != null)
+            {
+                dgvExtras.ClearSelection();
+                dgvExtras.CurrentCell = null;
+            }
         }
 
         private void BtnBack_Click(object? sender, EventArgs e)
@@ -777,9 +929,11 @@ namespace MegaEngineeringSuite
                 Cursor.Current = Cursors.WaitCursor;
 
                 RunContext.GenerateNewRunId();
+                SyncUiToDataModel();
                 lblStatusReady.Text = "Generating...";
                 statusStrip.Refresh();
                 SimpleLogger.LogGeneration("TubeSheet", "Tube Sheet Generation Started");
+                currentGeometry = geometryService.CalculateGeometry(currentData);
                 var tempService = new TemplateDrawingService();
                 var groupedViews = tempService.GenerateTemplateViews(currentGeometry, currentData);
 
@@ -894,6 +1048,7 @@ namespace MegaEngineeringSuite
                 Cursor.Current = Cursors.WaitCursor;
 
                 RunContext.GenerateNewRunId();
+                SyncUiToDataModel();
                 lblStatusReady.Text = "Generating...";
                 SimpleLogger.LogGeneration("BodyFlange", "Body Flange Generation Started");
                 
@@ -968,6 +1123,7 @@ namespace MegaEngineeringSuite
             try
             {
                 RunContext.GenerateNewRunId();
+                SyncUiToDataModel();
                 if (btn != null) btn.Enabled = false;
                 Cursor.Current = Cursors.WaitCursor;
 
@@ -1017,6 +1173,8 @@ namespace MegaEngineeringSuite
                 MessageBox.Show("Please calculate the engineering parameters first.", "Missing Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+
+            SyncUiToDataModel();
 
             using (SaveFileDialog sfd = new SaveFileDialog())
             {

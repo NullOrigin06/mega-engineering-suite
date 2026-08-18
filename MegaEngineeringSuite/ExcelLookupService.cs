@@ -46,6 +46,7 @@ namespace MegaEngineeringSuite
                         var data = new EngineeringDataModel
                         {
                             ShellID = shellId,
+                            DishendTHK = GetDoubleValue(row, 6),
                             TubeSheetFinishTHK = GetDoubleValue(row, 7),
                             TubeSheetRawTHK = GetDoubleValue(row, 8),
                             BodyFlangeFinishTHK = GetDoubleValue(row, 9),

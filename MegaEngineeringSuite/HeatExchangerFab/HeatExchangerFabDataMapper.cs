@@ -44,7 +44,11 @@ namespace MegaEngineeringSuite.HeatExchangerFab
                 BaffleTHK = data.BaffleTHK > 0 ? data.BaffleTHK : 4.0,
                 NoOfPasses = data.NoOfPass > 0 ? data.NoOfPass : 1,
                 TieRodQty = data.TieRodQty > 0 ? (int)data.TieRodQty : 6,
-                TieRodDia = data.TieRodDia > 0 ? data.TieRodDia : 12.0
+                TieRodDia = data.TieRodDia > 0 ? data.TieRodDia : 12.0,
+
+                BonnetShellFSLength = data.BonnetShellFSLength > 0 ? data.BonnetShellFSLength : 500.0,
+                BonnetShellRSLength = data.BonnetShellRSLength > 0 ? data.BonnetShellRSLength : 500.0,
+                DishendTHK = data.DishendTHK > 0 ? data.DishendTHK : 5.0
             };
         }
     }

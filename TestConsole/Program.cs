@@ -6,7 +6,7 @@ namespace TestConsole
     {
         static void Main(string[] args)
         {
-            ForensicDiagnosticRunner.RunIntermittentTelemetrySuite();
+            HeatExchangerUiValidationRunner.RunAllTests();
         }
     }
 }

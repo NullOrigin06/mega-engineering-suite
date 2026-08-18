@@ -43,6 +43,11 @@ namespace MegaEngineeringSuite.HeatExchangerFab
         public int TieRodQty { get; set; } = 6;
         public double TieRodDia { get; set; } = 12.0;
 
+        // Extras Parameters
+        public double BonnetShellFSLength { get; set; } = 500.0;
+        public double BonnetShellRSLength { get; set; } = 500.0;
+        public double DishendTHK { get; set; } = 5.0;
+
         // Materials of Construction (MOC)
         public string ShellMaterial { get; set; } = "SA 240 Gr 304";
         public string TubeMaterial { get; set; } = "SA 249 TP304";
