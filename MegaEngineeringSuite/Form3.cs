@@ -74,8 +74,8 @@ namespace MegaEngineeringSuite
         private ExcelLookupService lookupService;
         private DrawingAutomationService drawingService;
         private GeometryCalculationService geometryService;
-        private EngineeringDataModel currentData;
-        private GeometryModel currentGeometry;
+        private EngineeringDataModel? currentData;
+        private GeometryModel? currentGeometry;
         private MegaEngineeringSuite.HeatExchangerFab.HeatExchangerEngineeringProfile? _currentProfile;
         private readonly HashSet<string> _activeOverrides = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private string lastGeneratedLispPath = string.Empty;
@@ -801,79 +801,13 @@ namespace MegaEngineeringSuite
         private void OnShellIdChanged(int newShellId)
         {
             int oldShellId = currentData != null ? currentData.ShellID : 0;
+            MegaEngineeringSuite.HeatExchangerFab.HeatExchangerEngineeringProfile newProfile;
+
+            // Phase 1: Explicit Profile Lookup from Excel Standards Database
             try
             {
-                var newProfile = lookupService.LoadProfileByShellId(newShellId);
+                newProfile = lookupService.LoadProfileByShellId(newShellId);
                 _currentProfile = newProfile;
-
-                if (currentData == null)
-                {
-                    currentData = new EngineeringDataModel();
-                }
-
-                // Update currentData with the complete coherent new profile
-                currentData.ShellID = newProfile.ShellID;
-                currentData.ShellBonnetTHK = newProfile.ShellBonnetTHK;
-                currentData.LinerAfterMachining = newProfile.LinerAfterMachining;
-                currentData.DishendTHK = newProfile.DishendTHK;
-                currentData.TubeSheetFinishTHK = newProfile.TubeSheetFinishTHK;
-                currentData.TubeSheetRawTHK = newProfile.TubeSheetRawTHK;
-                currentData.BodyFlangeFinishTHK = newProfile.BodyFlangeFinishTHK;
-                currentData.BodyFlangeRawTHK = newProfile.BodyFlangeRawTHK;
-                currentData.PartitionPlateTHK = newProfile.PartitionPlateTHK;
-                currentData.BaffleTHK = newProfile.BaffleTHK;
-                currentData.BoltSize = newProfile.BoltSize;
-                currentData.BoltLength = newProfile.BoltLength;
-                currentData.NoOfBolts = newProfile.NoOfBolts;
-                currentData.HoleDia = newProfile.HoleDia;
-                currentData.FlangeID = newProfile.FlangeID;
-                currentData.BoltPCD = newProfile.BoltPCD;
-                currentData.TubeSheetFinishOD = newProfile.TubeSheetFinishOD;
-                currentData.TubeSheetRawOD = newProfile.TubeSheetRawOD;
-                currentData.LinerGasketOD = newProfile.LinerGasketOD;
-                currentData.TieRodDia = newProfile.TieRodDia;
-                currentData.TieRodQty = newProfile.TieRodQty;
-                currentData.SpacerTube = newProfile.SpacerTube;
-
-                // Clear previous profile overrides as specified
-                _activeOverrides.Clear();
-
-                // Recalculate geometry
-                currentGeometry = geometryService.CalculateGeometry(currentData);
-
-                // Update UI fields
-                txtShellID.Text = newShellId.ToString();
-                PopulateGrid(currentData);
-
-                // Diagnostic Telemetry Log
-                SimpleLogger.Log("PROFILE-RESOLUTION",
-                    $"Run ID: {RunContext.CurrentRunId}\n" +
-                    $"Old Shell ID: {oldShellId} -> New Shell ID: {newShellId}\n" +
-                    $"Loaded Parameters:\n" +
-                    $"  TubeSheetFinishTHK: {newProfile.TubeSheetFinishTHK}\n" +
-                    $"  BodyFlangeFinishTHK: {newProfile.BodyFlangeFinishTHK}\n" +
-                    $"  PartitionPlateTHK: {newProfile.PartitionPlateTHK}\n" +
-                    $"  BaffleTHK: {newProfile.BaffleTHK}\n" +
-                    $"  BoltSize: {newProfile.BoltSize}\n" +
-                    $"  BoltLength: {newProfile.BoltLength}\n" +
-                    $"  NoOfBolts: {newProfile.NoOfBolts}\n" +
-                    $"  HoleDia: {newProfile.HoleDia}\n" +
-                    $"  FlangeID: {newProfile.FlangeID}\n" +
-                    $"  BoltPCD: {newProfile.BoltPCD}\n" +
-                    $"  TubeSheetFinishOD: {newProfile.TubeSheetFinishOD}\n" +
-                    $"  TubeSheetRawOD: {newProfile.TubeSheetRawOD}\n" +
-                    $"  LinerGasketOD: {newProfile.LinerGasketOD}\n" +
-                    $"  TieRodDia: {newProfile.TieRodDia}\n" +
-                    $"  TieRodQty: {newProfile.TieRodQty}\n" +
-                    $"  SpacerTube: {newProfile.SpacerTube}\n" +
-                    $"  DishendTHK: {newProfile.DishendTHK}\n" +
-                    $"Preserved Extras:\n" +
-                    $"  BonnetShellFSLength: {currentData.BonnetShellFSLength}\n" +
-                    $"  BonnetShellRSLength: {currentData.BonnetShellRSLength}\n" +
-                    $"Overrides Cleared: [All]\n" +
-                    $"Active Overrides: [None]");
-
-                lblStatusReady.Text = $"Profile: Shell ID {newShellId} Refreshed";
             }
             catch (Exception ex)
             {
@@ -883,6 +817,108 @@ namespace MegaEngineeringSuite
                     PopulateGrid(currentData);
                     txtShellID.Text = oldShellId.ToString();
                 }
+                return;
+            }
+
+            // Phase 2: Assign the complete coherent engineering profile to currentData
+            if (currentData == null)
+            {
+                currentData = new EngineeringDataModel();
+            }
+
+            currentData.ShellID = newProfile.ShellID;
+            currentData.ShellBonnetTHK = newProfile.ShellBonnetTHK;
+            currentData.LinerAfterMachining = newProfile.LinerAfterMachining;
+            currentData.DishendTHK = newProfile.DishendTHK;
+            currentData.TubeSheetFinishTHK = newProfile.TubeSheetFinishTHK;
+            currentData.TubeSheetRawTHK = newProfile.TubeSheetRawTHK;
+            currentData.BodyFlangeFinishTHK = newProfile.BodyFlangeFinishTHK;
+            currentData.BodyFlangeRawTHK = newProfile.BodyFlangeRawTHK;
+            currentData.PartitionPlateTHK = newProfile.PartitionPlateTHK;
+            currentData.BaffleTHK = newProfile.BaffleTHK;
+            currentData.BoltSize = newProfile.BoltSize;
+            currentData.BoltLength = newProfile.BoltLength;
+            currentData.NoOfBolts = newProfile.NoOfBolts;
+            currentData.HoleDia = newProfile.HoleDia;
+            currentData.FlangeID = newProfile.FlangeID;
+            currentData.BoltPCD = newProfile.BoltPCD;
+            currentData.TubeSheetFinishOD = newProfile.TubeSheetFinishOD;
+            currentData.TubeSheetRawOD = newProfile.TubeSheetRawOD;
+            currentData.LinerGasketOD = newProfile.LinerGasketOD;
+            currentData.TieRodDia = newProfile.TieRodDia;
+            currentData.TieRodQty = newProfile.TieRodQty;
+            currentData.SpacerTube = newProfile.SpacerTube;
+
+            // Clear previous profile overrides as specified
+            _activeOverrides.Clear();
+
+            // Update UI fields with genuine loaded profile
+            txtShellID.Text = newShellId.ToString();
+            PopulateGrid(currentData);
+
+            // Phase 3: Evaluate Tube Sheet Geometry Compatibility Separately
+            bool geometryCompatible = false;
+            string geometryNotice = string.Empty;
+            try
+            {
+                currentGeometry = geometryService.CalculateGeometry(currentData);
+                geometryCompatible = true;
+            }
+            catch (InvalidOperationException geomEx)
+            {
+                currentGeometry = null;
+                geometryNotice = geomEx.Message;
+                SimpleLogger.Log("GEOMETRY-CAPACITY", $"Geometry Capacity Warning for Shell ID {newShellId}: {geomEx.Message}");
+            }
+            catch (Exception ex)
+            {
+                currentGeometry = null;
+                geometryNotice = ex.Message;
+                SimpleLogger.Log("GEOMETRY-CALCULATION", $"Geometry calculation exception for Shell ID {newShellId}: {ex.Message}");
+            }
+
+            // Diagnostic Telemetry Log
+            SimpleLogger.Log("PROFILE-RESOLUTION",
+                $"Run ID: {RunContext.CurrentRunId}\n" +
+                $"Old Shell ID: {oldShellId} -> New Shell ID: {newShellId}\n" +
+                $"Loaded Parameters:\n" +
+                $"  TubeSheetFinishTHK: {newProfile.TubeSheetFinishTHK}\n" +
+                $"  BodyFlangeFinishTHK: {newProfile.BodyFlangeFinishTHK}\n" +
+                $"  PartitionPlateTHK: {newProfile.PartitionPlateTHK}\n" +
+                $"  BaffleTHK: {newProfile.BaffleTHK}\n" +
+                $"  BoltSize: {newProfile.BoltSize}\n" +
+                $"  BoltLength: {newProfile.BoltLength}\n" +
+                $"  NoOfBolts: {newProfile.NoOfBolts}\n" +
+                $"  HoleDia: {newProfile.HoleDia}\n" +
+                $"  FlangeID: {newProfile.FlangeID}\n" +
+                $"  BoltPCD: {newProfile.BoltPCD}\n" +
+                $"  TubeSheetFinishOD: {newProfile.TubeSheetFinishOD}\n" +
+                $"  TubeSheetRawOD: {newProfile.TubeSheetRawOD}\n" +
+                $"  LinerGasketOD: {newProfile.LinerGasketOD}\n" +
+                $"  TieRodDia: {newProfile.TieRodDia}\n" +
+                $"  TieRodQty: {newProfile.TieRodQty}\n" +
+                $"  SpacerTube: {newProfile.SpacerTube}\n" +
+                $"  DishendTHK: {newProfile.DishendTHK}\n" +
+                $"Preserved Extras:\n" +
+                $"  BonnetShellFSLength: {currentData.BonnetShellFSLength}\n" +
+                $"  BonnetShellRSLength: {currentData.BonnetShellRSLength}\n" +
+                $"Overrides Cleared: [All]\n" +
+                $"Geometry Compatible: {geometryCompatible}");
+
+            if (geometryCompatible)
+            {
+                lblStatusReady.Text = $"Profile: Shell ID {newShellId} Refreshed";
+            }
+            else
+            {
+                lblStatusReady.Text = $"Profile: Shell ID {newShellId} Loaded (Geometry Capacity Notice)";
+                MessageBox.Show(
+                    $"Engineering profile loaded successfully for Shell ID {newShellId}.\n\n" +
+                    $"{geometryNotice}\n\n" +
+                    $"The engineering profile parameters have been updated from standards. Note: Generating a 2D Tube Sheet drill pattern requires a compatible tube layout.",
+                    "Profile Loaded - Geometry Capacity Notice",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
             }
         }
 
@@ -1045,9 +1081,15 @@ namespace MegaEngineeringSuite
 
         private async void BtnGenerateTubeSheet_Click(object? sender, EventArgs e)
         {
-            if (currentData == null || currentGeometry == null)
+            if (currentData == null)
             {
-                MessageBox.Show("Please click Calculate first.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Please calculate engineering parameters first.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (currentGeometry == null)
+            {
+                MessageBox.Show("Cannot generate Tube Sheet drawing because the current tube quantity exceeds the physical capacity of the selected Shell ID. Please select a larger Shell ID or adjust tube design parameters.", "Geometry Incompatible", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
